@@ -1014,6 +1014,10 @@ sed >libI77/lwrite.c <<'//GO.SYSIN DD libI77/lwrite.c' 's/^-//'
 -	else
 -		*b++ = ' ';
 -	if (n == 0) {
+-#ifdef SIGNED_ZEROS
+-		if (signbit_f2c(&n))
+-			*b++ = '-';
+-#endif
 -		*b++ = '0';
 -		*b++ = '.';
 -		*b = 0;
@@ -1141,7 +1145,7 @@ sed >libI77/lwrite.c <<'//GO.SYSIN DD libI77/lwrite.c' 's/^-//'
 -	{
 -		switch((int)type)
 -		{
--		default: f__fatal(204,"unknown type in lio");
+-		default: f__fatal(117,"unknown type in lio");
 -		case TYINT1:
 -			x = Ptr->flchar;
 -			goto xint;
@@ -1215,10 +1219,20 @@ sed >libI77/makefile <<'//GO.SYSIN DD libI77/makefile' 's/^-//'
 -## If your system does not have the ld command, comment out
 -## or remove both the ld and mv lines above.
 -
+-# To get signed zeros in write statements on IEEE-arithmetic systems,
+-# add -DSIGNED_ZEROS to the CFLAGS assignment above and add signbit.o
+-# to the end of the "OBJ =" assignment below.  Also copy or link
+-# libF77/arith.h to this directory (after "make arith.h" if necessary
+-# in the libF77 directory).  It's simpler to do things all at once
+-# with libf2c.zip and its makefile.u.
+-
 -OBJ =	backspace.o close.o dfe.o dolio.o due.o endfile.o err.o fmt.o \
 -	fmtlib.o ftell_.o i77vers.o iio.o ilnw.o inquire.o lread.o lwrite.o \
 -	open.o rdfmt.o rewind.o rsfe.o rsli.o rsne.o sfe.o sue.o typesize.o \
 -	uio.o util.o wref.o wrtfmt.o wsfe.o wsle.o wsne.o xwsne.o
+-
+-all: sysdep1.h libI77.a
+-
 -libI77.a:	$(OBJ)
 -		ar r libI77.a $?
 -		ranlib libI77.a || true
@@ -1255,6 +1269,7 @@ sed >libI77/makefile <<'//GO.SYSIN DD libI77/makefile' 's/^-//'
 -fmt.o:		fio.h
 -fmt.o:		fmt.h
 -ftell_.o:	fio.h
+-ftell64_.o:	fio.h
 -iio.o:		fio.h
 -iio.o:		fmt.h
 -ilnw.o:		fio.h
@@ -1298,12 +1313,15 @@ sed >libI77/makefile <<'//GO.SYSIN DD libI77/makefile' 's/^-//'
 -xwsne.o:	lio.h
 -xwsne.o:	fmt.h
 -
+-sysdep1.h: sysdep1.h0
+-	cp sysdep1.h0 sysdep1.h
+-
 -check:
 -	xsum Notice README backspace.c close.c dfe.c dolio.c due.c \
 -	endfile.c err.c f2ch.add fio.h fmt.c fmt.h fmtlib.c fp.h ftell_.c \
--	i77vers.c iio.c ilnw.c inquire.c lio.h lread.c lwrite.c makefile \
--	open.c rawio.h rdfmt.c rewind.c rsfe.c rsli.c rsne.c sfe.c sue.c \
--	typesize.c uio.c util.c wref.c wrtfmt.c wsfe.c wsle.c wsne.c \
+-	ftell64_.c i77vers.c iio.c ilnw.c inquire.c lio.h lread.c lwrite.c \
+-	makefile open.c rawio.h rdfmt.c rewind.c rsfe.c rsli.c rsne.c sfe.c \
+-	sue.c typesize.c uio.c util.c wref.c wrtfmt.c wsfe.c wsle.c wsne.c \
 -	xwsne.c >zap
 -	cmp zap libI77.xsum && rm zap || diff libI77.xsum zap
 //GO.SYSIN DD libI77/makefile
@@ -1509,7 +1527,7 @@ sed >libI77/open.c <<'//GO.SYSIN DD libI77/open.c' 's/^-//'
 -	case 'o':
 -	case 'O':
 -#ifdef NON_POSIX_STDIO
--		if (!(tf = fopen(buf,"r")))
+-		if (!(tf = FOPEN(buf,"r")))
 -			opnerr(a->oerr,errno,"open")
 -		fclose(tf);
 -#else
@@ -1538,7 +1556,7 @@ sed >libI77/open.c <<'//GO.SYSIN DD libI77/open.c' 's/^-//'
 -	case 'n':
 -	case 'N':
 -#ifdef NON_POSIX_STDIO
--		if ((tf = fopen(buf,"r")) || (tf = fopen(buf,"a"))) {
+-		if ((tf = FOPEN(buf,"r")) || (tf = FOPEN(buf,"a"))) {
 -			fclose(tf);
 -			opnerr(a->oerr,128,"open")
 -			}
@@ -1552,7 +1570,7 @@ sed >libI77/open.c <<'//GO.SYSIN DD libI77/open.c' 's/^-//'
 -#ifdef NON_ANSI_STDIO
 - replace:
 -#endif
--		if (tf = fopen(buf,f__w_mode[0]))
+-		if (tf = FOPEN(buf,f__w_mode[0]))
 -			fclose(tf);
 -	}
 -
@@ -1561,10 +1579,10 @@ sed >libI77/open.c <<'//GO.SYSIN DD libI77/open.c' 's/^-//'
 -	(void) strcpy(b->ufnm,buf);
 -	if ((s = a->oacc) && b->url)
 -		ufmt = 0;
--	if(!(tf = fopen(buf, f__w_mode[ufmt|2]))) {
--		if (tf = fopen(buf, f__r_mode[ufmt]))
+-	if(!(tf = FOPEN(buf, f__w_mode[ufmt|2]))) {
+-		if (tf = FOPEN(buf, f__r_mode[ufmt]))
 -			b->urw = 1;
--		else if (tf = fopen(buf, f__w_mode[ufmt])) {
+-		else if (tf = FOPEN(buf, f__w_mode[ufmt])) {
 -			b->uwrt = 1;
 -			b->urw = 2;
 -			}
@@ -1580,7 +1598,7 @@ sed >libI77/open.c <<'//GO.SYSIN DD libI77/open.c' 's/^-//'
 -		if (a->orl)
 -			rewind(b->ufd);
 -		else if ((s = a->oacc) && (*s == 'a' || *s == 'A')
--			&& fseek(b->ufd, 0L, SEEK_END))
+-			&& FSEEK(b->ufd, 0L, SEEK_END))
 -				opnerr(a->oerr,129,"open");
 -	return(0);
 -}
@@ -1658,7 +1676,6 @@ sed >libI77/rdfmt.c <<'//GO.SYSIN DD libI77/rdfmt.c' 's/^-//'
 -#include "f2c.h"
 -#include "fio.h"
 -
--extern int f__cursor;
 -#ifdef KR_headers
 -extern double atof();
 -#else
@@ -2128,7 +2145,7 @@ sed >libI77/rdfmt.c <<'//GO.SYSIN DD libI77/rdfmt.c' 's/^-//'
 -			f__icptr += f__cursor;
 -		}
 -		else if(f__curunit && f__curunit->useek)
--			(void) fseek(f__cf,(long) f__cursor,SEEK_CUR);
+-			(void) FSEEK(f__cf, f__cursor,SEEK_CUR);
 -		else
 -			err(f__elist->cierr,106,"fmt");
 -		f__recpos += f__cursor;
@@ -2759,7 +2776,7 @@ sed >libI77/rsne.c <<'//GO.SYSIN DD libI77/rsne.c' 's/^-//'
 -	dimen *dn, *dn0, *dn1;
 -	ftnlen *dims, *dims1;
 -	ftnlen b, b0, b1, ex, no, nomax, size, span;
--	ftnint no1, type;
+-	ftnint no1, no2, type;
 -	char *vaddr;
 -	long iva, ivae;
 -	dimen dimens[MAXDIM], substr;
@@ -2983,13 +3000,13 @@ sed >libI77/rsne.c <<'//GO.SYSIN DD libI77/rsne.c' 's/^-//'
 -			if (readall) {
 -				iva += dn0->delta;
 -				if (f__lcount > 0) {
--					no1 = (ivae - iva)/size;
--					if (no1 > f__lcount)
--						no1 = f__lcount;
--					if (k = l_read(&no1, vaddr + iva,
+-					no2 = (ivae - iva)/size;
+-					if (no2 > f__lcount)
+-						no2 = f__lcount;
+-					if (k = l_read(&no2, vaddr + iva,
 -							size, type))
 -						return k;
--					iva += no1 * dn0->delta;
+-					iva += no2 * dn0->delta;
 -					}
 -				}
 - mustend:
@@ -3119,7 +3136,7 @@ sed >libI77/sue.c <<'//GO.SYSIN DD libI77/sue.c' 's/^-//'
 -extern "C" {
 -#endif
 -extern uiolen f__reclen;
--long f__recloc;
+-OFF_T f__recloc;
 -
 - int
 -#ifdef KR_headers
@@ -3178,26 +3195,26 @@ sed >libI77/sue.c <<'//GO.SYSIN DD libI77/sue.c' 's/^-//'
 -	f__reclen=0;
 -	if(f__curunit->uwrt != 1 && f__nowwriting(f__curunit))
 -		err(a->cierr, errno, "write start");
--	f__recloc=ftell(f__cf);
--	(void) fseek(f__cf,(long)sizeof(uiolen),SEEK_CUR);
+-	f__recloc=FTELL(f__cf);
+-	FSEEK(f__cf,(OFF_T)sizeof(uiolen),SEEK_CUR);
 -	return(0);
 -}
 -integer e_wsue(Void)
--{	long loc;
+-{	OFF_T loc;
 -	fwrite((char *)&f__reclen,sizeof(uiolen),1,f__cf);
 -#ifdef ALWAYS_FLUSH
 -	if (fflush(f__cf))
 -		err(f__elist->cierr, errno, "write end");
 -#endif
--	loc=ftell(f__cf);
--	fseek(f__cf,f__recloc,SEEK_SET);
+-	loc=FTELL(f__cf);
+-	FSEEK(f__cf,f__recloc,SEEK_SET);
 -	fwrite((char *)&f__reclen,sizeof(uiolen),1,f__cf);
--	fseek(f__cf,loc,SEEK_SET);
+-	FSEEK(f__cf,loc,SEEK_SET);
 -	return(0);
 -}
 -integer e_rsue(Void)
 -{
--	(void) fseek(f__cf,(long)(f__reclen-f__recpos+sizeof(uiolen)),SEEK_CUR);
+-	FSEEK(f__cf,(OFF_T)(f__reclen-f__recpos+sizeof(uiolen)),SEEK_CUR);
 -	return(0);
 -}
 -#ifdef __cplusplus
@@ -3305,12 +3322,7 @@ sed >libI77/uio.c <<'//GO.SYSIN DD libI77/uio.c' 's/^-//'
 //GO.SYSIN DD libI77/uio.c
 echo libI77/util.c 1>&2
 sed >libI77/util.c <<'//GO.SYSIN DD libI77/util.c' 's/^-//'
--#ifndef NON_UNIX_STDIO
--#define _INCLUDE_POSIX_SOURCE	/* for HP-UX */
--#define _INCLUDE_XOPEN_SOURCE	/* for HP-UX */
--#include "sys/types.h"
--#include "sys/stat.h"
--#endif
+-#include "sysdep1.h"	/* here to get stat64 on some badly designed Linux systems */
 -#include "f2c.h"
 -#include "fio.h"
 -#ifdef __cplusplus
@@ -3355,8 +3367,8 @@ sed >libI77/util.c <<'//GO.SYSIN DD libI77/util.c' 's/^-//'
 -#else
 -long f__inode(char *a, int *dev)
 -#endif
--{	struct stat x;
--	if(stat(a,&x)<0) return(-1);
+-{	struct STAT_ST x;
+-	if(STAT(a,&x)<0) return(-1);
 -	*dev = x.st_dev;
 -	return(x.st_ino);
 -}
@@ -3424,8 +3436,13 @@ sed >libI77/wref.c <<'//GO.SYSIN DD libI77/wref.c' 's/^-//'
 -		sign = 0;
 -		signspace = (int)f__cplus;
 -#ifndef VAX
--		if (!dd)
+-		if (!dd) {
+-#ifdef SIGNED_ZEROS
+-			if (signbit_f2c(&dd))
+-				signspace = sign = 1;
+-#endif
 -			dd = 0.;	/* avoid -0 */
+-			}
 -#endif
 -		}
 -	delta = w - (2 /* for the . and the d adjustment above */
@@ -3587,8 +3604,13 @@ sed >libI77/wref.c <<'//GO.SYSIN DD libI77/wref.c' 's/^-//'
 -	else {
 -		sign = 0;
 -#ifndef VAX
--		if (!x)
+-		if (!x) {
+-#ifdef SIGNED_ZEROS
+-			if (signbit_f2c(&x))
+-				sign = 2;
+-#endif
 -			x = 0.;
+-			}
 -#endif
 -		}
 -
@@ -3609,7 +3631,7 @@ sed >libI77/wref.c <<'//GO.SYSIN DD libI77/wref.c' 's/^-//'
 -	if (buf[0] == '0' && d)
 -		{ ++b; --n; }
 -#endif
--	if (sign) {
+-	if (sign == 1) {
 -		/* check for all zeros */
 -		for(s = b;;) {
 -			while(*s == '0') s++;
@@ -4041,7 +4063,6 @@ sed >libI77/wsfe.c <<'//GO.SYSIN DD libI77/wsfe.c' 's/^-//'
 -#ifdef __cplusplus
 -extern "C" {
 -#endif
--extern int f__hiwater;
 -
 - int
 -x_wSL(Void)
@@ -4551,7 +4572,7 @@ sed >libI77/backspace.c <<'//GO.SYSIN DD libI77/backspace.c' 's/^-//'
 -integer f_back(alist *a)
 -#endif
 -{	unit *b;
--	long v, w, x, y, z;
+-	OFF_T v, w, x, y, z;
 -	uiolen n;
 -	FILE *f;
 -
@@ -4575,31 +4596,31 @@ sed >libI77/backspace.c <<'//GO.SYSIN DD libI77/backspace.c' 's/^-//'
 -	f = b->ufd;	/* may have changed in t_runc() */
 -	if(b->url>0)
 -	{
--		x=ftell(f);
+-		x=FTELL(f);
 -		y = x % b->url;
 -		if(y == 0) x--;
 -		x /= b->url;
 -		x *= b->url;
--		(void) fseek(f,x,SEEK_SET);
+-		(void) FSEEK(f,x,SEEK_SET);
 -		return(0);
 -	}
 -
 -	if(b->ufmt==0)
--	{	fseek(f,-(long)sizeof(uiolen),SEEK_CUR);
+-	{	FSEEK(f,-(OFF_T)sizeof(uiolen),SEEK_CUR);
 -		fread((char *)&n,sizeof(uiolen),1,f);
--		fseek(f,-(long)n-2*sizeof(uiolen),SEEK_CUR);
+-		FSEEK(f,-(OFF_T)n-2*sizeof(uiolen),SEEK_CUR);
 -		return(0);
 -	}
--	w = x = ftell(f);
+-	w = x = FTELL(f);
 -	z = 0;
 - loop:
 -	while(x) {
 -		x -= x < 64 ? x : 64;
--		fseek(f,x,SEEK_SET);
+-		FSEEK(f,x,SEEK_SET);
 -		for(y = x; y < w; y++) {
 -			if (getc(f) != '\n')
 -				continue;
--			v = ftell(f);
+-			v = FTELL(f);
 -			if (v == w) {
 -				if (z)
 -					goto break2;
@@ -4610,7 +4631,7 @@ sed >libI77/backspace.c <<'//GO.SYSIN DD libI77/backspace.c' 's/^-//'
 -		err(a->aerr,(EOF),"backspace")
 -		}
 - break2:
--	fseek(f, z, SEEK_SET);
+-	FSEEK(f, z, SEEK_SET);
 -	return 0;
 -}
 -#ifdef __cplusplus
@@ -4813,7 +4834,7 @@ sed >libI77/dfe.c <<'//GO.SYSIN DD libI77/dfe.c' 's/^-//'
 -	f__fmtbuf=a->cifmt;
 -	if(a->cirec <= 0)
 -		err(a->cierr,130,"dfe")
--	fseek(f__cf,(long)f__curunit->url * (a->cirec-1),SEEK_SET);
+-	FSEEK(f__cf,(OFF_T)f__curunit->url * (a->cirec-1),SEEK_SET);
 -	f__curunit->uend = 0;
 -	return(0);
 -}
@@ -4933,7 +4954,7 @@ sed >libI77/due.c <<'//GO.SYSIN DD libI77/due.c' 's/^-//'
 -	if(f__curunit->ufd==NULL) err(a->cierr,114,"cdue")
 -	if(a->cirec <= 0)
 -		err(a->cierr,130,"due")
--	fseek(f__cf,(long)(a->cirec-1)*f__curunit->url,SEEK_SET);
+-	FSEEK(f__cf,(OFF_T)(a->cirec-1)*f__curunit->url,SEEK_SET);
 -	f__curunit->uend = 0;
 -	return(0);
 -}
@@ -4967,8 +4988,8 @@ sed >libI77/due.c <<'//GO.SYSIN DD libI77/due.c' 's/^-//'
 -{
 -	if(f__curunit->url==1 || f__recpos==f__curunit->url)
 -		return(0);
--	fseek(f__cf,(long)(f__curunit->url-f__recpos),SEEK_CUR);
--	if(ftell(f__cf)%f__curunit->url)
+-	FSEEK(f__cf,(OFF_T)(f__curunit->url-f__recpos),SEEK_CUR);
+-	if(FTELL(f__cf)%f__curunit->url)
 -		err(f__elist->cierr,200,"syserr");
 -	return(0);
 -}
@@ -5031,7 +5052,7 @@ sed >libI77/endfile.c <<'//GO.SYSIN DD libI77/endfile.c' 's/^-//'
 -	if(b->ufd==NULL) {
 -		char nbuf[10];
 -		sprintf(nbuf,"fort.%ld",(long)a->aunit);
--		if (tf = fopen(nbuf, f__w_mode[0]))
+-		if (tf = FOPEN(nbuf, f__w_mode[0]))
 -			fclose(tf);
 -		return(0);
 -		}
@@ -5067,7 +5088,7 @@ sed >libI77/endfile.c <<'//GO.SYSIN DD libI77/endfile.c' 's/^-//'
 -t_runc(alist *a)
 -#endif
 -{
--	long loc, len;
+-	OFF_T loc, len;
 -	unit *b;
 -	int rc;
 -	FILE *bf;
@@ -5078,9 +5099,9 @@ sed >libI77/endfile.c <<'//GO.SYSIN DD libI77/endfile.c' 's/^-//'
 -	b = &f__units[a->aunit];
 -	if(b->url)
 -		return(0);	/*don't truncate direct files*/
--	loc=ftell(bf = b->ufd);
--	fseek(bf,0L,SEEK_END);
--	len=ftell(bf);
+-	loc=FTELL(bf = b->ufd);
+-	FSEEK(bf,(OFF_T)0,SEEK_END);
+-	len=FTELL(bf);
 -	if (loc >= len || b->useek == 0)
 -		return(0);
 -#ifdef NO_TRUNCATE
@@ -5089,13 +5110,13 @@ sed >libI77/endfile.c <<'//GO.SYSIN DD libI77/endfile.c' 's/^-//'
 -	rc = 0;
 -	fclose(b->ufd);
 -	if (!loc) {
--		if (!(bf = fopen(b->ufnm, f__w_mode[b->ufmt])))
+-		if (!(bf = FOPEN(b->ufnm, f__w_mode[b->ufmt])))
 -			rc = 1;
 -		if (b->uwrt)
 -			b->uwrt = 1;
 -		goto done;
 -		}
--	if (!(bf = fopen(b->ufnm, f__r_mode[0]))
+-	if (!(bf = FOPEN(b->ufnm, f__r_mode[0]))
 -	 || !(tf = tmpfile())) {
 -#ifdef NON_UNIX_STDIO
 - bad:
@@ -5103,24 +5124,24 @@ sed >libI77/endfile.c <<'//GO.SYSIN DD libI77/endfile.c' 's/^-//'
 -		rc = 1;
 -		goto done;
 -		}
--	if (copy(bf, loc, tf)) {
+-	if (copy(bf, (long)loc, tf)) {
 - bad1:
 -		rc = 1;
 -		goto done1;
 -		}
--	if (!(bf = freopen(b->ufnm, f__w_mode[0], bf)))
+-	if (!(bf = FREOPEN(b->ufnm, f__w_mode[0], bf)))
 -		goto bad1;
 -	rewind(tf);
--	if (copy(tf, loc, bf))
+-	if (copy(tf, (long)loc, bf))
 -		goto bad1;
 -	b->uwrt = 1;
 -	b->urw = 2;
 -#ifdef NON_UNIX_STDIO
 -	if (b->ufmt) {
 -		fclose(bf);
--		if (!(bf = fopen(b->ufnm, f__w_mode[3])))
+-		if (!(bf = FOPEN(b->ufnm, f__w_mode[3])))
 -			goto bad;
--		fseek(bf,0L,SEEK_END);
+-		FSEEK(bf,(OFF_T)0,SEEK_END);
 -		b->urw = 3;
 -		}
 -#endif
@@ -5131,7 +5152,13 @@ sed >libI77/endfile.c <<'//GO.SYSIN DD libI77/endfile.c' 's/^-//'
 -#else /* NO_TRUNCATE */
 -	if (b->urw & 2)
 -		fflush(b->ufd); /* necessary on some Linux systems */
--	rc = ftruncate(fileno(b->ufd), loc);
+-#ifndef FTRUNCATE
+-#define FTRUNCATE ftruncate
+-#endif
+-	rc = FTRUNCATE(fileno(b->ufd), loc);
+-	/* The following FSEEK is unnecessary on some systems, */
+-	/* but should be harmless. */
+-	FSEEK(b->ufd, (OFF_T)0, SEEK_END);
 -#endif /* NO_TRUNCATE */
 -	if (rc)
 -		err(a->aerr,111,"endfile");
@@ -5143,12 +5170,7 @@ sed >libI77/endfile.c <<'//GO.SYSIN DD libI77/endfile.c' 's/^-//'
 //GO.SYSIN DD libI77/endfile.c
 echo libI77/err.c 1>&2
 sed >libI77/err.c <<'//GO.SYSIN DD libI77/err.c' 's/^-//'
--#ifndef NON_UNIX_STDIO
--#define _INCLUDE_POSIX_SOURCE	/* for HP-UX */
--#define _INCLUDE_XOPEN_SOURCE	/* for HP-UX */
--#include "sys/types.h"
--#include "sys/stat.h"
--#endif
+-#include "sysdep1.h"	/* here to get stat64 on some badly designed Linux systems */
 -#include "f2c.h"
 -#ifdef KR_headers
 -extern char *malloc();
@@ -5189,7 +5211,8 @@ sed >libI77/err.c <<'//GO.SYSIN DD libI77/err.c' 's/^-//'
 -FILE *f__cf;	/*current file*/
 -unit *f__curunit;	/*current unit*/
 -int f__recpos;	/*place in current record*/
--int f__cursor, f__hiwater, f__scale;
+-OFF_T f__cursor, f__hiwater;
+-int f__scale;
 -char *f__icptr;
 -
 -/*error messages*/
@@ -5240,9 +5263,9 @@ sed >libI77/err.c <<'//GO.SYSIN DD libI77/err.c' 's/^-//'
 -#ifdef NON_UNIX_STDIO
 -	return !isatty(fileno(f));
 -#else
--	struct stat x;
+-	struct STAT_ST x;
 -
--	if (fstat(fileno(f),&x) < 0)
+-	if (FSTAT(fileno(f),&x) < 0)
 -		return(0);
 -#ifdef S_IFMT
 -	switch(x.st_mode & S_IFMT) {
@@ -5344,7 +5367,7 @@ sed >libI77/err.c <<'//GO.SYSIN DD libI77/err.c' 's/^-//'
 -f__nowreading(unit *x)
 -#endif
 -{
--	long loc;
+-	OFF_T loc;
 -	int ufmt, urw;
 -	extern char *f__r_mode[], *f__w_mode[];
 -
@@ -5353,17 +5376,17 @@ sed >libI77/err.c <<'//GO.SYSIN DD libI77/err.c' 's/^-//'
 -	if (!x->ufnm)
 -		goto cantread;
 -	ufmt = x->url ? 0 : x->ufmt;
--	loc = ftell(x->ufd);
+-	loc = FTELL(x->ufd);
 -	urw = 3;
--	if (!freopen(x->ufnm, f__w_mode[ufmt|2], x->ufd)) {
+-	if (!FREOPEN(x->ufnm, f__w_mode[ufmt|2], x->ufd)) {
 -		urw = 1;
--		if(!freopen(x->ufnm, f__r_mode[ufmt], x->ufd)) {
+-		if(!FREOPEN(x->ufnm, f__r_mode[ufmt], x->ufd)) {
 - cantread:
 -			errno = 126;
 -			return 1;
 -			}
 -		}
--	fseek(x->ufd,loc,SEEK_SET);
+-	FSEEK(x->ufd,loc,SEEK_SET);
 -	x->urw = urw;
 - done:
 -	x->uwrt = 0;
@@ -5377,7 +5400,7 @@ sed >libI77/err.c <<'//GO.SYSIN DD libI77/err.c' 's/^-//'
 -f__nowwriting(unit *x)
 -#endif
 -{
--	long loc;
+-	OFF_T loc;
 -	int ufmt;
 -	extern char *f__w_mode[];
 -
@@ -5388,14 +5411,14 @@ sed >libI77/err.c <<'//GO.SYSIN DD libI77/err.c' 's/^-//'
 -	ufmt = x->url ? 0 : x->ufmt;
 -	if (x->uwrt == 3) { /* just did write, rewind */
 -		if (!(f__cf = x->ufd =
--				freopen(x->ufnm,f__w_mode[ufmt],x->ufd)))
+-				FREOPEN(x->ufnm,f__w_mode[ufmt],x->ufd)))
 -			goto cantwrite;
 -		x->urw = 2;
 -		}
 -	else {
--		loc=ftell(x->ufd);
+-		loc=FTELL(x->ufd);
 -		if (!(f__cf = x->ufd =
--			freopen(x->ufnm, f__w_mode[ufmt | 2], x->ufd)))
+-			FREOPEN(x->ufnm, f__w_mode[ufmt | 2], x->ufd)))
 -			{
 -			x->ufd = NULL;
 - cantwrite:
@@ -5403,7 +5426,7 @@ sed >libI77/err.c <<'//GO.SYSIN DD libI77/err.c' 's/^-//'
 -			return(1);
 -			}
 -		x->urw = 3;
--		fseek(x->ufd,loc,SEEK_SET);
+-		FSEEK(x->ufd,loc,SEEK_SET);
 -		}
 - done:
 -	x->uwrt = 1;
@@ -5594,6 +5617,9 @@ sed >libI77/f2ch.add <<'//GO.SYSIN DD libI77/f2ch.add' 's/^-//'
 //GO.SYSIN DD libI77/f2ch.add
 echo libI77/fio.h 1>&2
 sed >libI77/fio.h <<'//GO.SYSIN DD libI77/fio.h' 's/^-//'
+-#ifndef SYSDEP_H_INCLUDED
+-#include "sysdep1.h"
+-#endif
 -#include "stdio.h"
 -#include "errno.h"
 -#ifndef NULL
@@ -5605,6 +5631,38 @@ sed >libI77/fio.h <<'//GO.SYSIN DD libI77/fio.h' 's/^-//'
 -#define SEEK_SET 0
 -#define SEEK_CUR 1
 -#define SEEK_END 2
+-#endif
+-
+-#ifndef FOPEN
+-#define FOPEN fopen
+-#endif
+-
+-#ifndef FREOPEN
+-#define FREOPEN freopen
+-#endif
+-
+-#ifndef FSEEK
+-#define FSEEK fseek
+-#endif
+-
+-#ifndef FSTAT
+-#define FSTAT fstat
+-#endif
+-
+-#ifndef FTELL
+-#define FTELL ftell
+-#endif
+-
+-#ifndef OFF_T
+-#define OFF_T long
+-#endif
+-
+-#ifndef STAT_ST
+-#define STAT_ST stat
+-#endif
+-
+-#ifndef STAT
+-#define STAT stat
 -#endif
 -
 -#ifdef MSDOS
@@ -5688,8 +5746,8 @@ sed >libI77/fio.h <<'//GO.SYSIN DD libI77/fio.h' 's/^-//'
 -#define MXUNIT 100
 -
 -extern int f__recpos;	/*position in current record*/
--extern int f__cursor;	/* offset to move to */
--extern int f__hiwater;	/* so TL doesn't confuse us */
+-extern OFF_T f__cursor;	/* offset to move to */
+-extern OFF_T f__hiwater;	/* so TL doesn't confuse us */
 -
 -#define WRITE	1
 -#define READ	2
@@ -5725,7 +5783,6 @@ sed >libI77/fmt.c <<'//GO.SYSIN DD libI77/fmt.c' 's/^-//'
 -#endif
 -#define GLITCH '\2'
 -	/* special quote character for stu */
--extern int f__cursor,f__scale;
 -extern flag f__cblank,f__cplus;	/*blanks in I and compulsory plus*/
 -static struct syl f__syl[SYLMX];
 -int f__parenlvl,f__pc,f__revloc;
@@ -6295,6 +6352,7 @@ sed >libI77/fmt.h <<'//GO.SYSIN DD libI77/fmt.h' 's/^-//'
 -extern int (*f__dorevert)();
 -extern int rd_ed(),rd_ned();
 -extern int w_ed(),w_ned();
+-extern int signbit_f2c();
 -#else
 -#ifdef __cplusplus
 -extern "C" {
@@ -6307,6 +6365,7 @@ sed >libI77/fmt.h <<'//GO.SYSIN DD libI77/fmt.h' 's/^-//'
 -extern void fmt_bg(void);
 -extern int pars_f(char*);
 -extern int rd_ed(struct syl*, char*, ftnlen),rd_ned(struct syl*);
+-extern int signbit_f2c(double*);
 -extern int w_ed(struct syl*, char*, ftnlen),w_ned(struct syl*);
 -extern int wrt_E(ufloat*, int, int, int, ftnlen);
 -extern int wrt_F(ufloat*, int, int, ftnlen);
@@ -6321,7 +6380,6 @@ sed >libI77/fmt.h <<'//GO.SYSIN DD libI77/fmt.h' 's/^-//'
 -#define GET(x) if((x=(*f__getn)())<0) return(x)
 -#define VAL(x) (x!='\n'?x:' ')
 -#define PUT(x) (*f__putn)(x)
--extern int f__cursor;
 -
 -#undef TYQUAD
 -#ifndef Allow_TYQUAD
@@ -6489,7 +6547,6 @@ sed >libI77/iio.c <<'//GO.SYSIN DD libI77/iio.c' 's/^-//'
 -char *f__icend;
 -extern icilist *f__svic;
 -int f__icnum;
--extern int f__hiwater;
 -
 - int
 -z_getc(Void)
@@ -6838,7 +6895,7 @@ sed >libI77/inquire.c <<'//GO.SYSIN DD libI77/inquire.c' 's/^-//'
 -	if(a->inrecl!=NULL && p!=NULL)
 -		*a->inrecl=p->url;
 -	if(a->innrec!=NULL && p!=NULL && p->url>0)
--		*a->innrec=ftell(p->ufd)/p->url+1;
+-		*a->innrec=(ftnint)(FTELL(p->ufd)/p->url+1);
 -	if(a->inblank && p!=NULL && p->ufmt)
 -		if(p->ublnk)
 -			b_char("ZERO",a->inblank,a->inblanklen);
@@ -6849,7 +6906,7 @@ sed >libI77/inquire.c <<'//GO.SYSIN DD libI77/inquire.c' 's/^-//'
 echo libI77/i77vers.c 1>&2
 sed >libI77/i77vers.c <<'//GO.SYSIN DD libI77/i77vers.c' 's/^-//'
 - char
--_libi77_version_f2c[] = "\n@(#) LIBI77 VERSION (f2c) pjw,dmg-mods 20010301\n";
+-_libi77_version_f2c[] = "\n@(#) LIBI77 VERSION (f2c) pjw,dmg-mods 20020906\n";
 -
 -/*
 -2.01	$ format added
@@ -7175,48 +7232,216 @@ sed >libI77/i77vers.c <<'//GO.SYSIN DD libI77/i77vers.c' 's/^-//'
 -/*		thus permitting truncation of scratch files on true Unix */
 -/*		systems, where scratch files have no name.  Add an fflush() */
 -/*		(surprisingly) needed on some Linux systems. */
+-/* 11 Oct. 2001: backspac.c dfe.c due.c endfile.c err.c fio.h fmt.c fmt.h */
+-/*		inquire.c open.c rdfmt.c sue.c util.c: change fseek and */
+-/*		ftell to FSEEK and FTELL (#defined to be fseek and ftell, */
+-/*		respectively, in fio.h unless otherwise #defined), and use */
+-/*		type OFF_T (#defined to be long unless otherwise #defined) */
+-/*		to permit handling files over 2GB long where possible, */
+-/*		with suitable -D options, provided for some systems in new */
+-/*		header file sysdep1.h (copied from sysdep1.h0 by default). */
+-/* 15 Nov. 2001: endfile.c: add FSEEK after FTRUNCATE. */
+-/* 28 Nov. 2001: fmt.h lwrite.c wref.c and (new) signbit.c: on IEEE systems, */
+-/*		print -0 as -0 when compiled with -DSIGNED_ZEROS.  See */
+-/*		comments in makefile or (better) libf2c/makefile.* . */
+-/* 6 Sept. 2002: rsne.c: fix bug with multiple repeat counts in reading */
+-/*		namelists, e.g., &nl a(2) = 3*1.0, 2*2.0, 3*3.0 /  */
 //GO.SYSIN DD libI77/i77vers.c
+echo libI77/sysdep1.h0 1>&2
+sed >libI77/sysdep1.h0 <<'//GO.SYSIN DD libI77/sysdep1.h0' 's/^-//'
+-#ifndef SYSDEP_H_INCLUDED
+-#define SYSDEP_H_INCLUDED
+-#undef USE_LARGEFILE
+-#ifndef NO_LONG_LONG
+-
+-#ifdef __sun__
+-#define USE_LARGEFILE
+-#define OFF_T off64_t
+-#endif
+-
+-#ifdef __linux__
+-#define USE_LARGEFILE
+-#define OFF_T __off64_t
+-#endif
+-
+-#ifdef _AIX43
+-#define _LARGE_FILES
+-#define _LARGE_FILE_API
+-#define USE_LARGEFILE
+-#endif /*_AIX43*/
+-
+-#ifdef __hpux
+-#define _FILE64
+-#define _LARGEFILE64_SOURCE
+-#define USE_LARGEFILE
+-#endif /*__hpux*/
+-
+-#ifdef __sgi
+-#define USE_LARGEFILE
+-#endif /*__sgi*/
+-
+-#ifdef __FreeBSD__
+-#define OFF_T off_t
+-#define FSEEK fseeko
+-#define FTELL ftello
+-#endif
+-
+-#ifdef USE_LARGEFILE
+-#ifndef OFF_T
+-#define OFF_T off64_t
+-#endif
+-#define _LARGEFILE_SOURCE
+-#define _LARGEFILE64_SOURCE
+-#include <sys/types.h>
+-#include <sys/stat.h>
+-#define FOPEN fopen64
+-#define FREOPEN freopen64
+-#define FSEEK fseeko64
+-#define FSTAT fstat64
+-#define FTELL ftello64
+-#define FTRUNCATE ftruncate64
+-#define STAT stat64
+-#define STAT_ST stat64
+-#endif /*USE_LARGEFILE*/
+-#endif /*NO_LONG_LONG*/
+-
+-#ifndef NON_UNIX_STDIO
+-#ifndef USE_LARGEFILE
+-#define _INCLUDE_POSIX_SOURCE	/* for HP-UX */
+-#define _INCLUDE_XOPEN_SOURCE	/* for HP-UX */
+-#include "sys/types.h"
+-#include "sys/stat.h"
+-#endif
+-#endif
+-
+-#endif /*SYSDEP_H_INCLUDED*/
+//GO.SYSIN DD libI77/sysdep1.h0
+echo libI77/ftell64_.c 1>&2
+sed >libI77/ftell64_.c <<'//GO.SYSIN DD libI77/ftell64_.c' 's/^-//'
+-#include "f2c.h"
+-#include "fio.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+- static FILE *
+-#ifdef KR_headers
+-unit_chk(Unit, who) integer Unit; char *who;
+-#else
+-unit_chk(integer Unit, char *who)
+-#endif
+-{
+-	if (Unit >= MXUNIT || Unit < 0)
+-		f__fatal(101, who);
+-	return f__units[Unit].ufd;
+-	}
+-
+- longint
+-#ifdef KR_headers
+-ftell64_(Unit) integer *Unit;
+-#else
+-ftell64_(integer *Unit)
+-#endif
+-{
+-	FILE *f;
+-	return (f = unit_chk(*Unit, "ftell")) ? FTELL(f) : -1L;
+-	}
+-
+- int
+-#ifdef KR_headers
+-fseek64_(Unit, offset, whence) integer *Unit, *whence; longint *offset;
+-#else
+-fseek64_(integer *Unit, longint *offset, integer *whence)
+-#endif
+-{
+-	FILE *f;
+-	int w = (int)*whence;
+-#ifdef SEEK_SET
+-	static int wohin[3] = { SEEK_SET, SEEK_CUR, SEEK_END };
+-#endif
+-	if (w < 0 || w > 2)
+-		w = 0;
+-#ifdef SEEK_SET
+-	w = wohin[w];
+-#endif
+-	return	!(f = unit_chk(*Unit, "fseek"))
+-		|| FSEEK(f, (OFF_T)*offset, w) ? 1 : 0;
+-	}
+-#ifdef __cplusplus
+-}
+-#endif
+//GO.SYSIN DD libI77/ftell64_.c
+echo libI77/signbit.c 1>&2
+sed >libI77/signbit.c <<'//GO.SYSIN DD libI77/signbit.c' 's/^-//'
+-#include "arith.h"
+-
+-#ifndef Long
+-#define Long long
+-#endif
+-
+- int
+-#ifdef KR_headers
+-signbit_f2c(x) double *x;
+-#else
+-signbit_f2c(double *x)
+-#endif
+-{
+-#ifdef IEEE_MC68k
+-	if (*(Long*)x & 0x80000000)
+-		return 1;
+-#else
+-#ifdef IEEE_8087
+-	if (((Long*)x)[1] & 0x80000000)
+-		return 1;
+-#endif /*IEEE_8087*/
+-#endif /*IEEE_MC68k*/
+-	return 0;
+-	}
+//GO.SYSIN DD libI77/signbit.c
 echo libI77/libI77.xsum 1>&2
 sed >libI77/libI77.xsum <<'//GO.SYSIN DD libI77/libI77.xsum' 's/^-//'
 -Notice	76f23b4	1212
 -README	f35cf24	10373
--backspace.c	e0d51378	1325
+-backspace.c	10ebf554	1328
 -close.c	173f01de	1393
--dfe.c	1c0fb024	2623
+-dfe.c	1d658105	2624
 -dolio.c	19c9fbd9	471
--due.c	f3cfad3e	1622
--endfile.c	c8afabe	2634
--err.c	e063fc02	6200
+-due.c	ee219f6d	1624
+-endfile.c	6f7201d	2838
+-err.c	ec8eb235	6127
 -f2ch.add	ef66bf17	6060
--fio.h	f0d3912d	2533
--fmt.c	12a28af0	8392
--fmt.h	fed48db7	1933
+-fio.h	f9389f5f	2932
+-fmt.c	cdfb2a1	8361
+-fmt.h	f5dd2afb	1970
 -fmtlib.c	eefc6a27	865
 -fp.h	100fb355	665
+-ftell64_.c	e2c4b21e	917
 -ftell_.c	e845eedb	894
--i77vers.c	f757ca5b	17062
--iio.c	e9200b91	2662
+-i77vers.c	fa55d58b	17986
+-iio.c	f958b627	2639
 -ilnw.c	fe0ab14b	1125
--inquire.c	6ef0c61	2722
+-inquire.c	1883d542	2732
 -lio.h	a087b39	1564
 -lread.c	eb3c2be3	14705
--lwrite.c	e696edf4	4551
--makefile	8a4b152	2372
--open.c	129f3506	5625
+-lwrite.c	f80da63f	4616
+-makefile	e31c232c	2856
+-open.c	a2fe776	5625
 -rawio.h	1ab49f7c	718
--rdfmt.c	13bd6a83	8886
+-rdfmt.c	ffbd74b2	8858
 -rewind.c	e4c6236f	475
 -rsfe.c	eb9e882c	1492
 -rsli.c	11f59b61	1785
--rsne.c	11f0c6ea	11546
+-rsne.c	1b1e1814	11551
 -sfe.c	d24f06	767
--sue.c	f02b5022	1875
+-signbit.c	e37eac06	330
+-sue.c	9705ecf	1865
+-sysdep1.h0	1812022d	1202
 -typesize.c	eee307ae	386
 -uio.c	e354a770	1619
--util.c	f32cdf46	983
--wref.c	1736a3be	4585
+-util.c	e526349d	902
+-wref.c	17bbfb7b	4747
 -wrtfmt.c	113fc4f9	7506
--wsfe.c	44cfb3d	1303
+-wsfe.c	f2d1fe4d	1280
 -wsle.c	fe50b4c9	697
 -wsne.c	428bfda	479
 -xwsne.c	185c4bdc	1174

@@ -22,6 +22,7 @@ use or performance of this software.
 ****************************************************************/
 #include "defs.h"
 #include "usignal.h"
+#include <stdlib.h>
 
 char binread[] = "rb", textread[] = "r";
 char binwrite[] = "wb", textwrite[] = "w";
@@ -107,6 +108,7 @@ Un_link_all(int cdelete)
  void
 set_tmp_names(Void)
 {
+#ifdef MSDOS
 	int k;
 	if (debugflag == 1)
 		return;
@@ -118,6 +120,15 @@ set_tmp_names(Void)
 	p1_file = blkdfname + k;
 	p1_bakfile = p1_file + k;
 	sortfname = p1_bakfile + k;
+#else
+	char c_functions[] = TMPDIR "/f2c_func_XXXXXX";
+	char initfname[]   = TMPDIR "/f2c_rc_XXXXXX";
+	char initbname[]   = TMPDIR "/f2c_rc.b_XXXXXX";
+	char blkdfname[]   = TMPDIR "/f2c_blkd_XXXXXX";
+	char p1_file[]     = TMPDIR "/f2c_p1f_XXXXXX";
+	char p1_bakfile[]  = TMPDIR "/f2c_p1fb_XXXXXX";
+	char sortfname[]   = TMPDIR "/f2c_sort_XXXXXX";
+#endif
 	{
 #ifdef MSDOS
 	char buf[64], *s, *t;
@@ -156,16 +167,21 @@ set_tmp_names(Void)
 	sprintf(p1_file, "%s%sp1f", t, f2c);
 	sprintf(p1_bakfile, "%s%sp1fb", t, f2c);
 	sprintf(sortfname, "%s%ssort", t, f2c);
-#else
-	long pid = getpid();
-	sprintf(c_functions, "%s/f2c%ld_func", tmpdir, pid);
-	sprintf(initfname, "%s/f2c%ld_rd", tmpdir, pid);
-	sprintf(blkdfname, "%s/f2c%ld_blkd", tmpdir, pid);
-	sprintf(p1_file, "%s/f2c%ld_p1f", tmpdir, pid);
-	sprintf(p1_bakfile, "%s/f2c%ld_p1fb", tmpdir, pid);
-	sprintf(sortfname, "%s/f2c%ld_sort", tmpdir, pid);
-#endif
 	sprintf(initbname, "%s.b", initfname);
+#else
+
+	if (mkstemp(c_functions) == -1
+	    || mkstemp(initfname) == -1
+	    || mkstemp(initbname) == -1
+	    || mkstemp(blkdfname) == -1
+	    || mkstemp(p1_file) == -1
+	    || mkstemp(p1_bakfile) == -1
+	    || mkstemp(sortfname) == -1) {
+	  fprintf(stderr, "Cannot create temporary files\n");
+	  Un_link_all(0);
+	  exit(1);
+	}
+#endif
 	}
 	if (debugflag)
 		fprintf(diagfile, "%s %s %s %s %s %s\n", c_functions,

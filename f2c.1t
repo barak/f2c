@@ -69,8 +69,8 @@ Compile code to check that subscripts are within declared array bounds.
 .TP
 .B -I2
 Render INTEGER and LOGICAL as short,
-INTEGER\(**4 as long int.  Assume the default \fIlibF77\fR
-and \fIlibI77\fR:  allow only INTEGER\(**4 (and no LOGICAL)
+INTEGER\(**4 as long int.  Assumes the default \fIlibf2c\fR:
+allow only INTEGER\(**4 (and no LOGICAL)
 variables in INQUIREs.  Option
 .L -I4
 confirms the default rendering of INTEGER as long int.
@@ -107,8 +107,8 @@ The following options are peculiar to
 .B -A
 Produce
 .SM ANSI
-C.
-Default is old-style C.
+C (default, starting 20020621).
+For old-style C, use option \f(CW-K\fP.
 .TP
 .B -a
 Make local variables automatic rather than static
@@ -185,11 +185,9 @@ on double-word) boundaries.
 .B -i2
 Similar to
 .BR -I2 ,
-but assume a modified
-.I libF77
-and
-.I libI77
-(compiled with
+but assume using a modified
+.I libf2c_i2
+(which was compiled with
 .BR -Df\^2c_i2 ),
 so
 .SM INTEGER
@@ -335,7 +333,7 @@ or with
 or
 .IR cc (1)
 options
-.BR "-lF77 -lI77 -lm" .
+.BR "-lf2c -lm" .
 Calling conventions
 are those of
 .IR f\&77 :
@@ -353,14 +351,23 @@ output file
 .F /usr/include/f2c.h
 header file
 .TP
-.F /usr/lib/libF77.a
-intrinsic function library
+.F /usr/lib/libf2c.a
+Default Fortran I/O and intrinsic function static library 
 .TP
-.F /usr/lib/libI77.a
-Fortran I/O library
+.F /usr/lib/libf2c_i2.a
+Fortran I/O and intrinsic function static library (compiled so that
+short INTEGERs and LOGICALs may be assigned by INQUIRE). To be 
+used with the
+.B -i2
+option.
 .TP
-.F /lib/libc.a
-C library, see section 3
+.F /usr/lib/libf2c.so.2
+Fortran I/O and intrinsic function shared library
+.TP
+.F /usr/lib/libf2c_i2.so.2
+Fortran I/O and intrinsic function shared library (for use with
+.B -i2
+option) see the information about the static version above).
 .SH "SEE ALSO"
 S. I. Feldman and
 P. J. Weinberger,

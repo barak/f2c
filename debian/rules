@@ -44,10 +44,6 @@ build:
         else cp ./src/f2c.master.h ./src/f2c.h ;\
 	fi
 
-## Apply security patches, gnarf
-	patch -p1 < patches/patch.CAN-2005-0017.f2c
-	patch -p1 < patches/patch.CAN-2005-0018.f2c
-
 	$(MAKE) -C "./src" CFLAGS="$(GCCOPT)" ;\
 
 	sh libi77 
@@ -89,7 +85,7 @@ binary-arch: checkroot
 	install -c -m 0755 fc          debian/tmp/usr/bin/fc
 	install -d -m 0755             debian/tmp/usr/share/man/man1
 	install -c -m 0644 fc.1        debian/tmp/usr/share/man/man1/fc.1
-	install -c -m 0644 src/f2c.1t  debian/tmp/usr/share/man/man1/f2c.1
+	install -c -m 0644 f2c.1t  debian/tmp/usr/share/man/man1/f2c.1
 	gzip -9v debian/tmp/usr/share/man/man1/f2c.1
 	gzip -9v debian/tmp/usr/share/man/man1/fc.1
 	install -d -m 0755             debian/tmp/usr/lib

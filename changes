@@ -3202,3 +3202,133 @@ Wed Aug 22 08:01:37 EDT 2001
   expr.c: fix some glitches in folding constants to integer*8
 (when NO_LONG_LONG is not #defined).
   intr.c: fold constant min(...) and max(...) expressions.
+
+Fri Nov 16 02:00:03 EST 2001
+  libf2c.zip:  tweak to permit handling files over 2GB long where
+possible, with suitable -D options, provided for some systems in
+new header file sysdep1.h (copied from sysdep1.h0 by default).
+Add an fseek to endfile.c to fix a glitch on some systems.
+
+Wed Nov 28 17:58:12 EST 2001
+  libf2c.zip:  on IEEE systems, print -0 as -0 when the relevant
+libf2c/makefile.* is suitably adjusted:  see comments about
+-DSIGNED_ZEROS in libf2c/makefile.*.
+
+Fri Jan 18 16:17:44 EST 2002
+  libf2c.zip:   fix bugs (reported by Holger Helmke) in qbit_bits():
+wrong return type, missing ~ on y in return value.  This affects
+the intrinsic ibits function for first argument of type integer*8.
+
+Thu Feb  7 17:14:43 EST 2002
+  Fix bug handling leading array dimensions in common:  invalid C
+resulted.  Example (after one provided by Dmitry G. Baksheyev):
+
+	subroutine foo(a)
+	common/c/m
+	integer m, n
+	equivalence(m,n)
+	integer a(n,2)
+	a(1,2) = 3
+	end
+
+  Fix a bug, apparently introduced sometime after 19980913, in
+handling certain substring expressions that involve temporary
+assignments and the first invocation of an implicitly typed function.
+When the expressions appeared in "else if (...)"  and "do while(...)",
+the temporary assignments appeared too soon.  Examples are hard to
+find, but here is one (after an example provided by Nat Bachman):
+
+	subroutine foo(n)
+	character*8 s
+	do while (moo(s(n+1:n+2)) .ge. 2)
+		n = n + 1
+		enddo
+	end
+
+It is hard for f2c to get this sort of example correct when the
+"untyped" function is a generic intrinsic.  When incorrect code would
+otherwise result, f2c now issues an error message and declines to
+produce C.  For example,
+
+	subroutine foo(n)
+	character*8 s
+	double precision goo
+	do while (sin(goo(s(n+1:n+2))) .ge. 2)
+		n = n + 1
+		enddo
+	end
+
+gives the new error message, but both
+
+	subroutine foo(n)
+	character*8 s
+	double precision goo
+	do while (dsin(goo(s(n+1:n+2))) .ge. 2)
+		n = n + 1
+		enddo
+	end
+and
+	subroutine foo(n)
+	character*8 s
+	double precision goo
+	do while (sin(goo(min(n, (n-3)**2))) .ge. 2)
+		n = n + 1
+		enddo
+	end
+
+give correct C.
+
+Fri Feb  8 08:43:40 EST 2002
+  Make a cleaner fix of the bug fixed yesterday in handling certain
+"do while(...)" and "else if (...)" constructs involving auxiliary
+assignments.  (Yesterday's changes to expr.c are recanted; expr.c
+is now restored to that of 20010820.)  Now
+
+	subroutine foo(n)
+	character*8 s
+	double precision goo
+	do while (sin(goo(s(n+1:n+2))) .ge. 0.2)
+		n = n + 1
+		enddo
+	end
+
+is correctly translated.
+
+Thu Mar 14 12:53:08 EST 2002
+  lex.c:  adjust to avoid an error message under -72 when source files
+are in CRLF form ("text mode" on Microsoft systems), a source line is
+exactly 72 characters long, and f2c is run on a system (such as a Unix
+or Linux system) that does not distinguish text and binary modes.
+Example (in CRLF form):
+      write(*,*)"Hello world, with a source line that is 72 chars long."
+      end
+  libf2c/z_log.c:  add code to cope with buggy compilers (e.g., some
+versions of gcc under -O2 or -O3) that do floating-point comparisons
+against values computed into extended-precision registers on some
+systems (such as Intel IA32 systems).  Compile with
+-DNO_DOUBLE_EXTENDED to omit the kludge that circumvents this bug.
+
+Thu May  2 19:09:01 EDT 2002
+  src/misc.c, src/sysdep.h, src/gram.c: tweaks for KR_headers (a rare
+concern today); version.c touched but left unchanged.
+  libf2c: fix glitch in makefile.vc; KR_header tweaks in s_stop.c
+and uninit.c (which also had a misplaced #endif).
+
+Wed Jun  5 16:13:34 EDT 2002
+  libf2c: uninit.c: for Linux on an ARM processor, add some
+#ifndef _FPU... tests; f77vers.c not changed.
+
+Tue Jun 25 15:13:32 EDT 2002
+  New command-line option -K requests old-style ("K&R") C.  The
+default is changed to -A (ANSI/ISO style).
+  Under -K, cast string-length arguments to (ftnlen).  This should
+matter only in the unusual case that "readme" instructs obtaining
+f2c.h by
+	sed 's/long int /long long /' f2c.h0 >f2c.h
+  Increase defaults for some table sizes:  make -Nn802 -Nq300 -Nx400
+the default.
+
+Fri Sep  6 18:39:24 EDT 2002
+  libf2c.zip: rsne.c: fix bug with multiple repeat counts in reading
+namelists, e.g., &nl a(2) = 3*1.0, 2*2.0, 3*3.0 /
+(Bug found by Jim McDonald, reported by Toon Moene.)

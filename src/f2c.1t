@@ -107,8 +107,8 @@ The following options are peculiar to
 .B -A
 Produce
 .SM ANSI
-C.
-Default is old-style C.
+C (default, starting 20020621).
+For old-style C, use option \f(CW-K\fP.
 .TP
 .B -a
 Make local variables automatic rather than static

@@ -1,27 +1,21 @@
-f2c (20010821-3.2) stable-security; urgency=high
+f2c (20020621-3.1) unstable; urgency=HIGH
 
-  * Non-maintainer upload by the Security Team
-  * Corrected the patch to create proper temporary files by not shadowing
-    global scope variables with local scope ones.  Thanks to Dan McMahill
-    from NetBSD [src/sysdep.c, patches/patch.CAN-2005-0017.f2c,
-    CAN-2005-0017]
-
- -- Martin Schulze <joey@infodrom.org>  Wed, 13 Apr 2005 20:46:45 +0200
-
-f2c (20010821-3.1) stable-security; urgency=high
-
-  * Non-maintainer upload by the Security Team
-  * Hacked debian/rules so that additional patches can be applied, since
-    the package itself does check whether it's using the pristine source
-  * Corrected creating of temporary files f2c [src/sysdep.c,
-    patches/patch.CAN-2005-0017.f2c, CAN-2005-0017]
-  * Added patch by Javier Fernández-Sanguino Peña to fix temporary file
-    problem in fc [fc, patches/patch.CAN-2005-0018.f2c, CAN-2005-0018]
-  * Surgically removed xsum comparison since it prevents security updates
+  * NMU for security issues. Closes: #292792
+  * Corrected creating of temporary files f2c [CAN-2005-0017]
+  * Added patch by Javier Fernandez-Sanguino PeÃ±a to fix temporary file
+    problem in fc [CAN-2005-0018]
+  * Removed xsum comparison since it prevents security updates
     from being applied [src/makefile]
 
- -- Martin Schulze <joey@infodrom.org>  Mon, 17 Jan 2005 09:49:17 +0100
+ -- Joey Hess <joeyh@debian.org>  Fri,  4 Feb 2005 13:28:26 -0500
 
+f2c (20020621-2) unstable; urgency=low
+  * fixed longstanding errors in manpage with reference to the f2c
+    libraries, closing bug #167660
+ -- Alan Bain <afrb2@debian.org>  Tue, 5 November 2002 21:30:00 +0000
+f2c (20020621-1) unstable; urgency=low
+  * new upstream release fixes a few minor bugs
+ -- Alan Bain <afrb2@debian.org>  Sun, 22 September 2002 16:15:36 +0100
 f2c (20010821-3) unstable; urgency=low
   * Fixed the uninit.c file to take advantage of new GLIBC 2.2 and later
     features for setting FPU exception mask

@@ -161,7 +161,10 @@ make_int_expr(expptr e)
 			if (e1 = e->addrblock.memoffset)
 				e->addrblock.memoffset = make_int_expr(e1);
 			}
-		else if (e->addrblock.vstg == STGARG)
+		else if (e->addrblock.vstg == STGARG
+			|| e->addrblock.vstg == STGCOMMON
+				&& e->addrblock.uname_tag == UNAM_NAME
+				&& e->addrblock.user.name->vcommequiv)
 			e = mkexpr(OPWHATSIN, e, ENULL);
 	        break;
 	    case TEXPR:

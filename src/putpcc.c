@@ -44,6 +44,7 @@ static Addrp putcxeq Argdcl((tagptr));
 static tagptr putmnmx Argdcl((tagptr));
 static tagptr putop Argdcl((tagptr));
 static tagptr putpower Argdcl((tagptr));
+static long p1_where;
 
 extern int init_ac[TYSUBR+1];
 extern int ops2[];
@@ -81,14 +82,8 @@ putif(p, else_if_p)
 putif(register expptr p, int else_if_p)
 #endif
 {
-	register int k;
-	int n;
-	long where;
+	int k, n;
 
-	if (else_if_p) {
-		p1put(P1_ELSEIFSTART);
-		where = ftell(pass1_file);
-		}
 	if( !ISLOGICAL((k = (p = fixtype(p))->headblock.vtype )) )
 	{
 		if(k != TYERROR)
@@ -109,7 +104,7 @@ putif(register expptr p, int else_if_p)
 				ei_last = ei_first + n;
 				}
 			p = putx(p);
-			if (*ei_next++ = ftell(pass1_file) > where) {
+			if (*ei_next++ = ftell(pass1_file) > p1_where) {
 				p1_if(p);
 				new_endif();
 				}
@@ -2130,7 +2125,6 @@ putwhile(p)
 putwhile(expptr p)
 #endif
 {
-	long where;
 	int k, n;
 
 	if (wh_next >= wh_last)
@@ -2145,8 +2139,6 @@ putwhile(expptr p)
 		wh_next += k;
 		wh_last = wh_first + n;
 		}
-	p1put(P1_WHILE1START);
-	where = ftell(pass1_file);
 	if( !ISLOGICAL((k = (p = fixtype(p))->headblock.vtype)))
 		{
 		if(k != TYERROR)
@@ -2154,8 +2146,20 @@ putwhile(expptr p)
 		}
 	else	{
 		p = putx(p);
-		*wh_next++ = ftell(pass1_file) > where;
+		*wh_next++ = ftell(pass1_file) > p1_where;
 		p1put(P1_WHILE2START);
 		p1_expr(p);
 		}
+	}
+
+ void
+#ifdef KR_headers
+westart(elseif) int elseif;
+#else
+westart(int elseif)
+#endif
+{
+	static int we[2] = { P1_WHILE1START, P1_ELSEIFSTART };
+	p1put(we[elseif]);
+	p1_where = ftell(pass1_file);
 	}

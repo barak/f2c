@@ -41,11 +41,19 @@ sed >libF77/uninit.c <<'//GO.SYSIN DD libF77/uninit.c' 's/^-//'
 -#endif
 -#endif /*RNAN*/
 -
+-#ifdef KR_headers
+-#define Void /*void*/
+-#define FA7UL (unsigned Long) 0xfa7a7a7aL
+-#else
+-#define Void void
+-#define FA7UL 0xfa7a7a7aUL
+-#endif
+-
 -#ifdef __cplusplus
 -extern "C" {
 -#endif
 -
--static void ieee0(void);
+-static void ieee0(Void);
 -
 -static unsigned Long rnan = RNAN,
 -	dnan0 = DNAN0,
@@ -54,7 +62,11 @@ sed >libF77/uninit.c <<'//GO.SYSIN DD libF77/uninit.c' 's/^-//'
 -double _0 = 0.;
 -
 - void
+-#ifdef KR_headers
+-_uninit_f2c(x, type, len) void *x; int type; long len;
+-#else
 -_uninit_f2c(void *x, int type, long len)
+-#endif
 -{
 -	static int first = 1;
 -
@@ -73,7 +85,7 @@ sed >libF77/uninit.c <<'//GO.SYSIN DD libF77/uninit.c' 's/^-//'
 -		*(short*)x = 0xfa7a;
 -		break;
 -	  case TYLONG:
--		*(unsigned Long*)x = 0xfa7a7a7aUL;
+-		*(unsigned Long*)x = FA7UL;
 -		return;
 -	  case TYQUAD:
 -	  case TYCOMPLEX:
@@ -104,7 +116,7 @@ sed >libF77/uninit.c <<'//GO.SYSIN DD libF77/uninit.c' 's/^-//'
 -		lx = (unsigned Long*)x;
 -		lxe = lx + len;
 -		while(lx < lxe)
--			*lx++ = 0xfa7a7a7aUL;
+-			*lx++ = FA7UL;
 -		break;
 -	  case TYCOMPLEX:
 -		len *= 2;
@@ -146,7 +158,7 @@ sed >libF77/uninit.c <<'//GO.SYSIN DD libF77/uninit.c' 's/^-//'
 -#include "signal.h"
 -
 - static void
--ieee0(void)
+-ieee0(Void)
 -{
 -#ifndef __alpha
 -	_control87(EM_DENORMAL | EM_UNDERFLOW | EM_INEXACT, MCW_EM);
@@ -166,8 +178,12 @@ sed >libF77/uninit.c <<'//GO.SYSIN DD libF77/uninit.c' 's/^-//'
 -#include "/usr/include/sigfpe.h"	/* full pathname for lcc -N */
 -#include "/usr/include/sys/fpu.h"
 -
--static void
+- static void
+-#ifdef KR_headers
+-ieeeuserhand(exception, val) unsigned exception[5]; int val[2];
+-#else
 -ieeeuserhand(unsigned exception[5], int val[2])
+-#endif
 -{
 -	fflush(stdout);
 -	fprintf(stderr,"ieee0() aborting because of ");
@@ -180,8 +196,12 @@ sed >libF77/uninit.c <<'//GO.SYSIN DD libF77/uninit.c' 's/^-//'
 -	abort();
 -}
 -
--static void
+- static void
+-#ifdef KR_headers
+-ieeeuserhand2(j) unsigned int **j;
+-#else
 -ieeeuserhand2(unsigned int **j)
+-#endif
 -{
 -	fprintf(stderr,"ieee0() aborting because of confusion\n");
 -	abort();
@@ -190,7 +210,7 @@ sed >libF77/uninit.c <<'//GO.SYSIN DD libF77/uninit.c' 's/^-//'
 -static int ieee_chk = 1;
 -
 - static void
--ieee0(void)
+-ieee0(Void)
 -{
 -	int i;
 -	char *s;
@@ -232,7 +252,7 @@ sed >libF77/uninit.c <<'//GO.SYSIN DD libF77/uninit.c' 's/^-//'
 -#endif
 -
 - static void
--ieee0(void)
+-ieee0(Void)
 -{
 -#if (defined(__mc68000__) || defined(__mc68020__) || defined(mc68020) || defined (__mc68k__))
 -/* Reported 20010705 by Alan Bain <alanb@chiark.greenend.org.uk> */
@@ -244,15 +264,54 @@ sed >libF77/uninit.c <<'//GO.SYSIN DD libF77/uninit.c' 's/^-//'
 -	__fpu_control = _FPU_IEEE + _FPU_DOUBLE + _FPU_MASK_OPERR + _FPU_MASK_DZ + _FPU_MASK_SNAN+_FPU_MASK_OVFL;
 -	_FPU_SETCW(__fpu_control);
 -#endif
--#else /* !__mc68k__ */
+-
+-#elif (defined(__powerpc__)||defined(_ARCH_PPC)||defined(_ARCH_PWR)) /* !__mc68k__ */
+-/* Reported 20011109 by Alan Bain <alanb@chiark.greenend.org.uk> */
+-
+-#ifdef Can_use__setfpucw
+-
+-/* The following is NOT a mistake -- the author of the fpu_control.h
+-for the PPC has erroneously defined IEEE mode to turn on exceptions
+-other than Inexact! Start from default then and turn on only the ones
+-which we want*/
+-
+-	__setfpucw(_FPU_DEFAULT +  _FPU_MASK_IM+_FPU_MASK_OM+_FPU_MASK_UM);
+-
+-#else /* PPC && !Can_use__setfpucw */
+-
+-	__fpu_control = _FPU_DEFAULT +_FPU_MASK_OM+_FPU_MASK_IM+_FPU_MASK_UM;
+-	_FPU_SETCW(__fpu_control);
+-
+-#endif /*Can_use__setfpucw*/
+-
+-#else /* !(mc68000||powerpc) */
+-
+-#ifdef _FPU_IEEE
+-#ifndef _FPU_EXTENDED /* e.g., ARM processor under Linux */
+-#define _FPU_EXTENDED 0
+-#endif
+-#ifndef _FPU_DOUBLE
+-#define _FPU_DOUBLE 0
+-#endif
 -#ifdef Can_use__setfpucw /* Has __setfpucw gone missing from S.u.S.E. 6.3? */
 -	__setfpucw(_FPU_IEEE - _FPU_EXTENDED + _FPU_DOUBLE - _FPU_MASK_IM - _FPU_MASK_ZM - _FPU_MASK_OM);
 -#else
 -	__fpu_control = _FPU_IEEE - _FPU_EXTENDED + _FPU_DOUBLE - _FPU_MASK_IM - _FPU_MASK_ZM - _FPU_MASK_OM;
 -	_FPU_SETCW(__fpu_control);
 -#endif
--	}
+-
+-#else /* !_FPU_IEEE */
+-
+-	fprintf(stderr, "\n%s\n%s\n%s\n%s\n",
+-		"WARNING:  _uninit_f2c in libf2c does not know how",
+-		"to enable trapping on this system, so f2c's -trapuv",
+-		"option will not detect uninitialized variables unless",
+-		"you can enable trapping manually.");
+-	fflush(stderr);
+-
+-#endif /* _FPU_IEEE */
 -#endif /* __mc68k__ */
+-	}
 -#endif /* __linux__ */
 -
 -#ifdef __alpha
@@ -260,7 +319,7 @@ sed >libF77/uninit.c <<'//GO.SYSIN DD libF77/uninit.c' 's/^-//'
 -#define IEEE0_done
 -#include <machine/fpu.h>
 - static void
--ieee0(void)
+-ieee0(Void)
 -{
 -	ieee_set_fp_control(IEEE_TRAP_ENABLE_INV);
 -	}
@@ -273,7 +332,7 @@ sed >libF77/uninit.c <<'//GO.SYSIN DD libF77/uninit.c' 's/^-//'
 -#include <math.h>
 -
 - static void
--ieee0(void)
+-ieee0(Void)
 -{
 -	fpsetmask(FP_X_INV);
 -	}
@@ -284,7 +343,7 @@ sed >libF77/uninit.c <<'//GO.SYSIN DD libF77/uninit.c' 's/^-//'
 -#include <fptrap.h>
 -
 - static void
--ieee0(void)
+-ieee0(Void)
 -{
 -	fp_enable(TRP_INVALID);
 -	fp_trap(FP_TRAP_SYNC);
@@ -296,7 +355,7 @@ sed >libF77/uninit.c <<'//GO.SYSIN DD libF77/uninit.c' 's/^-//'
 -#include <ieeefp.h>
 -
 - static void
--ieee0(void)
+-ieee0(Void)
 -{
 -	fpsetmask(FP_X_INV);
 -	}
@@ -304,7 +363,7 @@ sed >libF77/uninit.c <<'//GO.SYSIN DD libF77/uninit.c' 's/^-//'
 -
 -#ifndef IEEE0_done
 - static void
--ieee0(void) {}
+-ieee0(Void) {}
 -#endif
 //GO.SYSIN DD libF77/uninit.c
 echo libF77/arithchk.c 1>&2
@@ -336,6 +395,8 @@ sed >libF77/arithchk.c <<'//GO.SYSIN DD libF77/arithchk.c' 's/^-//'
 -/* Try to deduce arith.h from arithmetic properties. */
 -
 -#include <stdio.h>
+-#include <math.h>
+-#include <errno.h>
 -
 -#ifdef NO_FPINIT
 -#define fpinit_ASL()
@@ -362,6 +423,8 @@ sed >libF77/arithchk.c <<'//GO.SYSIN DD libF77/arithchk.c' 's/^-//'
 -IBM		= { "IBM", 3 },
 -VAX		= { "VAX", 4 },
 -CRAY		= { "CRAY", 5};
+-
+- static double t_nan;
 -
 - static Akind *
 -Lcheck()
@@ -459,11 +522,25 @@ sed >libF77/arithchk.c <<'//GO.SYSIN DD libF77/arithchk.c' 's/^-//'
 -	return b == 0.;
 -	}
 -
+- static int
+-need_nancheck()
+-{
+-	double t;
+-
+-	errno = 0;
+-	t = log(t_nan);
+-	if (errno == 0)
+-		return 1;
+-	errno = 0;
+-	t = sqrt(t_nan);
+-	return errno == 0;
+-	}
+-
 -main()
 -{
+-	FILE *f;
 -	Akind *a = 0;
 -	int Ldef = 0;
--	FILE *f;
 -
 -	fpinit_ASL();
 -#ifdef WRITE_ARITH_H	/* for Symantec's buggy "make" */
@@ -497,8 +574,13 @@ sed >libF77/arithchk.c <<'//GO.SYSIN DD libF77/arithchk.c' 's/^-//'
 -		if (sizeof(long long) < 8)
 -#endif
 -			fprintf(f, "#define NO_LONG_LONG\n");
--		if (a->kind <= 2 && fzcheck())
--			fprintf(f, "#define Sudden_Underflow\n");
+-		if (a->kind <= 2) {
+-			if (fzcheck())
+-				fprintf(f, "#define Sudden_Underflow\n");
+-			t_nan = -a->kind;
+-			if (need_nancheck())
+-				fprintf(f, "#define NANCHECK\n");
+-			}
 -		return 0;
 -		}
 -	fprintf(f, "/* Unknown arithmetic */\n");
@@ -515,7 +597,7 @@ sed >libF77/arithchk.c <<'//GO.SYSIN DD libF77/arithchk.c' 's/^-//'
 echo libF77/f77vers.c 1>&2
 sed >libF77/f77vers.c <<'//GO.SYSIN DD libF77/f77vers.c' 's/^-//'
 - char 
--_libf77_version_f2c[] = "\n@(#) LIBF77 VERSION (f2c) 20010705\n";
+-_libf77_version_f2c[] = "\n@(#) LIBF77 VERSION (f2c) 20020314\n";
 -
 -/*
 -2.00	11 June 1980.  File version.c added to library.
@@ -596,6 +678,15 @@ sed >libF77/f77vers.c <<'//GO.SYSIN DD libF77/f77vers.c' 's/^-//'
 -	23 June 2001: add uninit.c; [fi]77vers.c: make version strings
 -			visible as extern char _lib[fi]77_version_f2c[].
 -	5 July 2001: modify uninit.c for __mc68k__ under Linux.
+-	16 Nov. 2001: uninit.c: Linux Power PC logic supplied by Alan Bain.
+-	18 Jan. 2002: fix glitches in qbit_bits(): wrong return type,
+-			missing ~ on y in return value.
+-	14 March 2002: z_log.c: add code to cope with buggy compilers
+-			(e.g., some versions of gcc under -O2 or -O3)
+-			that do floating-point comparisons against values
+-			computed into extended-precision registers on some
+-			systems (such as Intel IA32 systems).  Compile with
+-			-DNO_DOUBLE_EXTENDED to omit the new logic.
 -*/
 //GO.SYSIN DD libF77/f77vers.c
 echo libF77/libF77.xsum 1>&2
@@ -604,7 +695,7 @@ sed >libF77/libF77.xsum <<'//GO.SYSIN DD libF77/libF77.xsum' 's/^-//'
 -Notice	76f23b4	1212
 -README	fbd01e7d	7210
 -abort_.c	1ef378f2	298
--arithchk.c	e704b78e	4359
+-arithchk.c	efc0d389	4669
 -c_abs.c	fec22c59	272
 -c_cos.c	18fc0ea3	354
 -c_div.c	f5424912	930
@@ -646,7 +737,7 @@ sed >libF77/libF77.xsum <<'//GO.SYSIN DD libF77/libF77.xsum' 's/^-//'
 -etime_.c	19d1fdad	839
 -exit_.c	ff4baa3a	543
 -f2ch.add	ef66bf17	6060
--f77vers.c	fea3855b	4182
+-f77vers.c	1d898ffa	4670
 -getarg_.c	f182a268	562
 -getenv_.c	ff3b797c	1217
 -h_abs.c	e4443109	218
@@ -677,7 +768,7 @@ sed >libF77/libF77.xsum <<'//GO.SYSIN DD libF77/libF77.xsum' 's/^-//'
 -lbitbits.c	33fe981	1097
 -lbitshft.c	e81981d2	258
 -main.c	dc8ce96	2219
--makefile	10e8a350	4353
+-makefile	f4048935	4364
 -pow_ci.c	fa934cec	412
 -pow_dd.c	f004559b	276
 -pow_di.c	a4db539	448
@@ -687,7 +778,7 @@ sed >libF77/libF77.xsum <<'//GO.SYSIN DD libF77/libF77.xsum' 's/^-//'
 -pow_ri.c	e7d9fc2a	436
 -pow_zi.c	1b894af7	851
 -pow_zz.c	f81a06b5	549
--qbitbits.c	1b9be428	1150
+-qbitbits.c	fdb9910e	1151
 -qbitshft.c	873054d	258
 -r_abs.c	f471383c	206
 -r_acos.c	1a6aca63	233
@@ -716,17 +807,17 @@ sed >libF77/libF77.xsum <<'//GO.SYSIN DD libF77/libF77.xsum' 's/^-//'
 -s_copy.c	1e258852	1024
 -s_paus.c	245d604	1596
 -s_rnge.c	fd20c6b4	753
--s_stop.c	ee7c9dfc	763
+-s_stop.c	ffa80b24	762
 -sig_die.c	fbcad8d6	701
 -signal1.h0	1d43ee57	842
 -signal_.c	f3ef9cfc	299
 -system_.c	eae6254c	646
--uninit.c	1056c3ba	5814
+-uninit.c	e071e019	7318
 -z_abs.c	1fa0640d	268
 -z_cos.c	facccd9b	363
 -z_div.c	1abdf45a	907
 -z_exp.c	1a8506e8	357
--z_log.c	e0e7631c	1158
+-z_log.c	6bf3b22	2729
 -z_sin.c	1aa35b59	359
 -z_sqrt.c	1864d867	581
 //GO.SYSIN DD libF77/libF77.xsum
@@ -958,7 +1049,8 @@ sed >libF77/makefile <<'//GO.SYSIN DD libF77/makefile' 's/^-//'
 -uninit.o: arith.h
 -
 -arith.h: arithchk.c
--	$(CC) $(CFLAGS) -DNO_FPINIT arithchk.c || $(CC) -DNO_LONG_LONG $(CFLAGS) -DNO_FPINIT arithchk.c
+-	$(CC) $(CFLAGS) -DNO_FPINIT arithchk.c -lm ||\
+-	 $(CC) -DNO_LONG_LONG $(CFLAGS) -DNO_FPINIT arithchk.c -lm
 -	./a.out >arith.h
 -	rm -f a.out arithchk.o
 -
@@ -1371,7 +1463,7 @@ sed >libF77/qbitbits.c <<'//GO.SYSIN DD libF77/qbitbits.c' 's/^-//'
 -#define LONG8BITS (2*LONGBITS)
 -#endif
 -
-- integer
+- longint
 -#ifdef KR_headers
 -qbit_bits(a, b, len) longint a; integer b, len;
 -#else
@@ -1386,7 +1478,7 @@ sed >libF77/qbitbits.c <<'//GO.SYSIN DD libF77/qbitbits.c' 's/^-//'
 -	y = (ulongint)-1L;
 -	x >>= b;
 -	y <<= len;
--	return (longint)(x & y);
+-	return (longint)(x & ~y);
 -	}
 -
 - longint
@@ -2246,7 +2338,7 @@ sed >libF77/s_stop.c <<'//GO.SYSIN DD libF77/s_stop.c' 's/^-//'
 -
 -#ifdef KR_headers
 -extern void f_exit();
--VOID s_stop(s, n) char *s; ftnlen n;
+-int s_stop(s, n) char *s; ftnlen n;
 -#else
 -#undef abs
 -#undef min
@@ -2527,19 +2619,62 @@ sed >libF77/z_log.c <<'//GO.SYSIN DD libF77/z_log.c' 's/^-//'
 -
 -#ifdef KR_headers
 -double log(), f__cabs(), atan2();
--VOID z_log(r, z) doublecomplex *r, *z;
+-#define ANSI(x) ()
 -#else
+-#define ANSI(x) x
 -#undef abs
 -#include "math.h"
 -#ifdef __cplusplus
 -extern "C" {
 -#endif
 -extern double f__cabs(double, double);
+-#endif
+-
+-#ifndef NO_DOUBLE_EXTENDED
+-#ifndef GCC_COMPARE_BUG_FIXED
+-#ifndef Pre20000310
+-#ifdef Comment
+-Some versions of gcc, such as 2.95.3 and 3.0.4, are buggy under -O2 or -O3:
+-on IA32 (Intel 80x87) systems, they may do comparisons on values computed
+-in extended-precision registers.  This can lead to the test "s > s0" that
+-was used below being carried out incorrectly.  The fix below cannot be
+-spoiled by overzealous optimization, since the compiler cannot know
+-whether gcc_bug_bypass_diff_F2C will be nonzero.  (We expect it always
+-to be zero.  The weird name is unlikely to collide with anything.)
+-
+-An example (provided by Ulrich Jakobus) where the bug fix matters is
+-
+-	double complex a, b
+-	a = (.1099557428756427618354862829619, .9857360542953131909982289471372)
+-	b = log(a)
+-
+-An alternative to the fix below would be to use 53-bit rounding precision,
+-but the means of specifying this 80x87 feature are highly unportable.
+-#endif /*Comment*/
+-#define BYPASS_GCC_COMPARE_BUG
+-double (*gcc_bug_bypass_diff_F2C) ANSI((double*,double*));
+- static double
+-#ifdef KR_headers
+-diff1(a,b) double *a, *b;
+-#else
+-diff1(double *a, double *b)
+-#endif
+-{ return *a - *b; }
+-#endif /*Pre20000310*/
+-#endif /*GCC_COMPARE_BUG_FIXED*/
+-#endif /*NO_DOUBLE_EXTENDED*/
+-
+-#ifdef KR_headers
+-VOID z_log(r, z) doublecomplex *r, *z;
+-#else
 -void z_log(doublecomplex *r, doublecomplex *z)
 -#endif
 -{
 -	double s, s0, t, t2, u, v;
 -	double zi = z->i, zr = z->r;
+-#ifdef BYPASS_GCC_COMPARE_BUG
+-	double (*diff) ANSI((double*,double*));
+-#endif
 -
 -	r->i = atan2(zi, zr);
 -#ifdef Pre20000310
@@ -2575,6 +2710,10 @@ sed >libF77/z_log.c <<'//GO.SYSIN DD libF77/z_log.c' 's/^-//'
 -
 -#endif /*Comment*/
 -
+-#ifdef BYPASS_GCC_COMPARE_BUG
+-		if (!(diff = gcc_bug_bypass_diff_F2C))
+-			diff = diff1;
+-#endif
 -		t = ((zr*zr - 1.) + zi*zi) / (s + 1);
 -		t2 = t*t;
 -		s = 1. - 0.5*t;
@@ -2584,7 +2723,12 @@ sed >libF77/z_log.c <<'//GO.SYSIN DD libF77/z_log.c' 's/^-//'
 -			u *= t2;
 -			v += 2;
 -			s += u/v - t*u/(v+1);
--			} while(s > s0);
+-			}
+-#ifdef BYPASS_GCC_COMPARE_BUG
+-			while(s - s0 > 1e-18 || (*diff)(&s,&s0) > 0.);
+-#else
+-			while(s > s0);
+-#endif
 -		r->r = s*t;
 -		}
 -#endif

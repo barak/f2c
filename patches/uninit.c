@@ -40,11 +40,19 @@
 #endif
 #endif /*RNAN*/
 
+#ifdef KR_headers
+#define Void /*void*/
+#define FA7UL (unsigned Long) 0xfa7a7a7aL
+#else
+#define Void void
+#define FA7UL 0xfa7a7a7aUL
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-static void ieee0(void);
+static void ieee0(Void);
 
 static unsigned Long rnan = RNAN,
 	dnan0 = DNAN0,
@@ -59,8 +67,12 @@ void unsupported_error()
 	exit(-1);
 }
 
- void
+void
+#ifdef KR_headers
+_uninit_f2c(x,type,len) void *x; int type; long len;
+#else
 _uninit_f2c(void *x, int type, long len)
+#endif
 {
 	static int first = 1;
 
@@ -79,7 +91,7 @@ _uninit_f2c(void *x, int type, long len)
 		*(short*)x = 0xfa7a;
 		break;
 	  case TYLONG:
-		*(unsigned Long*)x = 0xfa7a7a7aUL;
+		*(unsigned Long*)x = FA7UL;
 		return;
 	  case TYQUAD:
 	  case TYCOMPLEX:
@@ -110,7 +122,7 @@ _uninit_f2c(void *x, int type, long len)
 		lx = (unsigned Long*)x;
 		lxe = lx + len;
 		while(lx < lxe)
-			*lx++ = 0xfa7a7a7aUL;
+			*lx++ = FA7UL  ;
 		break;
 	  case TYCOMPLEX:
 		len *= 2;
@@ -164,7 +176,7 @@ _uninit_f2c(void *x, int type, long len)
 #include "signal.h"
 
  static void
-ieee0(void)
+ieee0(Void)
 {
 #ifndef __alpha
 	_control87(EM_DENORMAL | EM_UNDERFLOW | EM_INEXACT, MCW_EM);
@@ -188,7 +200,11 @@ ieee0(void)
 #include "/usr/include/sys/fpu.h"
 
 static void
+#ifdef KR_headers
+ieeeuserhand(exception,val) unsigned exception[5]; int val[2];
+#else
 ieeeuserhand(unsigned exception[5], int val[2])
+#endif
 {
 	fflush(stdout);
 	fprintf(stderr,"ieee0() aborting because of ");
@@ -211,7 +227,7 @@ ieeeuserhand2(unsigned int **j)
 static int ieee_chk = 1;
 
  static void
-ieee0(void)
+ieee0(Void)
 {
 	int i;
 	char *s;
@@ -244,13 +260,13 @@ ieee0(void)
  * independent way.  It should be used if at all possible  -- AFRB 
  */
 
-#if (defined(__GLIBC__)&&(!(__GLIBC__==2&&__GLIBC_MINOR<2)&(!__GLIBC__<2)))
+#if (defined(__GLIBC__)&&(!(__GLIBC__==2&&__GLIBC_MINOR<2)&&(!__GLIBC__<2)))
 
 #define _GNU_SOURCE 1
 #define IEEE0_done
 #include <fenv.h>
  static void
-ieee0(void)
+ieee0(Void)
 {
     /* Clear all exception flags */
     if (fedisableexcept(FE_ALL_EXCEPT)==-1)
@@ -339,7 +355,7 @@ which we want*/
 #endif
 
  static void
-ieee0(void)
+ieee0(Void)
 {
 #ifdef RQD_FPU_STATE
 	__fpu_control = RQD_FPU_STATE;
@@ -361,7 +377,7 @@ ieee0(void)
 #define IEEE0_done
 #include <machine/fpu.h>
  static void
-ieee0(void)
+ieee0(Void)
 {
 	ieee_set_fp_control(IEEE_TRAP_ENABLE_INV);
 	}
@@ -371,11 +387,12 @@ ieee0(void)
 #ifdef __hpux
 #ifndef IEEE0_done
 #define IEEE0_done
+
 #define _INCLUDE_HPUX_SOURCE
 #include <math.h>
 
  static void
-ieee0(void)
+ieee0(Void)
 {
 	fpsetmask(FP_X_INV);
 	}
@@ -388,7 +405,7 @@ ieee0(void)
 #include <fptrap.h>
 
  static void
-ieee0(void)
+ieee0(Void)
 {
 	fp_enable(TRP_INVALID);
 	fp_trap(FP_TRAP_SYNC);
@@ -405,7 +422,7 @@ ieee0(void)
 #include <ieeefp.h>
 
  static void
-ieee0(void)
+ieee0(Void)
 {
 	fpsetmask(FP_X_INV);
 	}
@@ -414,7 +431,7 @@ ieee0(void)
 
 #ifndef IEEE0_done
  static void
-ieee0(void) {
+ieee0(Void) {
 /* If there isn't a suitable implementation found from among those here
  * cause an error */
   unsupported_error();
