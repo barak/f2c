@@ -2034,11 +2034,40 @@ mkexpr(int opcode, register expptr lp, register expptr rp)
 	long L;
 	static long divlineno;
 
+	if (parstate < INEXEC) {
+
+		/* Song and dance to get statement functions right */
+		/* while catching incorrect type combinations in the */
+		/* first executable statement. */
+
+		ltype = lp->headblock.vtype;
+		ltag = lp->tag;
+		if(rp && opcode!=OPCALL && opcode!=OPCCALL)
+		{
+			rtype = rp->headblock.vtype;
+			rtag = rp->tag;
+		}
+		else rtype = 0;
+
+		etype = cktype(opcode, ltype, rtype);
+		if(etype == TYERROR)
+			goto error;
+		goto no_fold;
+		}
+
 	ltype = lp->headblock.vtype;
+	if (ltype == TYUNKNOWN) {
+		lp = fixtype(lp);
+		ltype = lp->headblock.vtype;
+		}
 	ltag = lp->tag;
 	if(rp && opcode!=OPCALL && opcode!=OPCCALL)
 	{
 		rtype = rp->headblock.vtype;
+		if (rtype == TYUNKNOWN) {
+			rp = fixtype(rp);
+			rtype = rp->headblock.vtype;
+			}
 		rtag = rp->tag;
 	}
 	else rtype = 0;
@@ -2316,6 +2345,7 @@ addop:
 		badop("mkexpr", opcode);
 	}
 
+ no_fold:
 	e = (expptr) ALLOC(Exprblock);
 	e->exprblock.tag = TEXPR;
 	e->exprblock.opcode = opcode;

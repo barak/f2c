@@ -28,7 +28,7 @@ endif
 
 build:
 	$(checkdir)
-	$(MAKE) -C "./src" CFLAGS="$(GCCOP1)" xsum
+	$(MAKE) -C "./src" CFLAGS="$(GCCOP1)" xsum.out
 
 ## Avoid using -mieee-fp on anything other than the i386 platform
 ## as it is a gcc i386 specific option
@@ -37,6 +37,12 @@ build:
 	if [ $(arch) == "i386" ] ;\
            then echo "Building for i386" ;\
         fi
+
+	if [ $(arch) == "alpha" ] ;\
+           then echo "Building for ALPHA" ;\
+	   sed 's/long //' ./src/f2c.master.h > ./src/f2c.h ;\
+        else cp ./src/f2c.master.h ./src/f2c.h ;\
+	fi
 
 	$(MAKE) -C "./src" CFLAGS="$(GCCOPT)" ;\
 
@@ -59,23 +65,27 @@ clean:
 	rm -f build build_f2c build_f2c_i2
 	rm -rf debian/tmp *~
 	rm -rf debian/*~ debian/files* debian/substvars
+	cp ./src/f2c.master.h ./src/f2c.h
 
 binary-indep:	checkroot build
-${checkdir}
+	${checkdir}
 
 
 binary-arch: checkroot 
 	rm -rf debian/tmp
 	install -d debian/tmp debian/tmp/DEBIAN
-	install -d debian/tmp/usr/doc/${package}
+	install -d debian/tmp/usr/share/doc/${package}
 	cp debian/shlibs debian/tmp/DEBIAN/shlibs
+	install -c -m 0755 debian/postinst debian/tmp/DEBIAN
+	install -c -m 0755 debian/prerm debian/tmp/DEBIAN
 	install -d -m 0755             debian/tmp/usr/bin
 	install -s -m 0755 src/f2c     debian/tmp/usr/bin/f2c
 	install -c -m 0755 fc          debian/tmp/usr/bin/fc
-	install -d -m 0755             debian/tmp/usr/man/man1
-	install -c -m 0644 fc.1        debian/tmp/usr/man/man1/fc.1
-	install -c -m 0644 src/f2c.1t  debian/tmp/usr/man/man1/f2c.1
-	gzip -9v debian/tmp/usr/man/man1/f2c.1
+	install -d -m 0755             debian/tmp/usr/share/man/man1
+	install -c -m 0644 fc.1        debian/tmp/usr/share/man/man1/fc.1
+	install -c -m 0644 src/f2c.1t  debian/tmp/usr/share/man/man1/f2c.1
+	gzip -9v debian/tmp/usr/share/man/man1/f2c.1
+	gzip -9v debian/tmp/usr/share/man/man1/fc.1
 	install -d -m 0755             debian/tmp/usr/lib
 	install -c -m 0644 libf2c.a    debian/tmp/usr/lib/libf2c.a
 	install -c -m 0644 libf2c_i2.a debian/tmp/usr/lib/libf2c_i2.a
@@ -89,15 +99,18 @@ binary-arch: checkroot
 	(cd debian/tmp/usr/lib; ln -s libf2c.so.$(flibver) libf2c.so.$(flibmajorver); \
 	ln -s libf2c_i2.so.$(flibver) libf2c_i2.so.$(flibmajorver) )
 
-	install -d -m 0755             debian/tmp/usr/doc/$(package)
-	install -c -m 0644 f2c.ps      debian/tmp/usr/doc/$(package)
-	install -c -m 0644 changes     debian/tmp/usr/doc/$(package)
-	install -c -m 0644 readme      debian/tmp/usr/doc/$(package)
+	install -d -m 0755             debian/tmp/usr/share/doc/$(package)
+	install -c -m 0644 f2c.ps      debian/tmp/usr/share/doc/$(package)
+	install -c -m 0644 changes     debian/tmp/usr/share/doc/$(package)/changelog
+	install -c -m 0644 readme      debian/tmp/usr/share/doc/$(package)
 	install -c -m 0644 debian/changelog \
-                                    debian/tmp/usr/doc/f2c/changelog.Debian
-	(cd debian/tmp/usr/doc/$(package); gzip -9v *)
+                                    debian/tmp/usr/share/doc/f2c/changelog.Debian
+	install -c -m 0644 debian/README.debian  \
+				    debian/tmp/usr/share/doc/f2c/README.debian
+	(cd debian/tmp/usr/share/doc/$(package); gzip -9v *)
 	install -c -m 0644 debian/copyright \
-			            debian/tmp/usr/doc/f2c/copyright
+			            debian/tmp/usr/share/doc/f2c/copyright
+
 	dpkg-shlibdeps ./src/f2c
 	dpkg-gencontrol
 	chown -R root.root debian/tmp

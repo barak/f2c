@@ -2854,3 +2854,198 @@ Thu Dec  4 22:10:09 EST 1997
 second and subsequent blocks were likely to be lost (not copied into
 comments in the resulting C).  Allow comment lines to be longer before
 breaking them.
+
+Mon Jan 19 17:19:27 EST 1998
+  makefile: change the rule for making gram.c to one for making gram1.c;
+henceforth, asking netlib to "send all from f2c/src" will bring you a
+working gram.c.  Nowadays there are simply too many broken versions of
+yacc floating around.
+  libi77: backspace.c: for b->ufmt==0, change sizeof(int) to
+sizeof(uiolen).  On machines where this would make a difference, it is
+best for portability to compile libI77 with -DUIOLEN_int, which will
+render the change invisible.
+
+Tue Feb 24 08:35:33 EST 1998
+  makefile: remove gram.c from the "make clean" rule.
+
+Wed Feb 25 08:29:39 EST 1998
+  makefile: change CFLAGS assignment to -O; add "veryclean" rule.
+
+Wed Mar  4 13:13:21 EST 1998
+  libi77: open.c: fix glitch in comparing file names under
+-DNON_UNIX_STDIO.
+
+Mon Mar  9 23:56:56 EST 1998
+  putpcc.c: omit an unnecessary temporary variable in computing
+(expr)**3.
+  libf77, libi77: minor tweaks to make some C++ compilers happy;
+Version.c not changed.
+
+Wed Mar 18 18:08:47 EST 1998
+  libf77: minor tweaks to [ed]time_.c; Version.c not changed.
+  libi77: endfile.c, open.c: acquire temporary files from tmpfile(),
+unless compiled with -DNON_ANSI_STDIO, which uses mktemp().
+New buffering scheme independent of NON_UNIX_STDIO for handling T
+format items.  Now -DNON_UNIX_STDIO is no longer be necessary for
+Linux, and libf2c no longer causes stderr to be buffered -- the former
+setbuf or setvbuf call for stderr was to make T format items work.
+open.c: use the Posix access() function to check existence or
+nonexistence of files, except under -DNON_POSIX_STDIO, where trial
+fopen calls are used.  In open.c, fix botch in changes of 19980304.
+  libf2c.zip: the PC makefiles are now set for NT/W95, with comments
+about changes for DOS.
+
+Fri Apr  3 17:22:12 EST 1998
+  Adjust fix of 19960913 to again permit substring notation on
+character variables in data statements.
+
+Sun Apr  5 19:26:50 EDT 1998
+  libi77: wsfe.c: make $ format item work: this was lost in the changes
+of 17 March 1998.
+
+Sat May 16 19:08:51 EDT 1998
+  Adjust output of ftnlen constants: rather than appending L,
+prepend (ftnlen).  This should make the resulting C more portable,
+e.g., to systems (such as DEC Alpha Unix systems) on which long
+may be longer than ftnlen.
+  Adjust -r so it also casts REAL expressions passed to intrinsic
+functions to REAL.
+
+Wed May 27 16:02:35 EDT 1998
+  libf2c.zip: tweak description of compiling libf2c for INTEGER*8
+to accord with makefile.u rather than libF77/makefile.
+
+Thu May 28 22:45:59 EDT 1998
+  libi77: backspace.c dfe.c due.c iio.c lread.c rsfe.c sue.c wsfe.c:
+set f__curunit sooner so various error messages will correctly
+identify the I/O unit involved.
+  libf2c.zip: above, plus tweaks to PC makefiles: for some purposes,
+it's still best to compile with -DMSDOS (even for use with NT).
+
+Thu Jun 18 01:22:52 EDT 1998
+  libi77: lread.c: modified so floating-point numbers (containing
+either a decimal point or an exponent field) are treated as errors
+when they appear as list input for integer data.  Compile lread.c with
+-DALLOW_FLOAT_IN_INTEGER_LIST_INPUT to restore the old behavior.
+
+Mon Aug 31 10:38:54 EDT 1998
+  formatdata.c: if possible, and assuming doubles must be aligned on
+double boundaries, use existing holes in DATA for common blocks to
+force alignment of the block.  For example,
+	block data
+	common /abc/ a, b
+	double precision a
+	integer b(2)
+	data b(2)/1/
+	end
+used to generate
+	struct {
+	    integer fill_1[3];
+	    integer e_2;
+	    doublereal e_3;
+	    } abc_ = { {0}, 1, 0. };
+and now generates
+	struct {
+	    doublereal fill_1[1];
+	    integer fill_2[1];
+	    integer e_3;
+	    } abc_ = { {0}, {0}, 1 };
+In the old generated C, e_3 was added to force alignment; in the new C,
+fill_1 does this job.
+
+Mon Sep  7 19:48:51 EDT 1998
+  libi77: move e_wdfe from sfe.c to dfe.c, where it was originally.
+Why did it ever move to sfe.c?
+
+Tue Sep  8 10:22:50 EDT 1998
+  Treat dreal as a synonym for dble unless -cd is specified on the
+command line.
+
+Sun Sep 13 22:23:41 EDT 1998
+  format.c: fix bug in writing prototypes under f2c -A ... *.P:
+under some circumstances involving external functions with no known
+type, a null pointer was passed to printf.
+
+Tue Oct 20 23:25:54 EDT 1998
+  Comments added to libf2c/README and libF77/README, pointing out
+the need to modify signal1.h on some systems.
+
+Wed Feb 10 22:59:52 EST 1999
+  defs.h lex.c: permit long names (up to at least roughly
+MAX_SHARPLINE_LEN = 1000 characters long) in #line lines (which only
+matters under -g).
+  fc: add -U option; recognize .so files.
+
+Sat Feb 13 10:18:27 EST 1999
+ libf2c: endfile.c, lread.c, signal1.h0: minor tweaks to make some
+(C++) compilers happier; f77_aloc.c: make exit_() visible to C++
+compilers.  Version strings not changed.
+
+Thu Mar 11 23:14:02 EST 1999
+  Modify f2c (exec.c, expr.c) to diagnose incorrect mixing of types
+when (f2c extended) intrinsic functions are involved, as in
+(not(17) .and. 4).  Catching this in the first executable statement
+is a bit tricky, as some checking must be postponed until all statement
+function declarations have been parsed.  Thus there is a chance of
+today's changes introducing bugs under (let us hope) unusual conditions.
+
+Sun Mar 28 13:17:44 EST 1999
+  lex.c: tweak to get the file name right in error messages caused
+by statements just after a # nnn "filename" line emitted by the C
+preprocessor.  (The trouble is that the line following the # nnn line
+must be read to see if it is a continuation of the stuff that preceded
+the # nnn line.)  When # nnn "filename" lines appear among the lines
+for a Fortran statement, the filename reported in an error message for
+the statement should now be the file that was current when the first
+line of the statement was read.
+
+Sun May  2 22:38:25 EDT 1999
+  libf77, libi77, libf2c.zip: make getenv_() more portable (call
+getenv() rather than knowing about char **environ); adjust some
+complex intrinsics to work with overlapping arguments (caused by
+inappropriate use of equivalence); open.c: get "external" versus
+"internal" right in the error message if a file cannot be opened;
+err.c: cast a pointer difference to (int) for %d; rdfmt.c: omit
+fixed-length buffer that could be overwritten by formats Inn or Lnn
+with nn > 83.
+
+Mon May  3 13:14:07 EDT 1999
+  "Invisible" changes to omit a few compiler warnings in f2c and
+libf2c; two new casts in libf2c/open.c that matter with 64-bit longs,
+and one more tweak (libf2c/c_log.c) for pathological equivalences.
+  Minor update to "fc" script: new -L flag and comment correction.
+
+Fri Jun 18 02:33:08 EDT 1999
+  libf2c.zip: rename backspace.c backspac.c, and fix a glitch in it
+-- b->ufd may change in t_runc().  (For now, it's still backspace.c
+in the libi77 bundle.)
+
+Sun Jun 27 22:05:47 EDT 1999
+  libf2c.zip, libi77: rsne.c: fix bug in namelist input: a misplaced
+increment could cause wrong array elements to be assigned; e.g.,
+"&input k(5)=10*1 &end" assigned k(5) and k(15 .. 23).
+
+Tue Sep  7 14:10:24 EDT 1999
+  f2c.h, libf2c/f2c.h0, libf2c/README: minor tweaks so a simple
+sed command converts f2c.h == libf2c/f2c.h0 to a form suitable for
+machines with 8-byte longs and doubles, 4-byte int's and floats,
+while working with a forthcoming (ill-advised) update to the C
+standard that outlaws plain "unsigned".
+  f2c.h, libf2c/f2c.h0: change "if 0" to "#ifdef INTEGER_STAR_8".
+  libf77, libf2c.zip: [cz]_div.c and README: arrange for compilation
+under -DIEEE_COMPLEX_DIVIDE to make these routines avoid calling sig_die
+when the denominator of a complex or double complex division vanishes;
+instead, they return pairs of NaNs or Infinities, depending whether the
+numerator also vanishes or not.
+
+Tue Oct  5 23:50:14 EDT 1999
+  formatdata.c, io.c, output.c, sysdep.c: adjust to make format
+strings legal when they contain 8-bit characters with the high bit on.
+(For many C compilers, this is not necessary, but it the ANSI/ISO C
+standard does not require this to work.)
+  libf2c.zip: tweak README and correct xsum0.out.
+
+Mon Oct 25 17:30:54 EDT 1999
+  io.c: fix glitch introduced in the previous change (19991005) that
+caused format(' %') to print "%%" rather than "%".
+

@@ -308,7 +308,7 @@ char *chr_fmt[Table_size] = {
 fmt_init(Void)
 {
 	static char *str1fmt[6] =
-		{ "\\b", "\\t", "\\n", "\\f", "\\r", "\\%03o" };
+		{ "\\b", "\\t", "\\n", "\\f", "\\r", "\\013" };
 	register int i, j;
 	register char *s;
 
@@ -319,8 +319,11 @@ fmt_init(Void)
 #else
 	i = 127;
 #endif
-	for(; i < Table_size; i++)
-		str_fmt[i] = "\\%03o";
+	s = Alloc(5*(Table_size - i));
+	for(; i < Table_size; i++) {
+		sprintf(str_fmt[i] = s, "\\%03o", i);
+		s += 5;
+		}
 #ifdef non_ASCII
 	for(i = 32; i < 127; i++) {
 		s = str0fmt[i];

@@ -8,12 +8,17 @@
 .\"
 .\" Original version of this manpage: 
 .\" Peter Maydell (pmaydell@chiark.greenend.org.uk), 03/1998
+.\" Updated by Alan Bain (afrb2@cam.ac.uk), 15/05/1999
+.\" added reference to -o in command specification
+.\" and to -U in options
 .\"
-.TH FC 1 "April 1998"
+.TH FC 1 "May 1999"
 .SH NAME
 fc \- frontend script to the f2c fortran compiler
 .SH SYNOPSIS
 .B /usr/bin/fc 
+.RB [ -o
+.IR objfile ]
 .RB [ -c ]
 .RB [ -S ]
 .RB [ -C ]
@@ -77,6 +82,10 @@ Compile in extra code to check that array subscripts are in bounds.
 .TP 8
 .I -l library
 Libraries specified with this option are passed to the linker.
+.TP 8
+.I -U def
+Definitions specified with this option are passed to C compiler (for .c files)
+or to cpp (for .F files) to remove definition.
 .TP 8
 .I -u
 Complain about undeclared variables.

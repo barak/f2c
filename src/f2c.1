@@ -53,7 +53,7 @@
 
 	  -A   Produce ANSI C.	Default	is old-style C.
 
-     Page 1					     (printed 5/12/96)
+     Page 1					      (printed 9/8/98)
 
      F2C(1)		       UNIX System V			F2C(1)
 
@@ -67,7 +67,8 @@
 
 	  -cd  Do not recognize	cdabs, cdcos, cdexp, cdlog, cdsin, and
 	       cdsqrt as synonyms for the double complex intrinsics
-	       zabs, zcos, zexp, zlog, zsin, and zsqrt,	respectively.
+	       zabs, zcos, zexp, zlog, zsin, and zsqrt,	respectively,
+	       nor dreal as a synonym for dble.
 
 	  -ddir
 	       Write `.c' files	in directory dir instead of the	cur-
@@ -108,11 +109,12 @@
 	       evaluation where	K&R (first edition) parenthesization
 	       rules allow rearrangement.  If the option is `-krd',
 	       use double precision temporaries	even for single-
-	       precision operands.
 
-     Page 2					     (printed 5/12/96)
+     Page 2					      (printed 9/8/98)
 
      F2C(1)		       UNIX System V			F2C(1)
+
+	       precision operands.
 
 	  -P   Write a file.P of ANSI (or C++) prototypes for defini-
 	       tions in	each input file.f or file.F.  When reading
@@ -128,8 +130,8 @@
 	       PRECISION.  Option `-!R'	confirms the default, which
 	       imitates	f77.
 
-	  -r   Cast values of REAL functions (including	intrinsics) to
-	       REAL.
+	  -r   Cast REAL arguments of intrinsic	functions and values
+	       of REAL functions (including intrinsics)	to REAL.
 
 	  -r8  Promote REAL to DOUBLE PRECISION, COMPLEX to DOUBLE
 	       COMPLEX.
@@ -164,13 +166,12 @@
 	  -!P  Do not attempt to infer ANSI or C++ prototypes from
 	       usage.
 
-	  The resulting	C invokes the support routines of f77; object
-	  code should be loaded	by f77 or with ld(1) or	cc(1) options
-
-     Page 3					     (printed 5/12/96)
+     Page 3					      (printed 9/8/98)
 
      F2C(1)		       UNIX System V			F2C(1)
 
+	  The resulting	C invokes the support routines of f77; object
+	  code should be loaded	by f77 or with ld(1) or	cc(1) options
 	  -lF77	-lI77 -lm.  Calling conventions	are those of f77: see
 	  the reference	below.
 
@@ -204,5 +205,5 @@
 	  places.
 	  Untypable EXTERNAL functions are declared int.
 
-     Page 4					     (printed 5/12/96)
+     Page 4					      (printed 9/8/98)
 

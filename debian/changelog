@@ -1,3 +1,33 @@
+f2c (19991025-1) unstable; urgency=low
+  * New upstream release from netlib included better support for
+    64 bit machines in the fortran libraries.
+  * FHS file locations now used
+ -- Alan Bain <afrb2@debian.org>  Mon, 8 Nov 1999 15:30:00 +0000
+f2c (19990503-4) unstable; urgency=low
+  * Fixed fc script to remove an unsafe method of creating a
+    temporary file, and replaced by a call to tempfile.
+ -- Alan Bain <afrb2@debian.org>  Fri, 28 May 1999 10:00:00 +0100
+f2c (19990503-3) unstable; urgency=low
+  * for alpha now converts header file correctly not to use long ints
+    which is more compatible with g77.
+ -- Alan Bain <afrb2@debian.org>  Mon, 24 May 1999 19:35:00 +0100
+f2c (19990503-2) unstable; urgency=low
+  * Fixed libc6 problem
+ -- Alan Bain <afrb2@cam.ac.uk>  Sat, 22 May 1999 22:00:00 +0100
+f2c (19990503-1) unstable; urgency=low
+  * New upstream release from netlib includes some improved error
+    messages when translating (in particular it correctly attempts
+    to locate the line on which an error occured).
+  * manpage for fc is now compressed
+  * upstream changelog installed as changelog rather than changes
+  * postinst now calls ldconfig
+ -- Alan Bain <afrb2@cam.ac.uk>  Sat, 15 May 1999 10:00:00 +0100
+f2c (19990210-1) unstable; urgency=low
+  * Updated to new netlib source 
+  * previous fixes to gram.c generation from yacc grammar
+    have now been incorporated in upstream source
+  * missing TAB in debian/rules added
+ -- Alan Bain <afrb2@cam.ac.uk>  Tue, 24 Feb 1999 23:30:00 +0000
 f2c (19971204-5) frozen; urgency=low
   * Removed unwanted file debian/files which got left in 
     by mistake in the previous build.

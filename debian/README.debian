@@ -1,0 +1,11 @@
+f2c for debian
+--------------
+
+This version of f2c automatically converts the header file
+f2c.h to not use long ints when compiled on alpha architecture,
+as this generates incorrect code for EQUIVALENCEs (64 bit longs
+are used on the alpha), and is not compatible with g77.  On
+other platforms the file is used as is.   Similar changes
+may turn out to be needed on other 64 bit architectures.
+
+Alan Bain <afrb2@debian.org>

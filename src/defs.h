@@ -1,5 +1,5 @@
 /****************************************************************
-Copyright 1990 - 1996 by AT&T, Lucent Technologies and Bellcore.
+Copyright 1990 - 1996, 1999 by AT&T, Lucent Technologies and Bellcore.
 
 Permission to use, copy, modify, and distribute this software
 and its documentation for any purpose and without fee is hereby
@@ -39,7 +39,7 @@ use or performance of this software.
 #define MAXLABLIST 258		/* Max number of labels in an alternate
 				   return CALL or computed GOTO */
 #define MAXCONTIN 99		/* Max continuation lines */
-
+#define MAX_SHARPLINE_LEN 1000	/* Elbow room for #line lines with long names */
 /* These are the primary pointer types used in the compiler */
 
 typedef union Expression *expptr, *tagptr;

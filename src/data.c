@@ -1,5 +1,5 @@
 /****************************************************************
-Copyright 1990, 1993 - 1996 by AT&T, Lucent Technologies and Bellcore.
+Copyright 1990, 1993-1996, 1999 by AT&T, Lucent Technologies and Bellcore.
 
 Permission to use, copy, modify, and distribute this software
 and its documentation for any purpose and without fee is hereby
@@ -116,7 +116,8 @@ nextdata(ftnint *elenp)
 		{
 			ip = &(p->impldoblock);
 			if(ip->implb==NULL || ip->impub==NULL || ip->varnp==NULL)
-				fatali("bad impldoblock 0%o", (int) ip);
+				fatali("bad impldoblock #%lx",
+					(unsigned long)ip);
 			if(ip->isactive)
 				ip->varvp->Const.ci += ip->impdiff;
 			else
