@@ -43,7 +43,12 @@ PATH=/v/bin:/bin:/usr/bin
 
 #		-P		emit .P files
 
-s=`tempfile --mode 600`
+
+## Modification to improve security of /tmp files
+s=`tempfile --mode 600` || {
+    echo 'Error (in fc): cannot create a temporary file' >&2
+    exit 1
+}
 CC=${CC_f2c:-'cc -common'}
 EFL=${EFL:-efl}
 EFLFLAGS=${EFLFLAGS:-'system=portable deltastno=10'}

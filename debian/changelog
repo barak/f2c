@@ -1,3 +1,13 @@
+f2c (19971204-5) frozen; urgency=low
+  * Removed unwanted file debian/files which got left in 
+    by mistake in the previous build.
+  * ammended clean target to remove these unwanted files.
+ -- Alan Bain <afrb2@cam.ac.uk>  Sat, 16 May 1998 23:30:00 +0100
+f2c (19971204-4) frozen; urgency=low
+
+  * Check error code from tempfile in fc script now
+    (really closing bug #19790)
+ -- Alan Bain <afrb2@cam.ac.uk>  Mon, 11 May 1998 21:30:00 +0100
 f2c (19971204-3) unstable; urgency=low
   
   * Fixed fc script so as not to use /tmp in insecure fashion

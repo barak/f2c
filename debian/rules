@@ -58,6 +58,7 @@ clean:
 	rm -f hello hello.o hello.c verify.out hello.P
 	rm -f build build_f2c build_f2c_i2
 	rm -rf debian/tmp *~
+	rm -rf debian/*~ debian/files* debian/substvars
 
 binary-indep:	checkroot build
 ${checkdir}
