@@ -1,3 +1,17 @@
+f2c (20010821-3.1) stable-security; urgency=high
+
+  * Non-maintainer upload by the Security Team
+  * Hacked debian/rules so that additional patches can be applied, since
+    the package itself does check whether it's using the pristine source
+  * Corrected creating of temporary files f2c [src/sysdep.c,
+    patches/patch.CAN-2005-0017.f2c, CAN-2005-0017]
+  * Added patch by Javier Fernández-Sanguino Peña to fix temporary file
+    problem in fc [fc, patches/patch.CAN-2005-0018.f2c, CAN-2005-0018]
+  * Surgically removed xsum comparison since it prevents security updates
+    from being applied [src/makefile]
+
+ -- Martin Schulze <joey@infodrom.org>  Mon, 17 Jan 2005 09:49:17 +0100
+
 f2c (20010821-3) unstable; urgency=low
   * Fixed the uninit.c file to take advantage of new GLIBC 2.2 and later
     features for setting FPU exception mask

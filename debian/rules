@@ -44,6 +44,10 @@ build:
         else cp ./src/f2c.master.h ./src/f2c.h ;\
 	fi
 
+## Apply security patches, gnarf
+	patch -p1 < patches/patch.CAN-2005-0017.f2c
+	patch -p1 < patches/patch.CAN-2005-0018.f2c
+
 	$(MAKE) -C "./src" CFLAGS="$(GCCOPT)" ;\
 
 	sh libi77 
