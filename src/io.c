@@ -1,5 +1,5 @@
 /****************************************************************
-Copyright 1990, 1991, 1993, 1994, 1996 by AT&T, Lucent Technologies and Bellcore.
+Copyright 1990, 1991, 1993, 1994, 1996, 2000 by AT&T, Lucent Technologies and Bellcore.
 
 Permission to use, copy, modify, and distribute this software
 and its documentation for any purpose and without fee is hereby
@@ -803,7 +803,7 @@ putio(expptr nelt, register expptr addr)
 		c->memoffset = ICON(0);
 		c->uname_tag = UNAM_IDENT;
 		c->charleng = 1;
-		sprintf(c->user.ident, "(ftnlen)sizeof(%s)", typename[type]);
+		sprintf(c->user.ident, "(ftnlen)sizeof(%s)", Typename[type]);
 		addr = mkexpr(OPCHARCAST, addr, ENULL);
 		}
 
@@ -814,10 +814,10 @@ putio(expptr nelt, register expptr addr)
 			: call3(TYINT, "do_lio", mc, nelt, addr);
 		}
 	else {
-		char *s = ioformatted==FORMATTED ? "do_fio"
+		char *s = (char*)(ioformatted==FORMATTED ? "do_fio"
 			: !byterev ? "do_uio"
 			: ONEOF(type, M(TYCHAR)|M(TYINT1)|M(TYLOGICAL1))
-			? "do_ucio" : "do_unio";
+			? "do_ucio" : "do_unio");
 		q = c	? call3(TYINT, s, nelt, addr, (expptr)c)
 			: call2(TYINT, s, nelt, addr);
 		}

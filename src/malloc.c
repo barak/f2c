@@ -1,5 +1,5 @@
 /****************************************************************
-Copyright 1990, 1994 by AT&T, Lucent Technologies and Bellcore.
+Copyright 1990, 1994, 2000 by AT&T, Lucent Technologies and Bellcore.
 
 Permission to use, copy, modify, and distribute this software
 and its documentation for any purpose and without fee is hereby
@@ -174,7 +174,8 @@ calloc(n, m) Unsigned m, n;
 calloc(Unsigned n, Unsigned m)
 #endif
 {
-	Char *rv = malloc(n *= m);
+	Char *rv;
+	rv = malloc(n *= m);
 	if (n && rv)
 		memset(rv, 0, n);
 	return rv;

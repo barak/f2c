@@ -95,7 +95,7 @@ simple:	  name
 simple_const:   STRUE	{ $$ = mklogcon(1); }
 	| SFALSE	{ $$ = mklogcon(0); }
 	| SHOLLERITH  { $$ = mkstrcon(toklen, token); }
-	| SICON	= { $$ = mkintcon( convci(toklen, token) ); }
+	| SICON	= { $$ = mkintqcon(toklen, token); }
 	| SRCON	= { $$ = mkrealcon(tyreal, token); }
 	| SDCON	= { $$ = mkrealcon(TYDREAL, token); }
 	| bit_const

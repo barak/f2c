@@ -48,6 +48,8 @@ build:
 
 	sh libi77 
 	sh libf77
+## Temporary I hope
+	cp patches/uninit.c libF77/
 ## These take gcc options from GCCOPT 
 	$(MAKE) -f ./debian/make_lib INTSIZE=f2c
 	$(MAKE) -f ./debian/make_lib INTSIZE=f2c_i2

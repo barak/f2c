@@ -1,8 +1,15 @@
-#!/bin/sh
+#! /bin/sh
 
 # NOTE: you may need to adjust the references to /usr/local/... below
 #	(or remove them if they're not needed on your system).
-#	See also the comments starting with ### below.
+#	You may need to add something like "-Olimit 2000" to the -O
+#	processing below or change it to something more suitable for your
+#	system.  See also the comments starting with ### below.
+
+#	Note that with some shells, invocations of the form
+#		CFLAGS='system-specific stuff' fc ...
+#	may be useful as way to pass system-specific stuff to the C compiler.
+#	The script below simply appends to the initial CFLAGS value.
 
 PATH=/usr/local/bin:/bin:/usr/bin
 
@@ -13,6 +20,9 @@ PATH=/usr/local/bin:/bin:/usr/bin
 #	Options:
 
 #		-o objfile	Override default executable name a.out.
+
+#		-a		use automatic variable storage (on the stack)
+#				by default -- rather than static storage
 
 #		-c		Do not call linker, leave relocatables in *.o.
 
@@ -49,9 +59,24 @@ PATH=/usr/local/bin:/bin:/usr/bin
 #		-I includepath	passed to C compiler (for .c files)
 #				or to cpp (for .F files), and to f2c
 
-#		-Ntnnn		allow nnn entries in table t
+#		-m xxx		passed to C compiler as -mxxx
+
+#		-N tnnn		allow nnn entries in table t
 
 #		-P		emit .P files
+
+#		-r8		promote real to double precision and
+#				complex to double complex
+
+#		-s		strip executable
+
+#		-trapuv		Initialize floating-point variables to
+#				signaling NaNs (on machines with IEEE
+#				arithmetic) unless they appear in save,
+#				common, or data statements.  Initialize
+#				other kinds of variables to values that
+#				may attract attention if used without
+#				being assigned proper values.
 
 #		-U def		passed to C compiler (for .c files)
 #				or to cpp (for .F files) to remove def
@@ -74,16 +99,22 @@ trap "rm -f $s $t; exit \$rc" 0
 OUTF=a.out
 OUTO=
 cOPT=1
-set -- `getopt cCD:gI:L:N:OU:o:Suw6 "$@"`
+set -- `getopt acCD:gI:L:m:N:OU:o:r:sSt:uw6 "$@"`
 case $? in 0);; *) rc=$?; exit;; esac
 CPPFLAGS=${CPPFLAGS:-'-I/usr/local/include'}
 CFLAGSF2C=${CFLAGSF2C:-'-I/usr/local/include'}
 OFILES=
+trapuv=
+strip=
+LIBS="-lf2c -lm"
 while
 	test X"$1" != X--
 do
 	case "$1"
 	in
+	-a)	F2CFLAGS="$F2CFLAGS -a"
+		shift;;
+
 	-C)	F2CFLAGS="$F2CFLAGS -C"
 		shift;;
 
@@ -104,6 +135,10 @@ do
 		shift 2
 		;;
 
+	-m)	CFLAGS="$CFLAGS -m$2"
+		shift 2
+		;;
+
 	-U)	CPPFLAGS="$CPPFLAGS -U$2"
 		shift 2
 		;;
@@ -115,7 +150,17 @@ do
 
 	-O)	case $2 in -1) O=-O1;; -2) O=-O2;; -3) O=-O3;; *) O=-O;; esac
 		case $O in -O);; *) shift;; esac
-		CFLAGS="$CFLAGS $O -Olimit 2000"
+		CFLAGS="$CFLAGS $O"
+#		CFLAGS="$CFLAGS $O -Olimit 2000"
+		shift
+		;;
+
+	-r)	case $2 in 8) F2CFLAGS="$F2CFLAGS -r8";;
+			*) echo "Ignoring -r$2";; esac
+		shift; shift
+		;;
+
+	-s)	strip=1
 		shift
 		;;
 
@@ -151,6 +196,19 @@ do
 	-S)	CFLAGS="$CFLAGS -S"
 		cOPT=0
 		shift
+		;;
+
+	-t)
+		case $2 in
+			rapuv)
+				F2CFLAGS="$F2CFLAGS -trapuv"
+				trapuv=1
+#				LIBS="$LIBS -lfpe"
+				shift 2;;
+			*)
+				echo "invalid parameter $1" 1>&2
+				shift;;
+			esac
 		;;
 
 	*)
@@ -275,7 +333,11 @@ done
 ### On some (IRIX) systems, -Wl,-dont_warn_unused prevents complaints
 ### about unnecessary -l options.
 
-#case $cOPT in 2) $CC -Wl,-dont_warn_unused -o $OUTF -u MAIN__ -L/usr/local/lib $OFILES -lf2c -lm;; esac
-case $cOPT in 2) $CC -o $OUTF -u MAIN__ -L/usr/local/lib $OFILES -lf2c -lm;; esac
+case $cOPT in 2)
+#	case $trapuv in 1) OFILES="$OFILES -lfpe";; esac
+#	$CC -Wl,-dont_warn_unused -o $OUTF -u MAIN__ -L/usr/local/lib $OFILES $LIBS
+	$CC -o $OUTF -u MAIN__ -L/usr/local/lib $OFILES $LIBS
+	case $strip in 1) strip $OUTF;; esac
+	;; esac
 rc=$?
 exit $rc

@@ -1,5 +1,5 @@
 /****************************************************************
-Copyright 1990 - 1996 by AT&T, Lucent Technologies and Bellcore.
+Copyright 1990-1996, 2000-2001 by AT&T, Lucent Technologies and Bellcore.
 
 Permission to use, copy, modify, and distribute this software
 and its documentation for any purpose and without fee is hereby
@@ -57,17 +57,17 @@ extern int krparens;
 
  void
 #ifdef KR_headers
-puthead(s, class)
+puthead(s, Class)
 	char *s;
-	int class;
+	int Class;
 #else
-puthead(char *s, int class)
+puthead(char *s, int Class)
 #endif
 {
 	if (headerdone == NO) {
-		if (class == CLMAIN)
+		if (Class == CLMAIN)
 			s = "MAIN__";
-		p1_head (class, s);
+		p1_head (Class, s);
 		headerdone = YES;
 		}
 }
@@ -514,7 +514,7 @@ putop(expptr p)
 	lp = p->exprblock.leftp = putx(p->exprblock.leftp);
 	if (p -> exprblock.rightp) {
 		tp = p->exprblock.rightp = putx(p->exprblock.rightp);
-		if (ISCONST(tp) && ISCONST(lp))
+		if (tp && ISCONST(tp) && ISCONST(lp))
 			p = fold(p);
 		}
 	return p;
@@ -1610,7 +1610,6 @@ get_argtypes(Exprp p, Argtypes ***pat0, Argtypes ***pat1)
 	Addrp a;
 	Argtypes **at0, **at1;
 	Namep np;
-	expptr rp;
 	Extsym *e;
 	char *fname;
 
@@ -1904,7 +1903,77 @@ putcall(expptr p0, Addrp *temp)
     return (expptr) p;
 }
 
+ static expptr
+#ifdef KR_headers
+foldminmax(op, type, p) int op; int type; chainp p;
+#else
+foldminmax(int op, int type, chainp p)
+#endif
+{
+	Constp c, c1;
+	ftnint i, i1;
+	double d, d1;
+	int dstg, d1stg;
+	char *s, *s1;
 
+	c = ALLOC(Constblock);
+	c->tag = TCONST;
+	c->vtype = type;
+	s = s1 = 0;
+
+	switch(type) {
+	  case TYREAL:
+	  case TYDREAL:
+		c1 = (Constp)p->datap;
+		d = ISINT(c1->vtype) ? (double)c1->Const.ci
+			: c1->vstg ? atof(c1->Const.cds[0]) : c1->Const.cd[0];
+		dstg = 0;
+		if (ISINT(c1->vtype))
+			d = (double)c1->Const.ci;
+		else if (dstg = c1->vstg)
+			d = atof(s = c1->Const.cds[0]);
+		else
+			d = c1->Const.cd[0];
+		while(p = p->nextp) {
+			c1 = (Constp)p->datap;
+			d1stg = 0;
+			if (ISINT(c1->vtype))
+				d1 = (double)c1->Const.ci;
+			else if (d1stg = c1->vstg)
+				d1 = atof(s1 = c1->Const.cds[0]);
+			else
+				d1 = c1->Const.cd[0];
+			if (op == OPMIN) {
+				if (d > d1)
+					goto d1copy;
+				}
+			else if (d < d1) {
+ d1copy:
+				d = d1;
+				dstg = d1stg;
+				s = s1;
+				}
+			}
+		if (c->vstg = dstg)
+			c->Const.cds[0] = s;
+		else
+			c->Const.cd[0] = d;
+		break;
+	  default:
+		i = ((Constp)p->datap)->Const.ci;
+		while(p = p->nextp) {
+			i1 = ((Constp)p->datap)->Const.ci;
+			if (op == OPMIN) {
+				if (i > i1)
+					i = i1;
+				}
+			else if (i < i1)
+				i = i1;
+			}
+		c->Const.ci = i;
+		}
+	return (expptr)c;
+	}
 
 /* putmnmx -- Put min or max.   p   must point to an EXPR, not just a
    CONST */
@@ -1933,6 +2002,19 @@ putmnmx(register expptr p)
 	p0 = p->exprblock.leftp->listblock.listp;
 	free( (charptr) (p->exprblock.leftp) );
 	free( (charptr) p );
+
+	/* for param statements, deal with constant expressions now */
+
+	for(p1 = p0;; p1 = p1->nextp) {
+		if (!p1) {
+			/* all constants */
+			p = foldminmax(op, type, p0);
+			frchain(&p0);
+			return p;
+			}
+		else if (!ISCONST(((expptr)p1->datap)))
+			break;
+		}
 
 	/* special case for two addressable operands */
 

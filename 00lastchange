@@ -1,0 +1,5 @@
+Wed Aug 22 08:01:37 EDT 2001
+  Preserve the sign of 0.
+  Pix some glitches in folding constants to integer*8
+(when NO_LONG_LONG is not #defined).
+  Fold constant min(...) and max(...) expressions.

@@ -2,18 +2,20 @@ Source: f2c
 Section: devel
 Priority: optional
 Maintainer: Alan Bain <afrb2@cam.ac.uk>
-Standards-Version: 3.1.0.0
+Standards-Version: 3.5.6.0
 
 Package: f2c
 Architecture: any
 Depends: ${shlibs:Depends}
 Recommends: gcc
 Suggests: fort77
-Description: A Fortran77 to C/C++ translator, plus static & shared libs.
- f2c translates Fortran77 (with some extensions) into C, so that it can
+Description: A FORTRAN 77 to C/C++ translator, plus static & shared libs.
+ f2c translates FORTRAN 77 (with some extensions) into C, so that it can
  then be compiled and run on a system with no Fortran compiler.  The C
  files must then be linked against the appropriate libraries.
  .
- Currently this is more stable than g77, and is the recommended way
- to compile Fortran as black box routines.  However source level
- debugging facilities are not available.
+ This is an actively maintained FORTRAN to C translator and with the
+ fort77 frontend provides an ideal way to compile FORTRAN routines
+ as black boxes (for example for invocation from C).  Source level
+ debugging facilities are not available, and error messages are not as
+ well developed as in g77.

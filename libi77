@@ -108,6 +108,9 @@ sed >libI77/lread.c <<'//GO.SYSIN DD libI77/lread.c' 's/^-//'
 -#include "lio.h"
 -#include "ctype.h"
 -#include "fp.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifndef KR_headers
 -int (*f__lioproc)(ftnint*, char*, ftnlen, ftnint), (*l_getc)(void),
@@ -157,6 +160,7 @@ sed >libI77/lread.c <<'//GO.SYSIN DD libI77/lread.c' 's/^-//'
 -#endif
 -#endif
 -
+- int
 -t_getc(Void)
 -{	int ch;
 -	if(f__curunit->uend) return(EOF);
@@ -417,11 +421,94 @@ sed >libI77/lread.c <<'//GO.SYSIN DD libI77/lread.c' 's/^-//'
 -	return(0);
 -}
 -
+- static char nmLbuf[256], *nmL_next;
+- static int (*nmL_getc_save)(Void);
+-#ifdef KR_headers
+- static int (*nmL_ungetc_save)(/* int, FILE* */);
+-#else
+- static int (*nmL_ungetc_save)(int, FILE*);
+-#endif
+-
+- static int
+-nmL_getc(Void)
+-{
+-	int rv;
+-	if (rv = *nmL_next++)
+-		return rv;
+-	l_getc = nmL_getc_save;
+-	l_ungetc = nmL_ungetc_save;
+-	return (*l_getc)();
+-	}
+-
+- static int
+-#ifdef KR_headers
+-nmL_ungetc(x, f) int x; FILE *f;
+-#else
+-nmL_ungetc(int x, FILE *f)
+-#endif
+-{
+-	f = f;	/* banish non-use warning */
+-	return *--nmL_next = x;
+-	}
+-
+- static int
+-#ifdef KR_headers
+-Lfinish(ch, dot, rvp) int ch, dot, *rvp;
+-#else
+-Lfinish(int ch, int dot, int *rvp)
+-#endif
+-{
+-	char *s, *se;
+-	static char what[] = "namelist input";
+-
+-	s = nmLbuf + 2;
+-	se = nmLbuf + sizeof(nmLbuf) - 1;
+-	*s++ = ch;
+-	while(!issep(GETC(ch)) && ch!=EOF) {
+-		if (s >= se) {
+- nmLbuf_ovfl:
+-			return *rvp = err__fl(f__elist->cierr,131,what);
+-			}
+-		*s++ = ch;
+-		if (ch != '=')
+-			continue;
+-		if (dot)
+-			return *rvp = err__fl(f__elist->cierr,112,what);
+- got_eq:
+-		*s = 0;
+-		nmL_getc_save = l_getc;
+-		l_getc = nmL_getc;
+-		nmL_ungetc_save = l_ungetc;
+-		l_ungetc = nmL_ungetc;
+-		nmLbuf[1] = *(nmL_next = nmLbuf) = ',';
+-		*rvp = f__lcount = 0;
+-		return 1;
+-		}
+-	if (dot)
+-		goto done;
+-	for(;;) {
+-		if (s >= se)
+-			goto nmLbuf_ovfl;
+-		*s++ = ch;
+-		if (!isblnk(ch))
+-			break;
+-		if (GETC(ch) == EOF)
+-			goto done;
+-		}
+-	if (ch == '=')
+-		goto got_eq;
+- done:
+-	Ungetc(ch, f__cf);
+-	return 0;
+-	}
+-
 - static int
 -l_L(Void)
 -{
--	int ch;
--	if(f__lcount>0) return(0);
+-	int ch, rv, sawdot;
+-
+-	if(f__lcount>0)
+-		return(0);
 -	f__lcount = 1;
 -	f__ltype=0;
 -	GETC(ch);
@@ -435,15 +522,23 @@ sed >libI77/lread.c <<'//GO.SYSIN DD libI77/lread.c' 's/^-//'
 -				err(f__elist->cierr,(EOF),"lread");
 -		GETC(ch);
 -	}
--	if(ch == '.') GETC(ch);
+-	sawdot = 0;
+-	if(ch == '.') {
+-		sawdot = 1;
+-		GETC(ch);
+-		}
 -	switch(ch)
 -	{
 -	case 't':
 -	case 'T':
+-		if (nml_read && Lfinish(ch, sawdot, &rv))
+-			return rv;
 -		f__lx=1;
 -		break;
 -	case 'f':
 -	case 'F':
+-		if (nml_read && Lfinish(ch, sawdot, &rv))
+-			return rv;
 -		f__lx=0;
 -		break;
 -	default:
@@ -460,7 +555,7 @@ sed >libI77/lread.c <<'//GO.SYSIN DD libI77/lread.c' 's/^-//'
 -	}
 -	f__ltype=TYLONG;
 -	while(!issep(GETC(ch)) && ch!=EOF);
--	(void) Ungetc(ch, f__cf);
+-	Ungetc(ch, f__cf);
 -	return(0);
 -}
 -
@@ -606,6 +701,8 @@ sed >libI77/lread.c <<'//GO.SYSIN DD libI77/lread.c' 's/^-//'
 -		}
 -	}
 -}
+-
+- int
 -#ifdef KR_headers
 -c_le(a) cilist *a;
 -#else
@@ -626,6 +723,8 @@ sed >libI77/lread.c <<'//GO.SYSIN DD libI77/lread.c' 's/^-//'
 -	if(!f__curunit->ufmt) err(a->cierr,103,"lio")
 -	return(0);
 -}
+-
+- int
 -#ifdef KR_headers
 -l_read(number,ptr,len,type) ftnint *number,type; char *ptr; ftnlen len;
 -#else
@@ -782,6 +881,9 @@ sed >libI77/lread.c <<'//GO.SYSIN DD libI77/lread.c' 's/^-//'
 -	f__doend = xrd_SL;
 -	return(0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/lread.c
 echo libI77/lwrite.c 1>&2
 sed >libI77/lwrite.c <<'//GO.SYSIN DD libI77/lwrite.c' 's/^-//'
@@ -789,6 +891,9 @@ sed >libI77/lwrite.c <<'//GO.SYSIN DD libI77/lwrite.c' 's/^-//'
 -#include "fio.h"
 -#include "fmt.h"
 -#include "lio.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -ftnint L_len;
 -int f__Aquote;
@@ -1018,6 +1123,8 @@ sed >libI77/lwrite.c <<'//GO.SYSIN DD libI77/lwrite.c' 's/^-//'
 -	l_put(bb);
 -	PUT(')');
 -}
+-
+- int
 -#ifdef KR_headers
 -l_write(number,ptr,len,type) ftnint *number,type; char *ptr; ftnlen len;
 -#else
@@ -1087,6 +1194,9 @@ sed >libI77/lwrite.c <<'//GO.SYSIN DD libI77/lwrite.c' 's/^-//'
 -	}
 -	return(0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/lwrite.c
 echo libI77/makefile 1>&2
 sed >libI77/makefile <<'//GO.SYSIN DD libI77/makefile' 's/^-//'
@@ -1105,22 +1215,24 @@ sed >libI77/makefile <<'//GO.SYSIN DD libI77/makefile' 's/^-//'
 -## If your system does not have the ld command, comment out
 -## or remove both the ld and mv lines above.
 -
--OBJ =	Version.o backspace.o close.o dfe.o dolio.o due.o endfile.o err.o \
--	fmt.o fmtlib.o ftell_.o iio.o ilnw.o inquire.o lread.o lwrite.o \
+-OBJ =	backspace.o close.o dfe.o dolio.o due.o endfile.o err.o fmt.o \
+-	fmtlib.o ftell_.o i77vers.o iio.o ilnw.o inquire.o lread.o lwrite.o \
 -	open.o rdfmt.o rewind.o rsfe.o rsli.o rsne.o sfe.o sue.o typesize.o \
 -	uio.o util.o wref.o wrtfmt.o wsfe.o wsle.o wsne.o xwsne.o
 -libI77.a:	$(OBJ)
 -		ar r libI77.a $?
--		-ranlib libI77.a
+-		ranlib libI77.a || true
 -
 -### If your system lacks ranlib, you don't need it; see README.
 -
 -install:	libI77.a
--	cp libI77.a /usr/lib/libI77.a
--	ranlib /usr/lib/libI77.a
+-	cp libI77.a $(LIBDIR)/libI77.a
+-	ranlib $(LIBDIR)/libI77.a || true
 -
--Version.o: Version.c
--	$(CC) -c Version.c
+-# i77vers.c was "Version.c"; renamed on 20010623 to accord with libf2c.zip.
+-
+-i77vers.o: i77vers.c
+-	$(CC) -c i77vers.c
 -
 -# To compile with C++, first "make f2c.h"
 -f2c.h: f2ch.add
@@ -1187,9 +1299,9 @@ sed >libI77/makefile <<'//GO.SYSIN DD libI77/makefile' 's/^-//'
 -xwsne.o:	fmt.h
 -
 -check:
--	xsum Notice README Version.c backspace.c close.c dfe.c dolio.c \
--	due.c endfile.c err.c f2ch.add fio.h fmt.c fmt.h fmtlib.c fp.h \
--	ftell_.c iio.c ilnw.c inquire.c lio.h lread.c lwrite.c makefile \
+-	xsum Notice README backspace.c close.c dfe.c dolio.c due.c \
+-	endfile.c err.c f2ch.add fio.h fmt.c fmt.h fmtlib.c fp.h ftell_.c \
+-	i77vers.c iio.c ilnw.c inquire.c lio.h lread.c lwrite.c makefile \
 -	open.c rawio.h rdfmt.c rewind.c rsfe.c rsli.c rsne.c sfe.c sue.c \
 -	typesize.c uio.c util.c wref.c wrtfmt.c wsfe.c wsle.c wsne.c \
 -	xwsne.c >zap
@@ -1219,6 +1331,9 @@ sed >libI77/open.c <<'//GO.SYSIN DD libI77/open.c' 's/^-//'
 -#undef min
 -#undef max
 -#include "stdlib.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -extern int f__canseek(FILE*);
 -extern integer f_clos(cllist*);
 -#endif
@@ -1469,6 +1584,8 @@ sed >libI77/open.c <<'//GO.SYSIN DD libI77/open.c' 's/^-//'
 -				opnerr(a->oerr,129,"open");
 -	return(0);
 -}
+-
+- int
 -#ifdef KR_headers
 -fk_open(seq,fmt,n) ftnint n;
 -#else
@@ -1482,12 +1599,15 @@ sed >libI77/open.c <<'//GO.SYSIN DD libI77/open.c' 's/^-//'
 -	a.ofnm=nbuf;
 -	a.ofnmlen=strlen(nbuf);
 -	a.osta=NULL;
--	a.oacc= seq==SEQ?"s":"d";
--	a.ofm = fmt==FMT?"f":"u";
+-	a.oacc= (char*)(seq==SEQ?"s":"d");
+-	a.ofm = (char*)(fmt==FMT?"f":"u");
 -	a.orl = seq==DIR?1:0;
 -	a.oblnk=NULL;
 -	return(f_open(&a));
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/open.c
 echo libI77/rawio.h 1>&2
 sed >libI77/rawio.h <<'//GO.SYSIN DD libI77/rawio.h' 's/^-//'
@@ -1551,6 +1671,9 @@ sed >libI77/rdfmt.c <<'//GO.SYSIN DD libI77/rdfmt.c' 's/^-//'
 -#include "fmt.h"
 -#include "fp.h"
 -#include "ctype.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 - static int
 -#ifdef KR_headers
@@ -1637,7 +1760,7 @@ sed >libI77/rdfmt.c <<'//GO.SYSIN DD libI77/rdfmt.c' 's/^-//'
 -rd_I(Uint *n, int w, ftnlen len, register int base)
 -#endif
 -{
--	int bad, ch, sign;
+-	int ch, sign;
 -	longint x = 0;
 -
 -	if (w <= 0)
@@ -1988,6 +2111,8 @@ sed >libI77/rdfmt.c <<'//GO.SYSIN DD libI77/rdfmt.c' 's/^-//'
 -		else *s = ch=='\n'?' ':ch;
 -	return(1);
 -}
+-
+- int
 -#ifdef KR_headers
 -rd_ed(p,ptr,len) struct syl *p; char *ptr; ftnlen len;
 -#else
@@ -2051,6 +2176,8 @@ sed >libI77/rdfmt.c <<'//GO.SYSIN DD libI77/rdfmt.c' 's/^-//'
 -		clearerr(f__cf);
 -	return(errno);
 -}
+-
+- int
 -#ifdef KR_headers
 -rd_ned(p) struct syl *p;
 -#else
@@ -2076,11 +2203,17 @@ sed >libI77/rdfmt.c <<'//GO.SYSIN DD libI77/rdfmt.c' 's/^-//'
 -		return(1);
 -	}
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/rdfmt.c
 echo libI77/rewind.c 1>&2
 sed >libI77/rewind.c <<'//GO.SYSIN DD libI77/rewind.c' 's/^-//'
 -#include "f2c.h"
 -#include "fio.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -#ifdef KR_headers
 -integer f_rew(a) alist *a;
 -#else
@@ -2103,6 +2236,9 @@ sed >libI77/rewind.c <<'//GO.SYSIN DD libI77/rewind.c' 's/^-//'
 -	b->uend=0;
 -	return(0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/rewind.c
 echo libI77/rsfe.c 1>&2
 sed >libI77/rsfe.c <<'//GO.SYSIN DD libI77/rsfe.c' 's/^-//'
@@ -2110,7 +2246,11 @@ sed >libI77/rsfe.c <<'//GO.SYSIN DD libI77/rsfe.c' 's/^-//'
 -#include "f2c.h"
 -#include "fio.h"
 -#include "fmt.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
+- int
 -xrd_SL(Void)
 -{	int ch;
 -	if(!f__curunit->uend)
@@ -2122,6 +2262,8 @@ sed >libI77/rsfe.c <<'//GO.SYSIN DD libI77/rsfe.c' 's/^-//'
 -	f__cursor=f__recpos=0;
 -	return(1);
 -}
+-
+- int
 -x_getc(Void)
 -{	int ch;
 -	if(f__curunit->uend) return(EOF);
@@ -2141,11 +2283,15 @@ sed >libI77/rsfe.c <<'//GO.SYSIN DD libI77/rsfe.c' 's/^-//'
 -	}
 -	return(-1);
 -}
+-
+- int
 -x_endp(Void)
 -{
 -	xrd_SL();
 -	return f__curunit->uend == 1 ? EOF : 0;
 -}
+-
+- int
 -x_rev(Void)
 -{
 -	(void) xrd_SL();
@@ -2184,6 +2330,9 @@ sed >libI77/rsfe.c <<'//GO.SYSIN DD libI77/rsfe.c' 's/^-//'
 -		err(f__elist->ciend,(EOF),"read start");
 -	return(0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/rsfe.c
 echo libI77/rsli.c 1>&2
 sed >libI77/rsli.c <<'//GO.SYSIN DD libI77/rsli.c' 's/^-//'
@@ -2191,6 +2340,9 @@ sed >libI77/rsli.c <<'//GO.SYSIN DD libI77/rsli.c' 's/^-//'
 -#include "fio.h"
 -#include "lio.h"
 -#include "fmt.h" /* for f__doend */
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -extern flag f__lquit;
 -extern int f__lcount;
@@ -2290,6 +2442,9 @@ sed >libI77/rsli.c <<'//GO.SYSIN DD libI77/rsli.c' 's/^-//'
 -	nml_read = 0;
 -	return rv;
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/rsli.c
 echo libI77/rsne.c 1>&2
 sed >libI77/rsne.c <<'//GO.SYSIN DD libI77/rsne.c' 's/^-//'
@@ -2331,7 +2486,7 @@ sed >libI77/rsne.c <<'//GO.SYSIN DD libI77/rsne.c' 's/^-//'
 -
 - extern flag f__lquit;
 - extern int f__lcount, nml_read;
-- extern t_getc(Void);
+- extern int t_getc(Void);
 -
 -#ifdef KR_headers
 - extern char *malloc(), *memset();
@@ -2351,6 +2506,9 @@ sed >libI77/rsne.c <<'//GO.SYSIN DD libI77/rsne.c' 's/^-//'
 -#undef max
 -#include "stdlib.h"
 -#include "string.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef ungetc
 - static int
@@ -2585,6 +2743,7 @@ sed >libI77/rsne.c <<'//GO.SYSIN DD libI77/rsne.c' 's/^-//'
 -
 - static char where0[] = "namelist read start ";
 -
+- int
 -#ifdef KR_headers
 -x_rsne(a) cilist *a;
 -#else
@@ -2599,8 +2758,8 @@ sed >libI77/rsne.c <<'//GO.SYSIN DD libI77/rsne.c' 's/^-//'
 -	Vardesc *v;
 -	dimen *dn, *dn0, *dn1;
 -	ftnlen *dims, *dims1;
--	ftnlen b, b0, b1, ex, no, no1, nomax, size, span;
--	ftnint type;
+-	ftnlen b, b0, b1, ex, no, nomax, size, span;
+-	ftnint no1, type;
 -	char *vaddr;
 -	long iva, ivae;
 -	dimen dimens[MAXDIM], substr;
@@ -2902,12 +3061,18 @@ sed >libI77/rsne.c <<'//GO.SYSIN DD libI77/rsne.c' 's/^-//'
 -		return n;
 -	return e_rsle();
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/rsne.c
 echo libI77/sfe.c 1>&2
 sed >libI77/sfe.c <<'//GO.SYSIN DD libI77/sfe.c' 's/^-//'
 -/* sequential formatted external common routines*/
 -#include "f2c.h"
 -#include "fio.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -extern char *f__fmtbuf;
 -
@@ -2917,6 +3082,8 @@ sed >libI77/sfe.c <<'//GO.SYSIN DD libI77/sfe.c' 's/^-//'
 -	f__fmtbuf=NULL;
 -	return(n);
 -}
+-
+- int
 -#ifdef KR_headers
 -c_sfe(a) cilist *a; /* check */
 -#else
@@ -2934,16 +3101,27 @@ sed >libI77/sfe.c <<'//GO.SYSIN DD libI77/sfe.c' 's/^-//'
 -{
 -	int n = en_fio();
 -	f__fmtbuf = NULL;
+-#ifdef ALWAYS_FLUSH
+-	if (!n && fflush(f__cf))
+-		err(f__elist->cierr, errno, "write end");
+-#endif
 -	return n;
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/sfe.c
 echo libI77/sue.c 1>&2
 sed >libI77/sue.c <<'//GO.SYSIN DD libI77/sue.c' 's/^-//'
 -#include "f2c.h"
 -#include "fio.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -extern uiolen f__reclen;
 -long f__recloc;
 -
+- int
 -#ifdef KR_headers
 -c_sue(a) cilist *a;
 -#else
@@ -3022,10 +3200,16 @@ sed >libI77/sue.c <<'//GO.SYSIN DD libI77/sue.c' 's/^-//'
 -	(void) fseek(f__cf,(long)(f__reclen-f__recpos+sizeof(uiolen)),SEEK_CUR);
 -	return(0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/sue.c
 echo libI77/typesize.c 1>&2
 sed >libI77/typesize.c <<'//GO.SYSIN DD libI77/typesize.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -ftnlen f__typesize[] = { 0, 0, sizeof(shortint), sizeof(integer),
 -			sizeof(real), sizeof(doublereal),
@@ -3037,13 +3221,20 @@ sed >libI77/typesize.c <<'//GO.SYSIN DD libI77/typesize.c' 's/^-//'
 -			sizeof(longint),
 -#endif
 -			0};
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/typesize.c
 echo libI77/uio.c 1>&2
 sed >libI77/uio.c <<'//GO.SYSIN DD libI77/uio.c' 's/^-//'
 -#include "f2c.h"
 -#include "fio.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -uiolen f__reclen;
 -
+- int
 -#ifdef KR_headers
 -do_us(number,ptr,len) ftnint *number; char *ptr; ftnlen len;
 -#else
@@ -3108,6 +3299,9 @@ sed >libI77/uio.c <<'//GO.SYSIN DD libI77/uio.c' 's/^-//'
 -		return(do_us(number,ptr,len));
 -	else	return(do_ud(number,ptr,len));
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/uio.c
 echo libI77/util.c 1>&2
 sed >libI77/util.c <<'//GO.SYSIN DD libI77/util.c' 's/^-//'
@@ -3119,6 +3313,9 @@ sed >libI77/util.c <<'//GO.SYSIN DD libI77/util.c' 's/^-//'
 -#endif
 -#include "f2c.h"
 -#include "fio.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 - VOID
 -#ifdef KR_headers
@@ -3164,6 +3361,9 @@ sed >libI77/util.c <<'//GO.SYSIN DD libI77/util.c' 's/^-//'
 -	return(x.st_ino);
 -}
 -#endif
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/util.c
 echo libI77/wref.c 1>&2
 sed >libI77/wref.c <<'//GO.SYSIN DD libI77/wref.c' 's/^-//'
@@ -3182,8 +3382,12 @@ sed >libI77/wref.c <<'//GO.SYSIN DD libI77/wref.c' 's/^-//'
 -#include "fp.h"
 -#ifndef VAX
 -#include "ctype.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -#endif
 -
+- int
 -#ifdef KR_headers
 -wrt_E(p,w,d,e,len) ufloat *p; ftnlen len;
 -#else
@@ -3360,6 +3564,7 @@ sed >libI77/wref.c <<'//GO.SYSIN DD libI77/wref.c' 's/^-//'
 -	return 0;
 -	}
 -
+- int
 -#ifdef KR_headers
 -wrt_F(p,w,d,len) ufloat *p; ftnlen len;
 -#else
@@ -3443,12 +3648,18 @@ sed >libI77/wref.c <<'//GO.SYSIN DD libI77/wref.c' 's/^-//'
 -		PUT('0');
 -	return 0;
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/wref.c
 echo libI77/wrtfmt.c 1>&2
 sed >libI77/wrtfmt.c <<'//GO.SYSIN DD libI77/wrtfmt.c' 's/^-//'
 -#include "f2c.h"
 -#include "fio.h"
 -#include "fmt.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -extern icilist *f__svic;
 -extern char *f__icptr;
@@ -3665,6 +3876,8 @@ sed >libI77/wrtfmt.c <<'//GO.SYSIN DD libI77/wrtfmt.c' 's/^-//'
 -	while(a--) (*f__putn)(*s++);
 -	return(1);
 -}
+-
+- int
 -#ifdef KR_headers
 -wrt_L(n,len, sz) Uint *n; ftnlen sz;
 -#else
@@ -3737,6 +3950,8 @@ sed >libI77/wrtfmt.c <<'//GO.SYSIN DD libI77/wrtfmt.c' 's/^-//'
 -	}
 -	return(wrt_E(p,w,d,e,len));
 -}
+-
+- int
 -#ifdef KR_headers
 -w_ed(p,ptr,len) struct syl *p; char *ptr; ftnlen len;
 -#else
@@ -3783,6 +3998,8 @@ sed >libI77/wrtfmt.c <<'//GO.SYSIN DD libI77/wrtfmt.c' 's/^-//'
 -		return(wrt_Z((Uint *)ptr,p->p1,p->p2.i[0],len));
 -	}
 -}
+-
+- int
 -#ifdef KR_headers
 -w_ned(p) struct syl *p;
 -#else
@@ -3811,6 +4028,9 @@ sed >libI77/wrtfmt.c <<'//GO.SYSIN DD libI77/wrtfmt.c' 's/^-//'
 -		return(wrt_H(p->p1,p->p2.s));
 -	}
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/wrtfmt.c
 echo libI77/wsfe.c 1>&2
 sed >libI77/wsfe.c <<'//GO.SYSIN DD libI77/wsfe.c' 's/^-//'
@@ -3818,6 +4038,9 @@ sed >libI77/wsfe.c <<'//GO.SYSIN DD libI77/wsfe.c' 's/^-//'
 -#include "f2c.h"
 -#include "fio.h"
 -#include "fmt.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -extern int f__hiwater;
 -
 - int
@@ -3887,6 +4110,9 @@ sed >libI77/wsfe.c <<'//GO.SYSIN DD libI77/wsfe.c' 's/^-//'
 -		err(a->cierr,errno,"write start");
 -	return(0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/wsfe.c
 echo libI77/wsle.c 1>&2
 sed >libI77/wsle.c <<'//GO.SYSIN DD libI77/wsle.c' 's/^-//'
@@ -3895,6 +4121,9 @@ sed >libI77/wsle.c <<'//GO.SYSIN DD libI77/wsle.c' 's/^-//'
 -#include "fmt.h"
 -#include "lio.h"
 -#include "string.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -integer s_wsle(a) cilist *a;
@@ -3926,12 +4155,18 @@ sed >libI77/wsle.c <<'//GO.SYSIN DD libI77/wsle.c' 's/^-//'
 -#endif
 -	return(n);
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/wsle.c
 echo libI77/wsne.c 1>&2
 sed >libI77/wsne.c <<'//GO.SYSIN DD libI77/wsne.c' 's/^-//'
 -#include "f2c.h"
 -#include "fio.h"
 -#include "lio.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 - integer
 -#ifdef KR_headers
@@ -3955,6 +4190,9 @@ sed >libI77/wsne.c <<'//GO.SYSIN DD libI77/wsne.c' 's/^-//'
 -	x_wsne(a);
 -	return e_wsle();
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/wsne.c
 echo libI77/xwsne.c 1>&2
 sed >libI77/xwsne.c <<'//GO.SYSIN DD libI77/xwsne.c' 's/^-//'
@@ -3976,6 +4214,9 @@ sed >libI77/xwsne.c <<'//GO.SYSIN DD libI77/xwsne.c' 's/^-//'
 -x_wsne(a) cilist *a;
 -#else
 -#include "string.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 - VOID
 -x_wsne(cilist *a)
@@ -3984,10 +4225,9 @@ sed >libI77/xwsne.c <<'//GO.SYSIN DD libI77/xwsne.c' 's/^-//'
 -	Namelist *nl;
 -	char *s;
 -	Vardesc *v, **vd, **vde;
--	ftnint *number, type;
+-	ftnint number, type;
 -	ftnlen *dims;
 -	ftnlen size;
--	static ftnint one = 1;
 -	extern ftnlen f__typesize[];
 -
 -	nl = (Namelist *)a->cifmt;
@@ -4009,7 +4249,7 @@ sed >libI77/xwsne.c <<'//GO.SYSIN DD libI77/xwsne.c' 's/^-//'
 -			PUT(*s++);
 -		PUT(' ');
 -		PUT('=');
--		number = (dims = v->dims) ? dims + 1 : &one;
+-		number = (dims = v->dims) ? dims[1] : 1;
 -		type = v->type;
 -		if (type < 0) {
 -			size = -type;
@@ -4017,7 +4257,7 @@ sed >libI77/xwsne.c <<'//GO.SYSIN DD libI77/xwsne.c' 's/^-//'
 -			}
 -		else
 -			size = f__typesize[type];
--		l_write(number, v->addr, size, type);
+-		l_write(&number, v->addr, size, type);
 -		if (vd < vde) {
 -			if (f__recpos+2 >= L_len)
 -				nl_donewrec();
@@ -4030,6 +4270,9 @@ sed >libI77/xwsne.c <<'//GO.SYSIN DD libI77/xwsne.c' 's/^-//'
 -	f__Aquote = 0;
 -	PUT('/');
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libI77/xwsne.c
 echo libI77/Notice 1>&2
 sed >libI77/Notice <<'//GO.SYSIN DD libI77/Notice' 's/^-//'
@@ -4284,10 +4527,2329 @@ sed >libI77/README <<'//GO.SYSIN DD libI77/README' 's/^-//'
 -	relative to the end of the file if whence = 2.  It branches
 -	to label errlab if unit i is not open or if the call
 -	otherwise fails.
+-
+-Nowadays most Unix and Linux systems have function
+-	int ftruncate(int fildes, off_t len);
+-defined in system header file unistd.h that adjusts the length of file
+-descriptor fildes to length len.  Unless endfile.c is compiled with
+--DNO_TRUNCATE, endfile.c #includes "unistd.h" and calls ftruncate() if
+-necessary to shorten files.  If your system lacks ftruncate(), compile
+-endfile.c with -DNO_TRUNCATE to make endfile.c use the older and more
+-portable scheme of shortening a file by copying to a temporary file
+-and back again.
 //GO.SYSIN DD libI77/README
-echo libI77/Version.c 1>&2
-sed >libI77/Version.c <<'//GO.SYSIN DD libI77/Version.c' 's/^-//'
--static char junk[] = "\n@(#) LIBI77 VERSION pjw,dmg-mods 19990627\n";
+echo libI77/backspace.c 1>&2
+sed >libI77/backspace.c <<'//GO.SYSIN DD libI77/backspace.c' 's/^-//'
+-#include "f2c.h"
+-#include "fio.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-#ifdef KR_headers
+-integer f_back(a) alist *a;
+-#else
+-integer f_back(alist *a)
+-#endif
+-{	unit *b;
+-	long v, w, x, y, z;
+-	uiolen n;
+-	FILE *f;
+-
+-	f__curunit = b = &f__units[a->aunit];	/* curunit for error messages */
+-	if(a->aunit >= MXUNIT || a->aunit < 0)
+-		err(a->aerr,101,"backspace")
+-	if(b->useek==0) err(a->aerr,106,"backspace")
+-	if(b->ufd == NULL) {
+-		fk_open(1, 1, a->aunit);
+-		return(0);
+-		}
+-	if(b->uend==1)
+-	{	b->uend=0;
+-		return(0);
+-	}
+-	if(b->uwrt) {
+-		t_runc(a);
+-		if (f__nowreading(b))
+-			err(a->aerr,errno,"backspace")
+-		}
+-	f = b->ufd;	/* may have changed in t_runc() */
+-	if(b->url>0)
+-	{
+-		x=ftell(f);
+-		y = x % b->url;
+-		if(y == 0) x--;
+-		x /= b->url;
+-		x *= b->url;
+-		(void) fseek(f,x,SEEK_SET);
+-		return(0);
+-	}
+-
+-	if(b->ufmt==0)
+-	{	fseek(f,-(long)sizeof(uiolen),SEEK_CUR);
+-		fread((char *)&n,sizeof(uiolen),1,f);
+-		fseek(f,-(long)n-2*sizeof(uiolen),SEEK_CUR);
+-		return(0);
+-	}
+-	w = x = ftell(f);
+-	z = 0;
+- loop:
+-	while(x) {
+-		x -= x < 64 ? x : 64;
+-		fseek(f,x,SEEK_SET);
+-		for(y = x; y < w; y++) {
+-			if (getc(f) != '\n')
+-				continue;
+-			v = ftell(f);
+-			if (v == w) {
+-				if (z)
+-					goto break2;
+-				goto loop;
+-				}
+-			z = v;
+-			}
+-		err(a->aerr,(EOF),"backspace")
+-		}
+- break2:
+-	fseek(f, z, SEEK_SET);
+-	return 0;
+-}
+-#ifdef __cplusplus
+-}
+-#endif
+//GO.SYSIN DD libI77/backspace.c
+echo libI77/close.c 1>&2
+sed >libI77/close.c <<'//GO.SYSIN DD libI77/close.c' 's/^-//'
+-#include "f2c.h"
+-#include "fio.h"
+-#ifdef KR_headers
+-integer f_clos(a) cllist *a;
+-#else
+-#undef abs
+-#undef min
+-#undef max
+-#include "stdlib.h"
+-#ifdef NON_UNIX_STDIO
+-#ifndef unlink
+-#define unlink remove
+-#endif
+-#else
+-#ifdef MSDOS
+-#include "io.h"
+-#else
+-#ifdef __cplusplus
+-extern "C" int unlink(const char*);
+-#else
+-extern int unlink(const char*);
+-#endif
+-#endif
+-#endif
+-
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+-integer f_clos(cllist *a)
+-#endif
+-{	unit *b;
+-
+-	if(a->cunit >= MXUNIT) return(0);
+-	b= &f__units[a->cunit];
+-	if(b->ufd==NULL)
+-		goto done;
+-	if (b->uscrtch == 1)
+-		goto Delete;
+-	if (!a->csta)
+-		goto Keep;
+-	switch(*a->csta) {
+-		default:
+-	 	Keep:
+-		case 'k':
+-		case 'K':
+-			if(b->uwrt == 1)
+-				t_runc((alist *)a);
+-			if(b->ufnm) {
+-				fclose(b->ufd);
+-				free(b->ufnm);
+-				}
+-			break;
+-		case 'd':
+-		case 'D':
+-		Delete:
+-			fclose(b->ufd);
+-			if(b->ufnm) {
+-				unlink(b->ufnm); /*SYSDEP*/
+-				free(b->ufnm);
+-				}
+-		}
+-	b->ufd=NULL;
+- done:
+-	b->uend=0;
+-	b->ufnm=NULL;
+-	return(0);
+-	}
+- void
+-#ifdef KR_headers
+-f_exit()
+-#else
+-f_exit(void)
+-#endif
+-{	int i;
+-	static cllist xx;
+-	if (!xx.cerr) {
+-		xx.cerr=1;
+-		xx.csta=NULL;
+-		for(i=0;i<MXUNIT;i++)
+-		{
+-			xx.cunit=i;
+-			(void) f_clos(&xx);
+-		}
+-	}
+-}
+- int
+-#ifdef KR_headers
+-flush_()
+-#else
+-flush_(void)
+-#endif
+-{	int i;
+-	for(i=0;i<MXUNIT;i++)
+-		if(f__units[i].ufd != NULL && f__units[i].uwrt)
+-			fflush(f__units[i].ufd);
+-return 0;
+-}
+-#ifdef __cplusplus
+-}
+-#endif
+//GO.SYSIN DD libI77/close.c
+echo libI77/dfe.c 1>&2
+sed >libI77/dfe.c <<'//GO.SYSIN DD libI77/dfe.c' 's/^-//'
+-#include "f2c.h"
+-#include "fio.h"
+-#include "fmt.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+- int
+-y_rsk(Void)
+-{
+-	if(f__curunit->uend || f__curunit->url <= f__recpos
+-		|| f__curunit->url == 1) return 0;
+-	do {
+-		getc(f__cf);
+-	} while(++f__recpos < f__curunit->url);
+-	return 0;
+-}
+-
+- int
+-y_getc(Void)
+-{
+-	int ch;
+-	if(f__curunit->uend) return(-1);
+-	if((ch=getc(f__cf))!=EOF)
+-	{
+-		f__recpos++;
+-		if(f__curunit->url>=f__recpos ||
+-			f__curunit->url==1)
+-			return(ch);
+-		else	return(' ');
+-	}
+-	if(feof(f__cf))
+-	{
+-		f__curunit->uend=1;
+-		errno=0;
+-		return(-1);
+-	}
+-	err(f__elist->cierr,errno,"readingd");
+-}
+-
+- static int
+-y_rev(Void)
+-{
+-	if (f__recpos < f__hiwater)
+-		f__recpos = f__hiwater;
+-	if (f__curunit->url > 1)
+-		while(f__recpos < f__curunit->url)
+-			(*f__putn)(' ');
+-	if (f__recpos)
+-		f__putbuf(0);
+-	f__recpos = 0;
+-	return(0);
+-}
+-
+- static int
+-y_err(Void)
+-{
+-	err(f__elist->cierr, 110, "dfe");
+-}
+-
+- static int
+-y_newrec(Void)
+-{
+-	y_rev();
+-	f__hiwater = f__cursor = 0;
+-	return(1);
+-}
+-
+- int
+-#ifdef KR_headers
+-c_dfe(a) cilist *a;
+-#else
+-c_dfe(cilist *a)
+-#endif
+-{
+-	f__sequential=0;
+-	f__formatted=f__external=1;
+-	f__elist=a;
+-	f__cursor=f__scale=f__recpos=0;
+-	f__curunit = &f__units[a->ciunit];
+-	if(a->ciunit>MXUNIT || a->ciunit<0)
+-		err(a->cierr,101,"startchk");
+-	if(f__curunit->ufd==NULL && fk_open(DIR,FMT,a->ciunit))
+-		err(a->cierr,104,"dfe");
+-	f__cf=f__curunit->ufd;
+-	if(!f__curunit->ufmt) err(a->cierr,102,"dfe")
+-	if(!f__curunit->useek) err(a->cierr,104,"dfe")
+-	f__fmtbuf=a->cifmt;
+-	if(a->cirec <= 0)
+-		err(a->cierr,130,"dfe")
+-	fseek(f__cf,(long)f__curunit->url * (a->cirec-1),SEEK_SET);
+-	f__curunit->uend = 0;
+-	return(0);
+-}
+-#ifdef KR_headers
+-integer s_rdfe(a) cilist *a;
+-#else
+-integer s_rdfe(cilist *a)
+-#endif
+-{
+-	int n;
+-	if(!f__init) f_init();
+-	f__reading=1;
+-	if(n=c_dfe(a))return(n);
+-	if(f__curunit->uwrt && f__nowreading(f__curunit))
+-		err(a->cierr,errno,"read start");
+-	f__getn = y_getc;
+-	f__doed = rd_ed;
+-	f__doned = rd_ned;
+-	f__dorevert = f__donewrec = y_err;
+-	f__doend = y_rsk;
+-	if(pars_f(f__fmtbuf)<0)
+-		err(a->cierr,100,"read start");
+-	fmt_bg();
+-	return(0);
+-}
+-#ifdef KR_headers
+-integer s_wdfe(a) cilist *a;
+-#else
+-integer s_wdfe(cilist *a)
+-#endif
+-{
+-	int n;
+-	if(!f__init) f_init();
+-	f__reading=0;
+-	if(n=c_dfe(a)) return(n);
+-	if(f__curunit->uwrt != 1 && f__nowwriting(f__curunit))
+-		err(a->cierr,errno,"startwrt");
+-	f__putn = x_putc;
+-	f__doed = w_ed;
+-	f__doned= w_ned;
+-	f__dorevert = y_err;
+-	f__donewrec = y_newrec;
+-	f__doend = y_rev;
+-	if(pars_f(f__fmtbuf)<0)
+-		err(a->cierr,100,"startwrt");
+-	fmt_bg();
+-	return(0);
+-}
+-integer e_rdfe(Void)
+-{
+-	en_fio();
+-	return 0;
+-}
+-integer e_wdfe(Void)
+-{
+-	return en_fio();
+-}
+-#ifdef __cplusplus
+-}
+-#endif
+//GO.SYSIN DD libI77/dfe.c
+echo libI77/dolio.c 1>&2
+sed >libI77/dolio.c <<'//GO.SYSIN DD libI77/dolio.c' 's/^-//'
+-#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-#ifdef KR_headers
+-extern int (*f__lioproc)();
+-
+-integer do_lio(type,number,ptr,len) ftnint *number,*type; char *ptr; ftnlen len;
+-#else
+-extern int (*f__lioproc)(ftnint*, char*, ftnlen, ftnint);
+-
+-integer do_lio(ftnint *type, ftnint *number, char *ptr, ftnlen len)
+-#endif
+-{
+-	return((*f__lioproc)(number,ptr,len,*type));
+-}
+-#ifdef __cplusplus
+-	}
+-#endif
+-#ifdef __cplusplus
+-}
+-#endif
+//GO.SYSIN DD libI77/dolio.c
+echo libI77/due.c 1>&2
+sed >libI77/due.c <<'//GO.SYSIN DD libI77/due.c' 's/^-//'
+-#include "f2c.h"
+-#include "fio.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+- int
+-#ifdef KR_headers
+-c_due(a) cilist *a;
+-#else
+-c_due(cilist *a)
+-#endif
+-{
+-	if(!f__init) f_init();
+-	f__sequential=f__formatted=f__recpos=0;
+-	f__external=1;
+-	f__curunit = &f__units[a->ciunit];
+-	if(a->ciunit>=MXUNIT || a->ciunit<0)
+-		err(a->cierr,101,"startio");
+-	f__elist=a;
+-	if(f__curunit->ufd==NULL && fk_open(DIR,UNF,a->ciunit) ) err(a->cierr,104,"due");
+-	f__cf=f__curunit->ufd;
+-	if(f__curunit->ufmt) err(a->cierr,102,"cdue")
+-	if(!f__curunit->useek) err(a->cierr,104,"cdue")
+-	if(f__curunit->ufd==NULL) err(a->cierr,114,"cdue")
+-	if(a->cirec <= 0)
+-		err(a->cierr,130,"due")
+-	fseek(f__cf,(long)(a->cirec-1)*f__curunit->url,SEEK_SET);
+-	f__curunit->uend = 0;
+-	return(0);
+-}
+-#ifdef KR_headers
+-integer s_rdue(a) cilist *a;
+-#else
+-integer s_rdue(cilist *a)
+-#endif
+-{
+-	int n;
+-	f__reading=1;
+-	if(n=c_due(a)) return(n);
+-	if(f__curunit->uwrt && f__nowreading(f__curunit))
+-		err(a->cierr,errno,"read start");
+-	return(0);
+-}
+-#ifdef KR_headers
+-integer s_wdue(a) cilist *a;
+-#else
+-integer s_wdue(cilist *a)
+-#endif
+-{
+-	int n;
+-	f__reading=0;
+-	if(n=c_due(a)) return(n);
+-	if(f__curunit->uwrt != 1 && f__nowwriting(f__curunit))
+-		err(a->cierr,errno,"write start");
+-	return(0);
+-}
+-integer e_rdue(Void)
+-{
+-	if(f__curunit->url==1 || f__recpos==f__curunit->url)
+-		return(0);
+-	fseek(f__cf,(long)(f__curunit->url-f__recpos),SEEK_CUR);
+-	if(ftell(f__cf)%f__curunit->url)
+-		err(f__elist->cierr,200,"syserr");
+-	return(0);
+-}
+-integer e_wdue(Void)
+-{
+-#ifdef ALWAYS_FLUSH
+-	if (fflush(f__cf))
+-		err(f__elist->cierr,errno,"write end");
+-#endif
+-	return(e_rdue());
+-}
+-#ifdef __cplusplus
+-}
+-#endif
+//GO.SYSIN DD libI77/due.c
+echo libI77/endfile.c 1>&2
+sed >libI77/endfile.c <<'//GO.SYSIN DD libI77/endfile.c' 's/^-//'
+-#include "f2c.h"
+-#include "fio.h"
+-
+-/* Compile this with -DNO_TRUNCATE if unistd.h does not exist or */
+-/* if it does not define int truncate(const char *name, off_t). */
+-
+-#ifdef MSDOS
+-#undef NO_TRUNCATE
+-#define NO_TRUNCATE
+-#endif
+-
+-#ifndef NO_TRUNCATE
+-#include "unistd.h"
+-#endif
+-
+-#ifdef KR_headers
+-extern char *strcpy();
+-extern FILE *tmpfile();
+-#else
+-#undef abs
+-#undef min
+-#undef max
+-#include "stdlib.h"
+-#include "string.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-#endif
+-
+-extern char *f__r_mode[], *f__w_mode[];
+-
+-#ifdef KR_headers
+-integer f_end(a) alist *a;
+-#else
+-integer f_end(alist *a)
+-#endif
+-{
+-	unit *b;
+-	FILE *tf;
+-
+-	if(a->aunit>=MXUNIT || a->aunit<0) err(a->aerr,101,"endfile");
+-	b = &f__units[a->aunit];
+-	if(b->ufd==NULL) {
+-		char nbuf[10];
+-		sprintf(nbuf,"fort.%ld",(long)a->aunit);
+-		if (tf = fopen(nbuf, f__w_mode[0]))
+-			fclose(tf);
+-		return(0);
+-		}
+-	b->uend=1;
+-	return(b->useek ? t_runc(a) : 0);
+-}
+-
+-#ifdef NO_TRUNCATE
+- static int
+-#ifdef KR_headers
+-copy(from, len, to) FILE *from, *to; register long len;
+-#else
+-copy(FILE *from, register long len, FILE *to)
+-#endif
+-{
+-	int len1;
+-	char buf[BUFSIZ];
+-
+-	while(fread(buf, len1 = len > BUFSIZ ? BUFSIZ : (int)len, 1, from)) {
+-		if (!fwrite(buf, len1, 1, to))
+-			return 1;
+-		if ((len -= len1) <= 0)
+-			break;
+-		}
+-	return 0;
+-	}
+-#endif /* NO_TRUNCATE */
+-
+- int
+-#ifdef KR_headers
+-t_runc(a) alist *a;
+-#else
+-t_runc(alist *a)
+-#endif
+-{
+-	long loc, len;
+-	unit *b;
+-	int rc;
+-	FILE *bf;
+-#ifdef NO_TRUNCATE
+-	FILE *tf;
+-#endif
+-
+-	b = &f__units[a->aunit];
+-	if(b->url)
+-		return(0);	/*don't truncate direct files*/
+-	loc=ftell(bf = b->ufd);
+-	fseek(bf,0L,SEEK_END);
+-	len=ftell(bf);
+-	if (loc >= len || b->useek == 0)
+-		return(0);
+-#ifdef NO_TRUNCATE
+-	if (b->ufnm == NULL)
+-		return 0;
+-	rc = 0;
+-	fclose(b->ufd);
+-	if (!loc) {
+-		if (!(bf = fopen(b->ufnm, f__w_mode[b->ufmt])))
+-			rc = 1;
+-		if (b->uwrt)
+-			b->uwrt = 1;
+-		goto done;
+-		}
+-	if (!(bf = fopen(b->ufnm, f__r_mode[0]))
+-	 || !(tf = tmpfile())) {
+-#ifdef NON_UNIX_STDIO
+- bad:
+-#endif
+-		rc = 1;
+-		goto done;
+-		}
+-	if (copy(bf, loc, tf)) {
+- bad1:
+-		rc = 1;
+-		goto done1;
+-		}
+-	if (!(bf = freopen(b->ufnm, f__w_mode[0], bf)))
+-		goto bad1;
+-	rewind(tf);
+-	if (copy(tf, loc, bf))
+-		goto bad1;
+-	b->uwrt = 1;
+-	b->urw = 2;
+-#ifdef NON_UNIX_STDIO
+-	if (b->ufmt) {
+-		fclose(bf);
+-		if (!(bf = fopen(b->ufnm, f__w_mode[3])))
+-			goto bad;
+-		fseek(bf,0L,SEEK_END);
+-		b->urw = 3;
+-		}
+-#endif
+-done1:
+-	fclose(tf);
+-done:
+-	f__cf = b->ufd = bf;
+-#else /* NO_TRUNCATE */
+-	if (b->urw & 2)
+-		fflush(b->ufd); /* necessary on some Linux systems */
+-	rc = ftruncate(fileno(b->ufd), loc);
+-#endif /* NO_TRUNCATE */
+-	if (rc)
+-		err(a->aerr,111,"endfile");
+-	return 0;
+-	}
+-#ifdef __cplusplus
+-}
+-#endif
+//GO.SYSIN DD libI77/endfile.c
+echo libI77/err.c 1>&2
+sed >libI77/err.c <<'//GO.SYSIN DD libI77/err.c' 's/^-//'
+-#ifndef NON_UNIX_STDIO
+-#define _INCLUDE_POSIX_SOURCE	/* for HP-UX */
+-#define _INCLUDE_XOPEN_SOURCE	/* for HP-UX */
+-#include "sys/types.h"
+-#include "sys/stat.h"
+-#endif
+-#include "f2c.h"
+-#ifdef KR_headers
+-extern char *malloc();
+-#else
+-#undef abs
+-#undef min
+-#undef max
+-#include "stdlib.h"
+-#endif
+-#include "fio.h"
+-#include "fmt.h"	/* for struct syl */
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+-/*global definitions*/
+-unit f__units[MXUNIT];	/*unit table*/
+-flag f__init;	/*0 on entry, 1 after initializations*/
+-cilist *f__elist;	/*active external io list*/
+-icilist *f__svic;	/*active internal io list*/
+-flag f__reading;	/*1 if reading, 0 if writing*/
+-flag f__cplus,f__cblank;
+-char *f__fmtbuf;
+-flag f__external;	/*1 if external io, 0 if internal */
+-#ifdef KR_headers
+-int (*f__doed)(),(*f__doned)();
+-int (*f__doend)(),(*f__donewrec)(),(*f__dorevert)();
+-int (*f__getn)();	/* for formatted input */
+-void (*f__putn)();	/* for formatted output */
+-#else
+-int (*f__getn)(void);	/* for formatted input */
+-void (*f__putn)(int);	/* for formatted output */
+-int (*f__doed)(struct syl*, char*, ftnlen),(*f__doned)(struct syl*);
+-int (*f__dorevert)(void),(*f__donewrec)(void),(*f__doend)(void);
+-#endif
+-flag f__sequential;	/*1 if sequential io, 0 if direct*/
+-flag f__formatted;	/*1 if formatted io, 0 if unformatted*/
+-FILE *f__cf;	/*current file*/
+-unit *f__curunit;	/*current unit*/
+-int f__recpos;	/*place in current record*/
+-int f__cursor, f__hiwater, f__scale;
+-char *f__icptr;
+-
+-/*error messages*/
+-char *F_err[] =
+-{
+-	"error in format",				/* 100 */
+-	"illegal unit number",				/* 101 */
+-	"formatted io not allowed",			/* 102 */
+-	"unformatted io not allowed",			/* 103 */
+-	"direct io not allowed",			/* 104 */
+-	"sequential io not allowed",			/* 105 */
+-	"can't backspace file",				/* 106 */
+-	"null file name",				/* 107 */
+-	"can't stat file",				/* 108 */
+-	"unit not connected",				/* 109 */
+-	"off end of record",				/* 110 */
+-	"truncation failed in endfile",			/* 111 */
+-	"incomprehensible list input",			/* 112 */
+-	"out of free space",				/* 113 */
+-	"unit not connected",				/* 114 */
+-	"read unexpected character",			/* 115 */
+-	"bad logical input field",			/* 116 */
+-	"bad variable type",				/* 117 */
+-	"bad namelist name",				/* 118 */
+-	"variable not in namelist",			/* 119 */
+-	"no end record",				/* 120 */
+-	"variable count incorrect",			/* 121 */
+-	"subscript for scalar variable",		/* 122 */
+-	"invalid array section",			/* 123 */
+-	"substring out of bounds",			/* 124 */
+-	"subscript out of bounds",			/* 125 */
+-	"can't read file",				/* 126 */
+-	"can't write file",				/* 127 */
+-	"'new' file exists",				/* 128 */
+-	"can't append to file",				/* 129 */
+-	"non-positive record number",			/* 130 */
+-	"nmLbuf overflow"				/* 131 */
+-};
+-#define MAXERR (sizeof(F_err)/sizeof(char *)+100)
+-
+- int
+-#ifdef KR_headers
+-f__canseek(f) FILE *f; /*SYSDEP*/
+-#else
+-f__canseek(FILE *f) /*SYSDEP*/
+-#endif
+-{
+-#ifdef NON_UNIX_STDIO
+-	return !isatty(fileno(f));
+-#else
+-	struct stat x;
+-
+-	if (fstat(fileno(f),&x) < 0)
+-		return(0);
+-#ifdef S_IFMT
+-	switch(x.st_mode & S_IFMT) {
+-	case S_IFDIR:
+-	case S_IFREG:
+-		if(x.st_nlink > 0)	/* !pipe */
+-			return(1);
+-		else
+-			return(0);
+-	case S_IFCHR:
+-		if(isatty(fileno(f)))
+-			return(0);
+-		return(1);
+-#ifdef S_IFBLK
+-	case S_IFBLK:
+-		return(1);
+-#endif
+-	}
+-#else
+-#ifdef S_ISDIR
+-	/* POSIX version */
+-	if (S_ISREG(x.st_mode) || S_ISDIR(x.st_mode)) {
+-		if(x.st_nlink > 0)	/* !pipe */
+-			return(1);
+-		else
+-			return(0);
+-		}
+-	if (S_ISCHR(x.st_mode)) {
+-		if(isatty(fileno(f)))
+-			return(0);
+-		return(1);
+-		}
+-	if (S_ISBLK(x.st_mode))
+-		return(1);
+-#else
+-	Help! How does fstat work on this system?
+-#endif
+-#endif
+-	return(0);	/* who knows what it is? */
+-#endif
+-}
+-
+- void
+-#ifdef KR_headers
+-f__fatal(n,s) char *s;
+-#else
+-f__fatal(int n, char *s)
+-#endif
+-{
+-	if(n<100 && n>=0) perror(s); /*SYSDEP*/
+-	else if(n >= (int)MAXERR || n < -1)
+-	{	fprintf(stderr,"%s: illegal error number %d\n",s,n);
+-	}
+-	else if(n == -1) fprintf(stderr,"%s: end of file\n",s);
+-	else
+-		fprintf(stderr,"%s: %s\n",s,F_err[n-100]);
+-	if (f__curunit) {
+-		fprintf(stderr,"apparent state: unit %d ",
+-			(int)(f__curunit-f__units));
+-		fprintf(stderr, f__curunit->ufnm ? "named %s\n" : "(unnamed)\n",
+-			f__curunit->ufnm);
+-		}
+-	else
+-		fprintf(stderr,"apparent state: internal I/O\n");
+-	if (f__fmtbuf)
+-		fprintf(stderr,"last format: %s\n",f__fmtbuf);
+-	fprintf(stderr,"lately %s %s %s %s",f__reading?"reading":"writing",
+-		f__sequential?"sequential":"direct",f__formatted?"formatted":"unformatted",
+-		f__external?"external":"internal");
+-	sig_die(" IO", 1);
+-}
+-/*initialization routine*/
+- VOID
+-f_init(Void)
+-{	unit *p;
+-
+-	f__init=1;
+-	p= &f__units[0];
+-	p->ufd=stderr;
+-	p->useek=f__canseek(stderr);
+-	p->ufmt=1;
+-	p->uwrt=1;
+-	p = &f__units[5];
+-	p->ufd=stdin;
+-	p->useek=f__canseek(stdin);
+-	p->ufmt=1;
+-	p->uwrt=0;
+-	p= &f__units[6];
+-	p->ufd=stdout;
+-	p->useek=f__canseek(stdout);
+-	p->ufmt=1;
+-	p->uwrt=1;
+-}
+-
+- int
+-#ifdef KR_headers
+-f__nowreading(x) unit *x;
+-#else
+-f__nowreading(unit *x)
+-#endif
+-{
+-	long loc;
+-	int ufmt, urw;
+-	extern char *f__r_mode[], *f__w_mode[];
+-
+-	if (x->urw & 1)
+-		goto done;
+-	if (!x->ufnm)
+-		goto cantread;
+-	ufmt = x->url ? 0 : x->ufmt;
+-	loc = ftell(x->ufd);
+-	urw = 3;
+-	if (!freopen(x->ufnm, f__w_mode[ufmt|2], x->ufd)) {
+-		urw = 1;
+-		if(!freopen(x->ufnm, f__r_mode[ufmt], x->ufd)) {
+- cantread:
+-			errno = 126;
+-			return 1;
+-			}
+-		}
+-	fseek(x->ufd,loc,SEEK_SET);
+-	x->urw = urw;
+- done:
+-	x->uwrt = 0;
+-	return 0;
+-}
+-
+- int
+-#ifdef KR_headers
+-f__nowwriting(x) unit *x;
+-#else
+-f__nowwriting(unit *x)
+-#endif
+-{
+-	long loc;
+-	int ufmt;
+-	extern char *f__w_mode[];
+-
+-	if (x->urw & 2)
+-		goto done;
+-	if (!x->ufnm)
+-		goto cantwrite;
+-	ufmt = x->url ? 0 : x->ufmt;
+-	if (x->uwrt == 3) { /* just did write, rewind */
+-		if (!(f__cf = x->ufd =
+-				freopen(x->ufnm,f__w_mode[ufmt],x->ufd)))
+-			goto cantwrite;
+-		x->urw = 2;
+-		}
+-	else {
+-		loc=ftell(x->ufd);
+-		if (!(f__cf = x->ufd =
+-			freopen(x->ufnm, f__w_mode[ufmt | 2], x->ufd)))
+-			{
+-			x->ufd = NULL;
+- cantwrite:
+-			errno = 127;
+-			return(1);
+-			}
+-		x->urw = 3;
+-		fseek(x->ufd,loc,SEEK_SET);
+-		}
+- done:
+-	x->uwrt = 1;
+-	return 0;
+-}
+-
+- int
+-#ifdef KR_headers
+-err__fl(f, m, s) int f, m; char *s;
+-#else
+-err__fl(int f, int m, char *s)
+-#endif
+-{
+-	if (!f)
+-		f__fatal(m, s);
+-	if (f__doend)
+-		(*f__doend)();
+-	return errno = m;
+-	}
+-#ifdef __cplusplus
+-}
+-#endif
+//GO.SYSIN DD libI77/err.c
+echo libI77/f2ch.add 1>&2
+sed >libI77/f2ch.add <<'//GO.SYSIN DD libI77/f2ch.add' 's/^-//'
+-/* If you are using a C++ compiler, append the following to f2c.h
+-   for compiling libF77 and libI77. */
+-
+-#ifdef __cplusplus
+-extern "C" {
+-extern int abort_(void);
+-extern double c_abs(complex *);
+-extern void c_cos(complex *, complex *);
+-extern void c_div(complex *, complex *, complex *);
+-extern void c_exp(complex *, complex *);
+-extern void c_log(complex *, complex *);
+-extern void c_sin(complex *, complex *);
+-extern void c_sqrt(complex *, complex *);
+-extern double d_abs(double *);
+-extern double d_acos(double *);
+-extern double d_asin(double *);
+-extern double d_atan(double *);
+-extern double d_atn2(double *, double *);
+-extern void d_cnjg(doublecomplex *, doublecomplex *);
+-extern double d_cos(double *);
+-extern double d_cosh(double *);
+-extern double d_dim(double *, double *);
+-extern double d_exp(double *);
+-extern double d_imag(doublecomplex *);
+-extern double d_int(double *);
+-extern double d_lg10(double *);
+-extern double d_log(double *);
+-extern double d_mod(double *, double *);
+-extern double d_nint(double *);
+-extern double d_prod(float *, float *);
+-extern double d_sign(double *, double *);
+-extern double d_sin(double *);
+-extern double d_sinh(double *);
+-extern double d_sqrt(double *);
+-extern double d_tan(double *);
+-extern double d_tanh(double *);
+-extern double derf_(double *);
+-extern double derfc_(double *);
+-extern integer do_fio(ftnint *, char *, ftnlen);
+-extern integer do_lio(ftnint *, ftnint *, char *, ftnlen);
+-extern integer do_uio(ftnint *, char *, ftnlen);
+-extern integer e_rdfe(void);
+-extern integer e_rdue(void);
+-extern integer e_rsfe(void);
+-extern integer e_rsfi(void);
+-extern integer e_rsle(void);
+-extern integer e_rsli(void);
+-extern integer e_rsue(void);
+-extern integer e_wdfe(void);
+-extern integer e_wdue(void);
+-extern integer e_wsfe(void);
+-extern integer e_wsfi(void);
+-extern integer e_wsle(void);
+-extern integer e_wsli(void);
+-extern integer e_wsue(void);
+-extern int ef1asc_(ftnint *, ftnlen *, ftnint *, ftnlen *);
+-extern integer ef1cmc_(ftnint *, ftnlen *, ftnint *, ftnlen *);
+-extern double erf(double);
+-extern double erf_(float *);
+-extern double erfc(double);
+-extern double erfc_(float *);
+-extern integer f_back(alist *);
+-extern integer f_clos(cllist *);
+-extern integer f_end(alist *);
+-extern void f_exit(void);
+-extern integer f_inqu(inlist *);
+-extern integer f_open(olist *);
+-extern integer f_rew(alist *);
+-extern int flush_(void);
+-extern void getarg_(integer *, char *, ftnlen);
+-extern void getenv_(char *, char *, ftnlen, ftnlen);
+-extern short h_abs(short *);
+-extern short h_dim(short *, short *);
+-extern short h_dnnt(double *);
+-extern short h_indx(char *, char *, ftnlen, ftnlen);
+-extern short h_len(char *, ftnlen);
+-extern short h_mod(short *, short *);
+-extern short h_nint(float *);
+-extern short h_sign(short *, short *);
+-extern short hl_ge(char *, char *, ftnlen, ftnlen);
+-extern short hl_gt(char *, char *, ftnlen, ftnlen);
+-extern short hl_le(char *, char *, ftnlen, ftnlen);
+-extern short hl_lt(char *, char *, ftnlen, ftnlen);
+-extern integer i_abs(integer *);
+-extern integer i_dim(integer *, integer *);
+-extern integer i_dnnt(double *);
+-extern integer i_indx(char *, char *, ftnlen, ftnlen);
+-extern integer i_len(char *, ftnlen);
+-extern integer i_mod(integer *, integer *);
+-extern integer i_nint(float *);
+-extern integer i_sign(integer *, integer *);
+-extern integer iargc_(void);
+-extern ftnlen l_ge(char *, char *, ftnlen, ftnlen);
+-extern ftnlen l_gt(char *, char *, ftnlen, ftnlen);
+-extern ftnlen l_le(char *, char *, ftnlen, ftnlen);
+-extern ftnlen l_lt(char *, char *, ftnlen, ftnlen);
+-extern void pow_ci(complex *, complex *, integer *);
+-extern double pow_dd(double *, double *);
+-extern double pow_di(double *, integer *);
+-extern short pow_hh(short *, shortint *);
+-extern integer pow_ii(integer *, integer *);
+-extern double pow_ri(float *, integer *);
+-extern void pow_zi(doublecomplex *, doublecomplex *, integer *);
+-extern void pow_zz(doublecomplex *, doublecomplex *, doublecomplex *);
+-extern double r_abs(float *);
+-extern double r_acos(float *);
+-extern double r_asin(float *);
+-extern double r_atan(float *);
+-extern double r_atn2(float *, float *);
+-extern void r_cnjg(complex *, complex *);
+-extern double r_cos(float *);
+-extern double r_cosh(float *);
+-extern double r_dim(float *, float *);
+-extern double r_exp(float *);
+-extern double r_imag(complex *);
+-extern double r_int(float *);
+-extern double r_lg10(float *);
+-extern double r_log(float *);
+-extern double r_mod(float *, float *);
+-extern double r_nint(float *);
+-extern double r_sign(float *, float *);
+-extern double r_sin(float *);
+-extern double r_sinh(float *);
+-extern double r_sqrt(float *);
+-extern double r_tan(float *);
+-extern double r_tanh(float *);
+-extern void s_cat(char *, char **, integer *, integer *, ftnlen);
+-extern integer s_cmp(char *, char *, ftnlen, ftnlen);
+-extern void s_copy(char *, char *, ftnlen, ftnlen);
+-extern int s_paus(char *, ftnlen);
+-extern integer s_rdfe(cilist *);
+-extern integer s_rdue(cilist *);
+-extern integer s_rnge(char *, integer, char *, integer);
+-extern integer s_rsfe(cilist *);
+-extern integer s_rsfi(icilist *);
+-extern integer s_rsle(cilist *);
+-extern integer s_rsli(icilist *);
+-extern integer s_rsne(cilist *);
+-extern integer s_rsni(icilist *);
+-extern integer s_rsue(cilist *);
+-extern int s_stop(char *, ftnlen);
+-extern integer s_wdfe(cilist *);
+-extern integer s_wdue(cilist *);
+-extern integer s_wsfe(cilist *);
+-extern integer s_wsfi(icilist *);
+-extern integer s_wsle(cilist *);
+-extern integer s_wsli(icilist *);
+-extern integer s_wsne(cilist *);
+-extern integer s_wsni(icilist *);
+-extern integer s_wsue(cilist *);
+-extern void sig_die(char *, int);
+-extern integer signal_(integer *, void (*)(int));
+-extern integer system_(char *, ftnlen);
+-extern double z_abs(doublecomplex *);
+-extern void z_cos(doublecomplex *, doublecomplex *);
+-extern void z_div(doublecomplex *, doublecomplex *, doublecomplex *);
+-extern void z_exp(doublecomplex *, doublecomplex *);
+-extern void z_log(doublecomplex *, doublecomplex *);
+-extern void z_sin(doublecomplex *, doublecomplex *);
+-extern void z_sqrt(doublecomplex *, doublecomplex *);
+-	}
+-#endif
+//GO.SYSIN DD libI77/f2ch.add
+echo libI77/fio.h 1>&2
+sed >libI77/fio.h <<'//GO.SYSIN DD libI77/fio.h' 's/^-//'
+-#include "stdio.h"
+-#include "errno.h"
+-#ifndef NULL
+-/* ANSI C */
+-#include "stddef.h"
+-#endif
+-
+-#ifndef SEEK_SET
+-#define SEEK_SET 0
+-#define SEEK_CUR 1
+-#define SEEK_END 2
+-#endif
+-
+-#ifdef MSDOS
+-#ifndef NON_UNIX_STDIO
+-#define NON_UNIX_STDIO
+-#endif
+-#endif
+-
+-#ifdef UIOLEN_int
+-typedef int uiolen;
+-#else
+-typedef long uiolen;
+-#endif
+-
+-/*units*/
+-typedef struct
+-{	FILE *ufd;	/*0=unconnected*/
+-	char *ufnm;
+-#ifndef MSDOS
+-	long uinode;
+-	int udev;
+-#endif
+-	int url;	/*0=sequential*/
+-	flag useek;	/*true=can backspace, use dir, ...*/
+-	flag ufmt;
+-	flag urw;	/* (1 for can read) | (2 for can write) */
+-	flag ublnk;
+-	flag uend;
+-	flag uwrt;	/*last io was write*/
+-	flag uscrtch;
+-} unit;
+-
+-extern flag f__init;
+-extern cilist *f__elist;	/*active external io list*/
+-extern flag f__reading,f__external,f__sequential,f__formatted;
+-#undef Void
+-#ifdef KR_headers
+-#define Void /*void*/
+-extern int (*f__getn)();	/* for formatted input */
+-extern void (*f__putn)();	/* for formatted output */
+-extern void x_putc();
+-extern long f__inode();
+-extern VOID sig_die();
+-extern int (*f__donewrec)(), t_putc(), x_wSL();
+-extern int c_sfe(), err__fl(), xrd_SL(), f__putbuf();
+-#else
+-#define Void void
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-extern int (*f__getn)(void);	/* for formatted input */
+-extern void (*f__putn)(int);	/* for formatted output */
+-extern void x_putc(int);
+-extern long f__inode(char*,int*);
+-extern void sig_die(char*,int);
+-extern void f__fatal(int,char*);
+-extern int t_runc(alist*);
+-extern int f__nowreading(unit*), f__nowwriting(unit*);
+-extern int fk_open(int,int,ftnint);
+-extern int en_fio(void);
+-extern void f_init(void);
+-extern int (*f__donewrec)(void), t_putc(int), x_wSL(void);
+-extern void b_char(char*,char*,ftnlen), g_char(char*,ftnlen,char*);
+-extern int c_sfe(cilist*), z_rnew(void);
+-extern int isatty(int);
+-extern int err__fl(int,int,char*);
+-extern int xrd_SL(void);
+-extern int f__putbuf(int);
+-#ifdef __cplusplus
+-	}
+-#endif
+-#endif
+-extern int (*f__doend)(Void);
+-extern FILE *f__cf;	/*current file*/
+-extern unit *f__curunit;	/*current unit*/
+-extern unit f__units[];
+-#define err(f,m,s) {if(f) errno= m; else f__fatal(m,s); return(m);}
+-#define errfl(f,m,s) return err__fl((int)f,m,s)
+-
+-/*Table sizes*/
+-#define MXUNIT 100
+-
+-extern int f__recpos;	/*position in current record*/
+-extern int f__cursor;	/* offset to move to */
+-extern int f__hiwater;	/* so TL doesn't confuse us */
+-
+-#define WRITE	1
+-#define READ	2
+-#define SEQ	3
+-#define DIR	4
+-#define FMT	5
+-#define UNF	6
+-#define EXT	7
+-#define INT	8
+-
+-#define buf_end(x) (x->_flag & _IONBF ? x->_ptr : x->_base + BUFSIZ)
+//GO.SYSIN DD libI77/fio.h
+echo libI77/fmt.c 1>&2
+sed >libI77/fmt.c <<'//GO.SYSIN DD libI77/fmt.c' 's/^-//'
+-#include "f2c.h"
+-#include "fio.h"
+-#include "fmt.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-#define skip(s) while(*s==' ') s++
+-#ifdef interdata
+-#define SYLMX 300
+-#endif
+-#ifdef pdp11
+-#define SYLMX 300
+-#endif
+-#ifdef vax
+-#define SYLMX 300
+-#endif
+-#ifndef SYLMX
+-#define SYLMX 300
+-#endif
+-#define GLITCH '\2'
+-	/* special quote character for stu */
+-extern int f__cursor,f__scale;
+-extern flag f__cblank,f__cplus;	/*blanks in I and compulsory plus*/
+-static struct syl f__syl[SYLMX];
+-int f__parenlvl,f__pc,f__revloc;
+-
+- static
+-#ifdef KR_headers
+-char *ap_end(s) char *s;
+-#else
+-char *ap_end(char *s)
+-#endif
+-{	char quote;
+-	quote= *s++;
+-	for(;*s;s++)
+-	{	if(*s!=quote) continue;
+-		if(*++s!=quote) return(s);
+-	}
+-	if(f__elist->cierr) {
+-		errno = 100;
+-		return(NULL);
+-	}
+-	f__fatal(100, "bad string");
+-	/*NOTREACHED*/ return 0;
+-}
+- static int
+-#ifdef KR_headers
+-op_gen(a,b,c,d)
+-#else
+-op_gen(int a, int b, int c, int d)
+-#endif
+-{	struct syl *p= &f__syl[f__pc];
+-	if(f__pc>=SYLMX)
+-	{	fprintf(stderr,"format too complicated:\n");
+-		sig_die(f__fmtbuf, 1);
+-	}
+-	p->op=a;
+-	p->p1=b;
+-	p->p2.i[0]=c;
+-	p->p2.i[1]=d;
+-	return(f__pc++);
+-}
+-#ifdef KR_headers
+-static char *f_list();
+-static char *gt_num(s,n,n1) char *s; int *n, n1;
+-#else
+-static char *f_list(char*);
+-static char *gt_num(char *s, int *n, int n1)
+-#endif
+-{	int m=0,f__cnt=0;
+-	char c;
+-	for(c= *s;;c = *s)
+-	{	if(c==' ')
+-		{	s++;
+-			continue;
+-		}
+-		if(c>'9' || c<'0') break;
+-		m=10*m+c-'0';
+-		f__cnt++;
+-		s++;
+-	}
+-	if(f__cnt==0) {
+-		if (!n1)
+-			s = 0;
+-		*n=n1;
+-		}
+-	else *n=m;
+-	return(s);
+-}
+-
+- static
+-#ifdef KR_headers
+-char *f_s(s,curloc) char *s;
+-#else
+-char *f_s(char *s, int curloc)
+-#endif
+-{
+-	skip(s);
+-	if(*s++!='(')
+-	{
+-		return(NULL);
+-	}
+-	if(f__parenlvl++ ==1) f__revloc=curloc;
+-	if(op_gen(RET1,curloc,0,0)<0 ||
+-		(s=f_list(s))==NULL)
+-	{
+-		return(NULL);
+-	}
+-	skip(s);
+-	return(s);
+-}
+-
+- static int
+-#ifdef KR_headers
+-ne_d(s,p) char *s,**p;
+-#else
+-ne_d(char *s, char **p)
+-#endif
+-{	int n,x,sign=0;
+-	struct syl *sp;
+-	switch(*s)
+-	{
+-	default:
+-		return(0);
+-	case ':': (void) op_gen(COLON,0,0,0); break;
+-	case '$':
+-		(void) op_gen(NONL, 0, 0, 0); break;
+-	case 'B':
+-	case 'b':
+-		if(*++s=='z' || *s == 'Z') (void) op_gen(BZ,0,0,0);
+-		else (void) op_gen(BN,0,0,0);
+-		break;
+-	case 'S':
+-	case 's':
+-		if(*(s+1)=='s' || *(s+1) == 'S')
+-		{	x=SS;
+-			s++;
+-		}
+-		else if(*(s+1)=='p' || *(s+1) == 'P')
+-		{	x=SP;
+-			s++;
+-		}
+-		else x=S;
+-		(void) op_gen(x,0,0,0);
+-		break;
+-	case '/': (void) op_gen(SLASH,0,0,0); break;
+-	case '-': sign=1;
+-	case '+':	s++;	/*OUTRAGEOUS CODING TRICK*/
+-	case '0': case '1': case '2': case '3': case '4':
+-	case '5': case '6': case '7': case '8': case '9':
+-		if (!(s=gt_num(s,&n,0))) {
+- bad:			*p = 0;
+-			return 1;
+-			}
+-		switch(*s)
+-		{
+-		default:
+-			return(0);
+-		case 'P':
+-		case 'p': if(sign) n= -n; (void) op_gen(P,n,0,0); break;
+-		case 'X':
+-		case 'x': (void) op_gen(X,n,0,0); break;
+-		case 'H':
+-		case 'h':
+-			sp = &f__syl[op_gen(H,n,0,0)];
+-			sp->p2.s = s + 1;
+-			s+=n;
+-			break;
+-		}
+-		break;
+-	case GLITCH:
+-	case '"':
+-	case '\'':
+-		sp = &f__syl[op_gen(APOS,0,0,0)];
+-		sp->p2.s = s;
+-		if((*p = ap_end(s)) == NULL)
+-			return(0);
+-		return(1);
+-	case 'T':
+-	case 't':
+-		if(*(s+1)=='l' || *(s+1) == 'L')
+-		{	x=TL;
+-			s++;
+-		}
+-		else if(*(s+1)=='r'|| *(s+1) == 'R')
+-		{	x=TR;
+-			s++;
+-		}
+-		else x=T;
+-		if (!(s=gt_num(s+1,&n,0)))
+-			goto bad;
+-		s--;
+-		(void) op_gen(x,n,0,0);
+-		break;
+-	case 'X':
+-	case 'x': (void) op_gen(X,1,0,0); break;
+-	case 'P':
+-	case 'p': (void) op_gen(P,1,0,0); break;
+-	}
+-	s++;
+-	*p=s;
+-	return(1);
+-}
+-
+- static int
+-#ifdef KR_headers
+-e_d(s,p) char *s,**p;
+-#else
+-e_d(char *s, char **p)
+-#endif
+-{	int i,im,n,w,d,e,found=0,x=0;
+-	char *sv=s;
+-	s=gt_num(s,&n,1);
+-	(void) op_gen(STACK,n,0,0);
+-	switch(*s++)
+-	{
+-	default: break;
+-	case 'E':
+-	case 'e':	x=1;
+-	case 'G':
+-	case 'g':
+-		found=1;
+-		if (!(s=gt_num(s,&w,0))) {
+- bad:
+-			*p = 0;
+-			return 1;
+-			}
+-		if(w==0) break;
+-		if(*s=='.') {
+-			if (!(s=gt_num(s+1,&d,0)))
+-				goto bad;
+-			}
+-		else d=0;
+-		if(*s!='E' && *s != 'e')
+-			(void) op_gen(x==1?E:G,w,d,0);	/* default is Ew.dE2 */
+-		else {
+-			if (!(s=gt_num(s+1,&e,0)))
+-				goto bad;
+-			(void) op_gen(x==1?EE:GE,w,d,e);
+-			}
+-		break;
+-	case 'O':
+-	case 'o':
+-		i = O;
+-		im = OM;
+-		goto finish_I;
+-	case 'Z':
+-	case 'z':
+-		i = Z;
+-		im = ZM;
+-		goto finish_I;
+-	case 'L':
+-	case 'l':
+-		found=1;
+-		if (!(s=gt_num(s,&w,0)))
+-			goto bad;
+-		if(w==0) break;
+-		(void) op_gen(L,w,0,0);
+-		break;
+-	case 'A':
+-	case 'a':
+-		found=1;
+-		skip(s);
+-		if(*s>='0' && *s<='9')
+-		{	s=gt_num(s,&w,1);
+-			if(w==0) break;
+-			(void) op_gen(AW,w,0,0);
+-			break;
+-		}
+-		(void) op_gen(A,0,0,0);
+-		break;
+-	case 'F':
+-	case 'f':
+-		if (!(s=gt_num(s,&w,0)))
+-			goto bad;
+-		found=1;
+-		if(w==0) break;
+-		if(*s=='.') {
+-			if (!(s=gt_num(s+1,&d,0)))
+-				goto bad;
+-			}
+-		else d=0;
+-		(void) op_gen(F,w,d,0);
+-		break;
+-	case 'D':
+-	case 'd':
+-		found=1;
+-		if (!(s=gt_num(s,&w,0)))
+-			goto bad;
+-		if(w==0) break;
+-		if(*s=='.') {
+-			if (!(s=gt_num(s+1,&d,0)))
+-				goto bad;
+-			}
+-		else d=0;
+-		(void) op_gen(D,w,d,0);
+-		break;
+-	case 'I':
+-	case 'i':
+-		i = I;
+-		im = IM;
+- finish_I:
+-		if (!(s=gt_num(s,&w,0)))
+-			goto bad;
+-		found=1;
+-		if(w==0) break;
+-		if(*s!='.')
+-		{	(void) op_gen(i,w,0,0);
+-			break;
+-		}
+-		if (!(s=gt_num(s+1,&d,0)))
+-			goto bad;
+-		(void) op_gen(im,w,d,0);
+-		break;
+-	}
+-	if(found==0)
+-	{	f__pc--; /*unSTACK*/
+-		*p=sv;
+-		return(0);
+-	}
+-	*p=s;
+-	return(1);
+-}
+- static
+-#ifdef KR_headers
+-char *i_tem(s) char *s;
+-#else
+-char *i_tem(char *s)
+-#endif
+-{	char *t;
+-	int n,curloc;
+-	if(*s==')') return(s);
+-	if(ne_d(s,&t)) return(t);
+-	if(e_d(s,&t)) return(t);
+-	s=gt_num(s,&n,1);
+-	if((curloc=op_gen(STACK,n,0,0))<0) return(NULL);
+-	return(f_s(s,curloc));
+-}
+-
+- static
+-#ifdef KR_headers
+-char *f_list(s) char *s;
+-#else
+-char *f_list(char *s)
+-#endif
+-{
+-	for(;*s!=0;)
+-	{	skip(s);
+-		if((s=i_tem(s))==NULL) return(NULL);
+-		skip(s);
+-		if(*s==',') s++;
+-		else if(*s==')')
+-		{	if(--f__parenlvl==0)
+-			{
+-				(void) op_gen(REVERT,f__revloc,0,0);
+-				return(++s);
+-			}
+-			(void) op_gen(GOTO,0,0,0);
+-			return(++s);
+-		}
+-	}
+-	return(NULL);
+-}
+-
+- int
+-#ifdef KR_headers
+-pars_f(s) char *s;
+-#else
+-pars_f(char *s)
+-#endif
+-{
+-	f__parenlvl=f__revloc=f__pc=0;
+-	if(f_s(s,0) == NULL)
+-	{
+-		return(-1);
+-	}
+-	return(0);
+-}
+-#define STKSZ 10
+-int f__cnt[STKSZ],f__ret[STKSZ],f__cp,f__rp;
+-flag f__workdone, f__nonl;
+-
+- static int
+-#ifdef KR_headers
+-type_f(n)
+-#else
+-type_f(int n)
+-#endif
+-{
+-	switch(n)
+-	{
+-	default:
+-		return(n);
+-	case RET1:
+-		return(RET1);
+-	case REVERT: return(REVERT);
+-	case GOTO: return(GOTO);
+-	case STACK: return(STACK);
+-	case X:
+-	case SLASH:
+-	case APOS: case H:
+-	case T: case TL: case TR:
+-		return(NED);
+-	case F:
+-	case I:
+-	case IM:
+-	case A: case AW:
+-	case O: case OM:
+-	case L:
+-	case E: case EE: case D:
+-	case G: case GE:
+-	case Z: case ZM:
+-		return(ED);
+-	}
+-}
+-#ifdef KR_headers
+-integer do_fio(number,ptr,len) ftnint *number; ftnlen len; char *ptr;
+-#else
+-integer do_fio(ftnint *number, char *ptr, ftnlen len)
+-#endif
+-{	struct syl *p;
+-	int n,i;
+-	for(i=0;i<*number;i++,ptr+=len)
+-	{
+-loop:	switch(type_f((p= &f__syl[f__pc])->op))
+-	{
+-	default:
+-		fprintf(stderr,"unknown code in do_fio: %d\n%s\n",
+-			p->op,f__fmtbuf);
+-		err(f__elist->cierr,100,"do_fio");
+-	case NED:
+-		if((*f__doned)(p))
+-		{	f__pc++;
+-			goto loop;
+-		}
+-		f__pc++;
+-		continue;
+-	case ED:
+-		if(f__cnt[f__cp]<=0)
+-		{	f__cp--;
+-			f__pc++;
+-			goto loop;
+-		}
+-		if(ptr==NULL)
+-			return((*f__doend)());
+-		f__cnt[f__cp]--;
+-		f__workdone=1;
+-		if((n=(*f__doed)(p,ptr,len))>0)
+-			errfl(f__elist->cierr,errno,"fmt");
+-		if(n<0)
+-			err(f__elist->ciend,(EOF),"fmt");
+-		continue;
+-	case STACK:
+-		f__cnt[++f__cp]=p->p1;
+-		f__pc++;
+-		goto loop;
+-	case RET1:
+-		f__ret[++f__rp]=p->p1;
+-		f__pc++;
+-		goto loop;
+-	case GOTO:
+-		if(--f__cnt[f__cp]<=0)
+-		{	f__cp--;
+-			f__rp--;
+-			f__pc++;
+-			goto loop;
+-		}
+-		f__pc=1+f__ret[f__rp--];
+-		goto loop;
+-	case REVERT:
+-		f__rp=f__cp=0;
+-		f__pc = p->p1;
+-		if(ptr==NULL)
+-			return((*f__doend)());
+-		if(!f__workdone) return(0);
+-		if((n=(*f__dorevert)()) != 0) return(n);
+-		goto loop;
+-	case COLON:
+-		if(ptr==NULL)
+-			return((*f__doend)());
+-		f__pc++;
+-		goto loop;
+-	case NONL:
+-		f__nonl = 1;
+-		f__pc++;
+-		goto loop;
+-	case S:
+-	case SS:
+-		f__cplus=0;
+-		f__pc++;
+-		goto loop;
+-	case SP:
+-		f__cplus = 1;
+-		f__pc++;
+-		goto loop;
+-	case P:	f__scale=p->p1;
+-		f__pc++;
+-		goto loop;
+-	case BN:
+-		f__cblank=0;
+-		f__pc++;
+-		goto loop;
+-	case BZ:
+-		f__cblank=1;
+-		f__pc++;
+-		goto loop;
+-	}
+-	}
+-	return(0);
+-}
+-
+- int
+-en_fio(Void)
+-{	ftnint one=1;
+-	return(do_fio(&one,(char *)NULL,(ftnint)0));
+-}
+-
+- VOID
+-fmt_bg(Void)
+-{
+-	f__workdone=f__cp=f__rp=f__pc=f__cursor=0;
+-	f__cnt[0]=f__ret[0]=0;
+-}
+-#ifdef __cplusplus
+-}
+-#endif
+//GO.SYSIN DD libI77/fmt.c
+echo libI77/fmt.h 1>&2
+sed >libI77/fmt.h <<'//GO.SYSIN DD libI77/fmt.h' 's/^-//'
+-struct syl
+-{	int op;
+-	int p1;
+-	union { int i[2]; char *s;} p2;
+-	};
+-#define RET1 1
+-#define REVERT 2
+-#define GOTO 3
+-#define X 4
+-#define SLASH 5
+-#define STACK 6
+-#define I 7
+-#define ED 8
+-#define NED 9
+-#define IM 10
+-#define APOS 11
+-#define H 12
+-#define TL 13
+-#define TR 14
+-#define T 15
+-#define COLON 16
+-#define S 17
+-#define SP 18
+-#define SS 19
+-#define P 20
+-#define BN 21
+-#define BZ 22
+-#define F 23
+-#define E 24
+-#define EE 25
+-#define D 26
+-#define G 27
+-#define GE 28
+-#define L 29
+-#define A 30
+-#define AW 31
+-#define O 32
+-#define NONL 33
+-#define OM 34
+-#define Z 35
+-#define ZM 36
+-extern int f__pc,f__parenlvl,f__revloc;
+-typedef union
+-{	real pf;
+-	doublereal pd;
+-} ufloat;
+-typedef union
+-{	short is;
+-#ifndef KR_headers
+-	signed
+-#endif
+-		char ic;
+-	integer il;
+-#ifdef Allow_TYQUAD
+-	longint ili;
+-#endif
+-} Uint;
+-#ifdef KR_headers
+-extern int (*f__doed)(),(*f__doned)();
+-extern int (*f__dorevert)();
+-extern int rd_ed(),rd_ned();
+-extern int w_ed(),w_ned();
+-#else
+-#ifdef __cplusplus
+-extern "C" {
+-#define Cextern extern "C"
+-#else
+-#define Cextern extern
+-#endif
+-extern int (*f__doed)(struct syl*, char*, ftnlen),(*f__doned)(struct syl*);
+-extern int (*f__dorevert)(void);
+-extern void fmt_bg(void);
+-extern int pars_f(char*);
+-extern int rd_ed(struct syl*, char*, ftnlen),rd_ned(struct syl*);
+-extern int w_ed(struct syl*, char*, ftnlen),w_ned(struct syl*);
+-extern int wrt_E(ufloat*, int, int, int, ftnlen);
+-extern int wrt_F(ufloat*, int, int, ftnlen);
+-extern int wrt_L(Uint*, int, ftnlen);
+-#ifdef __cplusplus
+-	}
+-#endif
+-#endif
+-extern flag f__cblank,f__cplus,f__workdone, f__nonl;
+-extern char *f__fmtbuf;
+-extern int f__scale;
+-#define GET(x) if((x=(*f__getn)())<0) return(x)
+-#define VAL(x) (x!='\n'?x:' ')
+-#define PUT(x) (*f__putn)(x)
+-extern int f__cursor;
+-
+-#undef TYQUAD
+-#ifndef Allow_TYQUAD
+-#undef longint
+-#define longint long
+-#else
+-#define TYQUAD 14
+-#endif
+-
+-#ifdef KR_headers
+-extern char *f__icvt();
+-#else
+-Cextern char *f__icvt(longint, int*, int*, int);
+-#endif
+//GO.SYSIN DD libI77/fmt.h
+echo libI77/fmtlib.c 1>&2
+sed >libI77/fmtlib.c <<'//GO.SYSIN DD libI77/fmtlib.c' 's/^-//'
+-/*	@(#)fmtlib.c	1.2	*/
+-#define MAXINTLENGTH 23
+-
+-#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-#ifndef Allow_TYQUAD
+-#undef longint
+-#define longint long
+-#undef ulongint
+-#define ulongint unsigned long
+-#endif
+-
+-#ifdef KR_headers
+-char *f__icvt(value,ndigit,sign, base) longint value; int *ndigit,*sign;
+- register int base;
+-#else
+-char *f__icvt(longint value, int *ndigit, int *sign, int base)
+-#endif
+-{
+-	static char buf[MAXINTLENGTH+1];
+-	register int i;
+-	ulongint uvalue;
+-
+-	if(value > 0) {
+-		uvalue = value;
+-		*sign = 0;
+-		}
+-	else if (value < 0) {
+-		uvalue = -value;
+-		*sign = 1;
+-		}
+-	else {
+-		*sign = 0;
+-		*ndigit = 1;
+-		buf[MAXINTLENGTH-1] = '0';
+-		return &buf[MAXINTLENGTH-1];
+-		}
+-	i = MAXINTLENGTH;
+-	do {
+-		buf[--i] = (uvalue%base) + '0';
+-		uvalue /= base;
+-		}
+-		while(uvalue > 0);
+-	*ndigit = MAXINTLENGTH - i;
+-	return &buf[i];
+-	}
+-#ifdef __cplusplus
+-}
+-#endif
+//GO.SYSIN DD libI77/fmtlib.c
+echo libI77/fp.h 1>&2
+sed >libI77/fp.h <<'//GO.SYSIN DD libI77/fp.h' 's/^-//'
+-#define FMAX 40
+-#define EXPMAXDIGS 8
+-#define EXPMAX 99999999
+-/* FMAX = max number of nonzero digits passed to atof() */
+-/* EXPMAX = 10^EXPMAXDIGS - 1 = largest allowed exponent absolute value */
+-
+-#ifdef V10 /* Research Tenth-Edition Unix */
+-#include "local.h"
+-#endif
+-
+-/* MAXFRACDIGS and MAXINTDIGS are for wrt_F -- bounds (not necessarily
+-   tight) on the maximum number of digits to the right and left of
+- * the decimal point.
+- */
+-
+-#ifdef VAX
+-#define MAXFRACDIGS 56
+-#define MAXINTDIGS 38
+-#else
+-#ifdef CRAY
+-#define MAXFRACDIGS 9880
+-#define MAXINTDIGS 9864
+-#else
+-/* values that suffice for IEEE double */
+-#define MAXFRACDIGS 344
+-#define MAXINTDIGS 308
+-#endif
+-#endif
+//GO.SYSIN DD libI77/fp.h
+echo libI77/ftell_.c 1>&2
+sed >libI77/ftell_.c <<'//GO.SYSIN DD libI77/ftell_.c' 's/^-//'
+-#include "f2c.h"
+-#include "fio.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+- static FILE *
+-#ifdef KR_headers
+-unit_chk(Unit, who) integer Unit; char *who;
+-#else
+-unit_chk(integer Unit, char *who)
+-#endif
+-{
+-	if (Unit >= MXUNIT || Unit < 0)
+-		f__fatal(101, who);
+-	return f__units[Unit].ufd;
+-	}
+-
+- integer
+-#ifdef KR_headers
+-ftell_(Unit) integer *Unit;
+-#else
+-ftell_(integer *Unit)
+-#endif
+-{
+-	FILE *f;
+-	return (f = unit_chk(*Unit, "ftell")) ? ftell(f) : -1L;
+-	}
+-
+- int
+-#ifdef KR_headers
+-fseek_(Unit, offset, whence) integer *Unit, *offset, *whence;
+-#else
+-fseek_(integer *Unit, integer *offset, integer *whence)
+-#endif
+-{
+-	FILE *f;
+-	int w = (int)*whence;
+-#ifdef SEEK_SET
+-	static int wohin[3] = { SEEK_SET, SEEK_CUR, SEEK_END };
+-#endif
+-	if (w < 0 || w > 2)
+-		w = 0;
+-#ifdef SEEK_SET
+-	w = wohin[w];
+-#endif
+-	return	!(f = unit_chk(*Unit, "fseek"))
+-		|| fseek(f, *offset, w) ? 1 : 0;
+-	}
+-#ifdef __cplusplus
+-}
+-#endif
+//GO.SYSIN DD libI77/ftell_.c
+echo libI77/iio.c 1>&2
+sed >libI77/iio.c <<'//GO.SYSIN DD libI77/iio.c' 's/^-//'
+-#include "f2c.h"
+-#include "fio.h"
+-#include "fmt.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-extern char *f__icptr;
+-char *f__icend;
+-extern icilist *f__svic;
+-int f__icnum;
+-extern int f__hiwater;
+-
+- int
+-z_getc(Void)
+-{
+-	if(f__recpos++ < f__svic->icirlen) {
+-		if(f__icptr >= f__icend) err(f__svic->iciend,(EOF),"endfile");
+-		return(*(unsigned char *)f__icptr++);
+-		}
+-	return '\n';
+-}
+-
+- void
+-#ifdef KR_headers
+-z_putc(c)
+-#else
+-z_putc(int c)
+-#endif
+-{
+-	if (f__icptr < f__icend && f__recpos++ < f__svic->icirlen)
+-		*f__icptr++ = c;
+-}
+-
+- int
+-z_rnew(Void)
+-{
+-	f__icptr = f__svic->iciunit + (++f__icnum)*f__svic->icirlen;
+-	f__recpos = 0;
+-	f__cursor = 0;
+-	f__hiwater = 0;
+-	return 1;
+-}
+-
+- static int
+-z_endp(Void)
+-{
+-	(*f__donewrec)();
+-	return 0;
+-	}
+-
+- int
+-#ifdef KR_headers
+-c_si(a) icilist *a;
+-#else
+-c_si(icilist *a)
+-#endif
+-{
+-	f__elist = (cilist *)a;
+-	f__fmtbuf=a->icifmt;
+-	f__curunit = 0;
+-	f__sequential=f__formatted=1;
+-	f__external=0;
+-	if(pars_f(f__fmtbuf)<0)
+-		err(a->icierr,100,"startint");
+-	fmt_bg();
+-	f__cblank=f__cplus=f__scale=0;
+-	f__svic=a;
+-	f__icnum=f__recpos=0;
+-	f__cursor = 0;
+-	f__hiwater = 0;
+-	f__icptr = a->iciunit;
+-	f__icend = f__icptr + a->icirlen*a->icirnum;
+-	f__cf = 0;
+-	return(0);
+-}
+-
+- int
+-iw_rev(Void)
+-{
+-	if(f__workdone)
+-		z_endp();
+-	f__hiwater = f__recpos = f__cursor = 0;
+-	return(f__workdone=0);
+-	}
+-
+-#ifdef KR_headers
+-integer s_rsfi(a) icilist *a;
+-#else
+-integer s_rsfi(icilist *a)
+-#endif
+-{	int n;
+-	if(n=c_si(a)) return(n);
+-	f__reading=1;
+-	f__doed=rd_ed;
+-	f__doned=rd_ned;
+-	f__getn=z_getc;
+-	f__dorevert = z_endp;
+-	f__donewrec = z_rnew;
+-	f__doend = z_endp;
+-	return(0);
+-}
+-
+- int
+-z_wnew(Void)
+-{
+-	if (f__recpos < f__hiwater) {
+-		f__icptr += f__hiwater - f__recpos;
+-		f__recpos = f__hiwater;
+-		}
+-	while(f__recpos++ < f__svic->icirlen)
+-		*f__icptr++ = ' ';
+-	f__recpos = 0;
+-	f__cursor = 0;
+-	f__hiwater = 0;
+-	f__icnum++;
+-	return 1;
+-}
+-#ifdef KR_headers
+-integer s_wsfi(a) icilist *a;
+-#else
+-integer s_wsfi(icilist *a)
+-#endif
+-{	int n;
+-	if(n=c_si(a)) return(n);
+-	f__reading=0;
+-	f__doed=w_ed;
+-	f__doned=w_ned;
+-	f__putn=z_putc;
+-	f__dorevert = iw_rev;
+-	f__donewrec = z_wnew;
+-	f__doend = z_endp;
+-	return(0);
+-}
+-integer e_rsfi(Void)
+-{	int n = en_fio();
+-	f__fmtbuf = NULL;
+-	return(n);
+-}
+-integer e_wsfi(Void)
+-{
+-	int n;
+-	n = en_fio();
+-	f__fmtbuf = NULL;
+-	if(f__svic->icirnum != 1
+-	 && (f__icnum >  f__svic->icirnum
+-	 || (f__icnum == f__svic->icirnum && (f__recpos | f__hiwater))))
+-		err(f__svic->icierr,110,"inwrite");
+-	if (f__recpos < f__hiwater)
+-		f__recpos = f__hiwater;
+-	if (f__recpos >= f__svic->icirlen)
+-		err(f__svic->icierr,110,"recend");
+-	if (!f__recpos && f__icnum)
+-		return n;
+-	while(f__recpos++ < f__svic->icirlen)
+-		*f__icptr++ = ' ';
+-	return n;
+-}
+-#ifdef __cplusplus
+-}
+-#endif
+//GO.SYSIN DD libI77/iio.c
+echo libI77/ilnw.c 1>&2
+sed >libI77/ilnw.c <<'//GO.SYSIN DD libI77/ilnw.c' 's/^-//'
+-#include "f2c.h"
+-#include "fio.h"
+-#include "lio.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-extern char *f__icptr;
+-extern char *f__icend;
+-extern icilist *f__svic;
+-extern int f__icnum;
+-#ifdef KR_headers
+-extern void z_putc();
+-#else
+-extern void z_putc(int);
+-#endif
+-
+- static int
+-z_wSL(Void)
+-{
+-	while(f__recpos < f__svic->icirlen)
+-		z_putc(' ');
+-	return z_rnew();
+-	}
+-
+- static void
+-#ifdef KR_headers
+-c_liw(a) icilist *a;
+-#else
+-c_liw(icilist *a)
+-#endif
+-{
+-	f__reading = 0;
+-	f__external = 0;
+-	f__formatted = 1;
+-	f__putn = z_putc;
+-	L_len = a->icirlen;
+-	f__donewrec = z_wSL;
+-	f__svic = a;
+-	f__icnum = f__recpos = 0;
+-	f__cursor = 0;
+-	f__cf = 0;
+-	f__curunit = 0;
+-	f__icptr = a->iciunit;
+-	f__icend = f__icptr + a->icirlen*a->icirnum;
+-	f__elist = (cilist *)a;
+-	}
+-
+- integer
+-#ifdef KR_headers
+-s_wsni(a) icilist *a;
+-#else
+-s_wsni(icilist *a)
+-#endif
+-{
+-	cilist ca;
+-
+-	c_liw(a);
+-	ca.cifmt = a->icifmt;
+-	x_wsne(&ca);
+-	z_wSL();
+-	return 0;
+-	}
+-
+- integer
+-#ifdef KR_headers
+-s_wsli(a) icilist *a;
+-#else
+-s_wsli(icilist *a)
+-#endif
+-{
+-	f__lioproc = l_write;
+-	c_liw(a);
+-	return(0);
+-	}
+-
+-integer e_wsli(Void)
+-{
+-	z_wSL();
+-	return(0);
+-	}
+-#ifdef __cplusplus
+-}
+-#endif
+//GO.SYSIN DD libI77/ilnw.c
+echo libI77/inquire.c 1>&2
+sed >libI77/inquire.c <<'//GO.SYSIN DD libI77/inquire.c' 's/^-//'
+-#include "f2c.h"
+-#include "fio.h"
+-#include "string.h"
+-#ifdef NON_UNIX_STDIO
+-#ifndef MSDOS
+-#include "unistd.h" /* for access() */
+-#endif
+-#endif
+-#ifdef KR_headers
+-integer f_inqu(a) inlist *a;
+-#else
+-#ifdef __cplusplus
+-extern "C" integer f_inqu(inlist*);
+-#endif
+-#ifdef MSDOS
+-#undef abs
+-#undef min
+-#undef max
+-#include "io.h"
+-#endif
+-integer f_inqu(inlist *a)
+-#endif
+-{	flag byfile;
+-	int i;
+-#ifndef NON_UNIX_STDIO
+-	int n;
+-#endif
+-	unit *p;
+-	char buf[256];
+-	long x;
+-	if(a->infile!=NULL)
+-	{	byfile=1;
+-		g_char(a->infile,a->infilen,buf);
+-#ifdef NON_UNIX_STDIO
+-		x = access(buf,0) ? -1 : 0;
+-		for(i=0,p=NULL;i<MXUNIT;i++)
+-			if(f__units[i].ufd != NULL
+-			 && f__units[i].ufnm != NULL
+-			 && !strcmp(f__units[i].ufnm,buf)) {
+-				p = &f__units[i];
+-				break;
+-				}
+-#else
+-		x=f__inode(buf, &n);
+-		for(i=0,p=NULL;i<MXUNIT;i++)
+-			if(f__units[i].uinode==x
+-			&& f__units[i].ufd!=NULL
+-			&& f__units[i].udev == n) {
+-				p = &f__units[i];
+-				break;
+-				}
+-#endif
+-	}
+-	else
+-	{
+-		byfile=0;
+-		if(a->inunit<MXUNIT && a->inunit>=0)
+-		{
+-			p= &f__units[a->inunit];
+-		}
+-		else
+-		{
+-			p=NULL;
+-		}
+-	}
+-	if(a->inex!=NULL)
+-		if(byfile && x != -1 || !byfile && p!=NULL)
+-			*a->inex=1;
+-		else *a->inex=0;
+-	if(a->inopen!=NULL)
+-		if(byfile) *a->inopen=(p!=NULL);
+-		else *a->inopen=(p!=NULL && p->ufd!=NULL);
+-	if(a->innum!=NULL) *a->innum= p-f__units;
+-	if(a->innamed!=NULL)
+-		if(byfile || p!=NULL && p->ufnm!=NULL)
+-			*a->innamed=1;
+-		else	*a->innamed=0;
+-	if(a->inname!=NULL)
+-		if(byfile)
+-			b_char(buf,a->inname,a->innamlen);
+-		else if(p!=NULL && p->ufnm!=NULL)
+-			b_char(p->ufnm,a->inname,a->innamlen);
+-	if(a->inacc!=NULL && p!=NULL && p->ufd!=NULL)
+-		if(p->url)
+-			b_char("DIRECT",a->inacc,a->inacclen);
+-		else	b_char("SEQUENTIAL",a->inacc,a->inacclen);
+-	if(a->inseq!=NULL)
+-		if(p!=NULL && p->url)
+-			b_char("NO",a->inseq,a->inseqlen);
+-		else	b_char("YES",a->inseq,a->inseqlen);
+-	if(a->indir!=NULL)
+-		if(p==NULL || p->url)
+-			b_char("YES",a->indir,a->indirlen);
+-		else	b_char("NO",a->indir,a->indirlen);
+-	if(a->infmt!=NULL)
+-		if(p!=NULL && p->ufmt==0)
+-			b_char("UNFORMATTED",a->infmt,a->infmtlen);
+-		else	b_char("FORMATTED",a->infmt,a->infmtlen);
+-	if(a->inform!=NULL)
+-		if(p!=NULL && p->ufmt==0)
+-		b_char("NO",a->inform,a->informlen);
+-		else b_char("YES",a->inform,a->informlen);
+-	if(a->inunf)
+-		if(p!=NULL && p->ufmt==0)
+-			b_char("YES",a->inunf,a->inunflen);
+-		else if (p!=NULL) b_char("NO",a->inunf,a->inunflen);
+-		else b_char("UNKNOWN",a->inunf,a->inunflen);
+-	if(a->inrecl!=NULL && p!=NULL)
+-		*a->inrecl=p->url;
+-	if(a->innrec!=NULL && p!=NULL && p->url>0)
+-		*a->innrec=ftell(p->ufd)/p->url+1;
+-	if(a->inblank && p!=NULL && p->ufmt)
+-		if(p->ublnk)
+-			b_char("ZERO",a->inblank,a->inblanklen);
+-		else	b_char("NULL",a->inblank,a->inblanklen);
+-	return(0);
+-}
+//GO.SYSIN DD libI77/inquire.c
+echo libI77/i77vers.c 1>&2
+sed >libI77/i77vers.c <<'//GO.SYSIN DD libI77/i77vers.c' 's/^-//'
+- char
+-_libi77_version_f2c[] = "\n@(#) LIBI77 VERSION (f2c) pjw,dmg-mods 20010301\n";
 -
 -/*
 -2.01	$ format added
@@ -4589,2222 +7151,73 @@ sed >libI77/Version.c <<'//GO.SYSIN DD libI77/Version.c' 's/^-//'
 -/* 27 June 1999: rsne.c: fix bug in namelist input: a misplaced increment */
 -/*		 could cause wrong array elements to be assigned; e.g.,	*/
 -/*		 "&input k(5)=10*1 &end" assigned k(5) and k(15..23)	*/
-//GO.SYSIN DD libI77/Version.c
-echo libI77/backspace.c 1>&2
-sed >libI77/backspace.c <<'//GO.SYSIN DD libI77/backspace.c' 's/^-//'
--#include "f2c.h"
--#include "fio.h"
--#ifdef KR_headers
--integer f_back(a) alist *a;
--#else
--integer f_back(alist *a)
--#endif
--{	unit *b;
--	long v, w, x, y, z;
--	uiolen n;
--	FILE *f;
--
--	f__curunit = b = &f__units[a->aunit];	/* curunit for error messages */
--	if(a->aunit >= MXUNIT || a->aunit < 0)
--		err(a->aerr,101,"backspace")
--	if(b->useek==0) err(a->aerr,106,"backspace")
--	if(b->ufd == NULL) {
--		fk_open(1, 1, a->aunit);
--		return(0);
--		}
--	if(b->uend==1)
--	{	b->uend=0;
--		return(0);
--	}
--	if(b->uwrt) {
--		t_runc(a);
--		if (f__nowreading(b))
--			err(a->aerr,errno,"backspace")
--		}
--	f = b->ufd;	/* may have changed in t_runc() */
--	if(b->url>0)
--	{
--		x=ftell(f);
--		y = x % b->url;
--		if(y == 0) x--;
--		x /= b->url;
--		x *= b->url;
--		(void) fseek(f,x,SEEK_SET);
--		return(0);
--	}
--
--	if(b->ufmt==0)
--	{	fseek(f,-(long)sizeof(uiolen),SEEK_CUR);
--		fread((char *)&n,sizeof(uiolen),1,f);
--		fseek(f,-(long)n-2*sizeof(uiolen),SEEK_CUR);
--		return(0);
--	}
--	w = x = ftell(f);
--	z = 0;
-- loop:
--	while(x) {
--		x -= x < 64 ? x : 64;
--		fseek(f,x,SEEK_SET);
--		for(y = x; y < w; y++) {
--			if (getc(f) != '\n')
--				continue;
--			v = ftell(f);
--			if (v == w) {
--				if (z)
--					goto break2;
--				goto loop;
--				}
--			z = v;
--			}
--		err(a->aerr,(EOF),"backspace")
--		}
-- break2:
--	fseek(f, z, SEEK_SET);
--	return 0;
--}
-//GO.SYSIN DD libI77/backspace.c
-echo libI77/close.c 1>&2
-sed >libI77/close.c <<'//GO.SYSIN DD libI77/close.c' 's/^-//'
--#include "f2c.h"
--#include "fio.h"
--#ifdef KR_headers
--integer f_clos(a) cllist *a;
--#else
--#undef abs
--#undef min
--#undef max
--#include "stdlib.h"
--#ifdef NON_UNIX_STDIO
--#ifndef unlink
--#define unlink remove
--#endif
--#else
--#ifdef MSDOS
--#include "io.h"
--#else
--#ifdef __cplusplus
--extern "C" int unlink(const char*);
--#else
--extern int unlink(const char*);
--#endif
--#endif
--#endif
--
--integer f_clos(cllist *a)
--#endif
--{	unit *b;
--
--	if(a->cunit >= MXUNIT) return(0);
--	b= &f__units[a->cunit];
--	if(b->ufd==NULL)
--		goto done;
--	if (b->uscrtch == 1)
--		goto Delete;
--	if (!a->csta)
--		goto Keep;
--	switch(*a->csta) {
--		default:
--	 	Keep:
--		case 'k':
--		case 'K':
--			if(b->uwrt == 1)
--				t_runc((alist *)a);
--			if(b->ufnm) {
--				fclose(b->ufd);
--				free(b->ufnm);
--				}
--			break;
--		case 'd':
--		case 'D':
--		Delete:
--			fclose(b->ufd);
--			if(b->ufnm) {
--				unlink(b->ufnm); /*SYSDEP*/
--				free(b->ufnm);
--				}
--		}
--	b->ufd=NULL;
-- done:
--	b->uend=0;
--	b->ufnm=NULL;
--	return(0);
--	}
-- void
--#ifdef KR_headers
--f_exit()
--#else
--f_exit(void)
--#endif
--{	int i;
--	static cllist xx;
--	if (!xx.cerr) {
--		xx.cerr=1;
--		xx.csta=NULL;
--		for(i=0;i<MXUNIT;i++)
--		{
--			xx.cunit=i;
--			(void) f_clos(&xx);
--		}
--	}
--}
-- int
--#ifdef KR_headers
--flush_()
--#else
--flush_(void)
--#endif
--{	int i;
--	for(i=0;i<MXUNIT;i++)
--		if(f__units[i].ufd != NULL && f__units[i].uwrt)
--			fflush(f__units[i].ufd);
--return 0;
--}
-//GO.SYSIN DD libI77/close.c
-echo libI77/dfe.c 1>&2
-sed >libI77/dfe.c <<'//GO.SYSIN DD libI77/dfe.c' 's/^-//'
--#include "f2c.h"
--#include "fio.h"
--#include "fmt.h"
--
--y_rsk(Void)
--{
--	if(f__curunit->uend || f__curunit->url <= f__recpos
--		|| f__curunit->url == 1) return 0;
--	do {
--		getc(f__cf);
--	} while(++f__recpos < f__curunit->url);
--	return 0;
--}
--y_getc(Void)
--{
--	int ch;
--	if(f__curunit->uend) return(-1);
--	if((ch=getc(f__cf))!=EOF)
--	{
--		f__recpos++;
--		if(f__curunit->url>=f__recpos ||
--			f__curunit->url==1)
--			return(ch);
--		else	return(' ');
--	}
--	if(feof(f__cf))
--	{
--		f__curunit->uend=1;
--		errno=0;
--		return(-1);
--	}
--	err(f__elist->cierr,errno,"readingd");
--}
--
-- static int
--y_rev(Void)
--{
--	if (f__recpos < f__hiwater)
--		f__recpos = f__hiwater;
--	if (f__curunit->url > 1)
--		while(f__recpos < f__curunit->url)
--			(*f__putn)(' ');
--	if (f__recpos)
--		f__putbuf(0);
--	f__recpos = 0;
--	return(0);
--}
--
-- static int
--y_err(Void)
--{
--	err(f__elist->cierr, 110, "dfe");
--}
--
-- static int
--y_newrec(Void)
--{
--	y_rev();
--	f__hiwater = f__cursor = 0;
--	return(1);
--}
--
--#ifdef KR_headers
--c_dfe(a) cilist *a;
--#else
--c_dfe(cilist *a)
--#endif
--{
--	f__sequential=0;
--	f__formatted=f__external=1;
--	f__elist=a;
--	f__cursor=f__scale=f__recpos=0;
--	f__curunit = &f__units[a->ciunit];
--	if(a->ciunit>MXUNIT || a->ciunit<0)
--		err(a->cierr,101,"startchk");
--	if(f__curunit->ufd==NULL && fk_open(DIR,FMT,a->ciunit))
--		err(a->cierr,104,"dfe");
--	f__cf=f__curunit->ufd;
--	if(!f__curunit->ufmt) err(a->cierr,102,"dfe")
--	if(!f__curunit->useek) err(a->cierr,104,"dfe")
--	f__fmtbuf=a->cifmt;
--	if(a->cirec <= 0)
--		err(a->cierr,130,"dfe")
--	fseek(f__cf,(long)f__curunit->url * (a->cirec-1),SEEK_SET);
--	f__curunit->uend = 0;
--	return(0);
--}
--#ifdef KR_headers
--integer s_rdfe(a) cilist *a;
--#else
--integer s_rdfe(cilist *a)
--#endif
--{
--	int n;
--	if(!f__init) f_init();
--	f__reading=1;
--	if(n=c_dfe(a))return(n);
--	if(f__curunit->uwrt && f__nowreading(f__curunit))
--		err(a->cierr,errno,"read start");
--	f__getn = y_getc;
--	f__doed = rd_ed;
--	f__doned = rd_ned;
--	f__dorevert = f__donewrec = y_err;
--	f__doend = y_rsk;
--	if(pars_f(f__fmtbuf)<0)
--		err(a->cierr,100,"read start");
--	fmt_bg();
--	return(0);
--}
--#ifdef KR_headers
--integer s_wdfe(a) cilist *a;
--#else
--integer s_wdfe(cilist *a)
--#endif
--{
--	int n;
--	if(!f__init) f_init();
--	f__reading=0;
--	if(n=c_dfe(a)) return(n);
--	if(f__curunit->uwrt != 1 && f__nowwriting(f__curunit))
--		err(a->cierr,errno,"startwrt");
--	f__putn = x_putc;
--	f__doed = w_ed;
--	f__doned= w_ned;
--	f__dorevert = y_err;
--	f__donewrec = y_newrec;
--	f__doend = y_rev;
--	if(pars_f(f__fmtbuf)<0)
--		err(a->cierr,100,"startwrt");
--	fmt_bg();
--	return(0);
--}
--integer e_rdfe(Void)
--{
--	en_fio();
--	return 0;
--}
--integer e_wdfe(Void)
--{
--	return en_fio();
--}
-//GO.SYSIN DD libI77/dfe.c
-echo libI77/dolio.c 1>&2
-sed >libI77/dolio.c <<'//GO.SYSIN DD libI77/dolio.c' 's/^-//'
--#include "f2c.h"
--
--#ifdef __cplusplus
--extern "C" {
--#endif
--#ifdef KR_headers
--extern int (*f__lioproc)();
--
--integer do_lio(type,number,ptr,len) ftnint *number,*type; char *ptr; ftnlen len;
--#else
--extern int (*f__lioproc)(ftnint*, char*, ftnlen, ftnint);
--
--integer do_lio(ftnint *type, ftnint *number, char *ptr, ftnlen len)
--#endif
--{
--	return((*f__lioproc)(number,ptr,len,*type));
--}
--#ifdef __cplusplus
--	}
--#endif
-//GO.SYSIN DD libI77/dolio.c
-echo libI77/due.c 1>&2
-sed >libI77/due.c <<'//GO.SYSIN DD libI77/due.c' 's/^-//'
--#include "f2c.h"
--#include "fio.h"
--
--#ifdef KR_headers
--c_due(a) cilist *a;
--#else
--c_due(cilist *a)
--#endif
--{
--	if(!f__init) f_init();
--	f__sequential=f__formatted=f__recpos=0;
--	f__external=1;
--	f__curunit = &f__units[a->ciunit];
--	if(a->ciunit>=MXUNIT || a->ciunit<0)
--		err(a->cierr,101,"startio");
--	f__elist=a;
--	if(f__curunit->ufd==NULL && fk_open(DIR,UNF,a->ciunit) ) err(a->cierr,104,"due");
--	f__cf=f__curunit->ufd;
--	if(f__curunit->ufmt) err(a->cierr,102,"cdue")
--	if(!f__curunit->useek) err(a->cierr,104,"cdue")
--	if(f__curunit->ufd==NULL) err(a->cierr,114,"cdue")
--	if(a->cirec <= 0)
--		err(a->cierr,130,"due")
--	fseek(f__cf,(long)(a->cirec-1)*f__curunit->url,SEEK_SET);
--	f__curunit->uend = 0;
--	return(0);
--}
--#ifdef KR_headers
--integer s_rdue(a) cilist *a;
--#else
--integer s_rdue(cilist *a)
--#endif
--{
--	int n;
--	f__reading=1;
--	if(n=c_due(a)) return(n);
--	if(f__curunit->uwrt && f__nowreading(f__curunit))
--		err(a->cierr,errno,"read start");
--	return(0);
--}
--#ifdef KR_headers
--integer s_wdue(a) cilist *a;
--#else
--integer s_wdue(cilist *a)
--#endif
--{
--	int n;
--	f__reading=0;
--	if(n=c_due(a)) return(n);
--	if(f__curunit->uwrt != 1 && f__nowwriting(f__curunit))
--		err(a->cierr,errno,"write start");
--	return(0);
--}
--integer e_rdue(Void)
--{
--	if(f__curunit->url==1 || f__recpos==f__curunit->url)
--		return(0);
--	fseek(f__cf,(long)(f__curunit->url-f__recpos),SEEK_CUR);
--	if(ftell(f__cf)%f__curunit->url)
--		err(f__elist->cierr,200,"syserr");
--	return(0);
--}
--integer e_wdue(Void)
--{
--#ifdef ALWAYS_FLUSH
--	if (fflush(f__cf))
--		err(f__elist->cierr,errno,"write end");
--#endif
--	return(e_rdue());
--}
-//GO.SYSIN DD libI77/due.c
-echo libI77/endfile.c 1>&2
-sed >libI77/endfile.c <<'//GO.SYSIN DD libI77/endfile.c' 's/^-//'
--#include "f2c.h"
--#include "fio.h"
--
--#ifdef KR_headers
--extern char *strcpy();
--extern FILE *tmpfile();
--#else
--#undef abs
--#undef min
--#undef max
--#include "stdlib.h"
--#include "string.h"
--#endif
--
--extern char *f__r_mode[], *f__w_mode[];
--
--#ifdef KR_headers
--integer f_end(a) alist *a;
--#else
--integer f_end(alist *a)
--#endif
--{
--	unit *b;
--	FILE *tf;
--
--	if(a->aunit>=MXUNIT || a->aunit<0) err(a->aerr,101,"endfile");
--	b = &f__units[a->aunit];
--	if(b->ufd==NULL) {
--		char nbuf[10];
--		sprintf(nbuf,"fort.%ld",a->aunit);
--		if (tf = fopen(nbuf, f__w_mode[0]))
--			fclose(tf);
--		return(0);
--		}
--	b->uend=1;
--	return(b->useek ? t_runc(a) : 0);
--}
--
-- static int
--#ifdef KR_headers
--copy(from, len, to) FILE *from, *to; register long len;
--#else
--copy(FILE *from, register long len, FILE *to)
--#endif
--{
--	int len1;
--	char buf[BUFSIZ];
--
--	while(fread(buf, len1 = len > BUFSIZ ? BUFSIZ : (int)len, 1, from)) {
--		if (!fwrite(buf, len1, 1, to))
--			return 1;
--		if ((len -= len1) <= 0)
--			break;
--		}
--	return 0;
--	}
--
-- int
--#ifdef KR_headers
--t_runc(a) alist *a;
--#else
--t_runc(alist *a)
--#endif
--{
--	long loc, len;
--	unit *b;
--	FILE *bf, *tf;
--	int rc = 0;
--
--	b = &f__units[a->aunit];
--	if(b->url)
--		return(0);	/*don't truncate direct files*/
--	loc=ftell(bf = b->ufd);
--	fseek(bf,0L,SEEK_END);
--	len=ftell(bf);
--	if (loc >= len || b->useek == 0 || b->ufnm == NULL)
--		return(0);
--	fclose(b->ufd);
--	if (!loc) {
--		if (!(bf = fopen(b->ufnm, f__w_mode[b->ufmt])))
--			rc = 1;
--		if (b->uwrt)
--			b->uwrt = 1;
--		goto done;
--		}
--	if (!(bf = fopen(b->ufnm, f__r_mode[0]))
--	 || !(tf = tmpfile())) {
--#ifdef NON_UNIX_STDIO
-- bad:
--#endif
--		rc = 1;
--		goto done;
--		}
--	if (copy(bf, loc, tf)) {
-- bad1:
--		rc = 1;
--		goto done1;
--		}
--	if (!(bf = freopen(b->ufnm, f__w_mode[0], bf)))
--		goto bad1;
--	rewind(tf);
--	if (copy(tf, loc, bf))
--		goto bad1;
--	b->urw = 2;
--#ifdef NON_UNIX_STDIO
--	if (b->ufmt) {
--		fclose(bf);
--		if (!(bf = fopen(b->ufnm, f__w_mode[3])))
--			goto bad;
--		fseek(bf,0L,SEEK_END);
--		b->urw = 3;
--		}
--#endif
--done1:
--	fclose(tf);
--done:
--	f__cf = b->ufd = bf;
--	if (rc)
--		err(a->aerr,111,"endfile");
--	return 0;
--	}
-//GO.SYSIN DD libI77/endfile.c
-echo libI77/err.c 1>&2
-sed >libI77/err.c <<'//GO.SYSIN DD libI77/err.c' 's/^-//'
--#ifndef NON_UNIX_STDIO
--#define _INCLUDE_POSIX_SOURCE	/* for HP-UX */
--#define _INCLUDE_XOPEN_SOURCE	/* for HP-UX */
--#include "sys/types.h"
--#include "sys/stat.h"
--#endif
--#include "f2c.h"
--#ifdef KR_headers
--extern char *malloc();
--#else
--#undef abs
--#undef min
--#undef max
--#include "stdlib.h"
--#endif
--#include "fio.h"
--#include "fmt.h"	/* for struct syl */
--
--/*global definitions*/
--unit f__units[MXUNIT];	/*unit table*/
--flag f__init;	/*0 on entry, 1 after initializations*/
--cilist *f__elist;	/*active external io list*/
--icilist *f__svic;	/*active internal io list*/
--flag f__reading;	/*1 if reading, 0 if writing*/
--flag f__cplus,f__cblank;
--char *f__fmtbuf;
--flag f__external;	/*1 if external io, 0 if internal */
--#ifdef KR_headers
--int (*f__doed)(),(*f__doned)();
--int (*f__doend)(),(*f__donewrec)(),(*f__dorevert)();
--int (*f__getn)();	/* for formatted input */
--void (*f__putn)();	/* for formatted output */
--#else
--int (*f__getn)(void);	/* for formatted input */
--void (*f__putn)(int);	/* for formatted output */
--int (*f__doed)(struct syl*, char*, ftnlen),(*f__doned)(struct syl*);
--int (*f__dorevert)(void),(*f__donewrec)(void),(*f__doend)(void);
--#endif
--flag f__sequential;	/*1 if sequential io, 0 if direct*/
--flag f__formatted;	/*1 if formatted io, 0 if unformatted*/
--FILE *f__cf;	/*current file*/
--unit *f__curunit;	/*current unit*/
--int f__recpos;	/*place in current record*/
--int f__cursor, f__hiwater, f__scale;
--char *f__icptr;
--
--/*error messages*/
--char *F_err[] =
--{
--	"error in format",				/* 100 */
--	"illegal unit number",				/* 101 */
--	"formatted io not allowed",			/* 102 */
--	"unformatted io not allowed",			/* 103 */
--	"direct io not allowed",			/* 104 */
--	"sequential io not allowed",			/* 105 */
--	"can't backspace file",				/* 106 */
--	"null file name",				/* 107 */
--	"can't stat file",				/* 108 */
--	"unit not connected",				/* 109 */
--	"off end of record",				/* 110 */
--	"truncation failed in endfile",			/* 111 */
--	"incomprehensible list input",			/* 112 */
--	"out of free space",				/* 113 */
--	"unit not connected",				/* 114 */
--	"read unexpected character",			/* 115 */
--	"bad logical input field",			/* 116 */
--	"bad variable type",				/* 117 */
--	"bad namelist name",				/* 118 */
--	"variable not in namelist",			/* 119 */
--	"no end record",				/* 120 */
--	"variable count incorrect",			/* 121 */
--	"subscript for scalar variable",		/* 122 */
--	"invalid array section",			/* 123 */
--	"substring out of bounds",			/* 124 */
--	"subscript out of bounds",			/* 125 */
--	"can't read file",				/* 126 */
--	"can't write file",				/* 127 */
--	"'new' file exists",				/* 128 */
--	"can't append to file",				/* 129 */
--	"non-positive record number"			/* 130 */
--};
--#define MAXERR (sizeof(F_err)/sizeof(char *)+100)
--
--#ifdef KR_headers
--f__canseek(f) FILE *f; /*SYSDEP*/
--#else
--f__canseek(FILE *f) /*SYSDEP*/
--#endif
--{
--#ifdef NON_UNIX_STDIO
--	return !isatty(fileno(f));
--#else
--	struct stat x;
--
--	if (fstat(fileno(f),&x) < 0)
--		return(0);
--#ifdef S_IFMT
--	switch(x.st_mode & S_IFMT) {
--	case S_IFDIR:
--	case S_IFREG:
--		if(x.st_nlink > 0)	/* !pipe */
--			return(1);
--		else
--			return(0);
--	case S_IFCHR:
--		if(isatty(fileno(f)))
--			return(0);
--		return(1);
--#ifdef S_IFBLK
--	case S_IFBLK:
--		return(1);
--#endif
--	}
--#else
--#ifdef S_ISDIR
--	/* POSIX version */
--	if (S_ISREG(x.st_mode) || S_ISDIR(x.st_mode)) {
--		if(x.st_nlink > 0)	/* !pipe */
--			return(1);
--		else
--			return(0);
--		}
--	if (S_ISCHR(x.st_mode)) {
--		if(isatty(fileno(f)))
--			return(0);
--		return(1);
--		}
--	if (S_ISBLK(x.st_mode))
--		return(1);
--#else
--	Help! How does fstat work on this system?
--#endif
--#endif
--	return(0);	/* who knows what it is? */
--#endif
--}
--
-- void
--#ifdef KR_headers
--f__fatal(n,s) char *s;
--#else
--f__fatal(int n, char *s)
--#endif
--{
--	if(n<100 && n>=0) perror(s); /*SYSDEP*/
--	else if(n >= (int)MAXERR || n < -1)
--	{	fprintf(stderr,"%s: illegal error number %d\n",s,n);
--	}
--	else if(n == -1) fprintf(stderr,"%s: end of file\n",s);
--	else
--		fprintf(stderr,"%s: %s\n",s,F_err[n-100]);
--	if (f__curunit) {
--		fprintf(stderr,"apparent state: unit %d ",
--			(int)(f__curunit-f__units));
--		fprintf(stderr, f__curunit->ufnm ? "named %s\n" : "(unnamed)\n",
--			f__curunit->ufnm);
--		}
--	else
--		fprintf(stderr,"apparent state: internal I/O\n");
--	if (f__fmtbuf)
--		fprintf(stderr,"last format: %s\n",f__fmtbuf);
--	fprintf(stderr,"lately %s %s %s %s",f__reading?"reading":"writing",
--		f__sequential?"sequential":"direct",f__formatted?"formatted":"unformatted",
--		f__external?"external":"internal");
--	sig_die(" IO", 1);
--}
--/*initialization routine*/
-- VOID
--f_init(Void)
--{	unit *p;
--
--	f__init=1;
--	p= &f__units[0];
--	p->ufd=stderr;
--	p->useek=f__canseek(stderr);
--	p->ufmt=1;
--	p->uwrt=1;
--	p = &f__units[5];
--	p->ufd=stdin;
--	p->useek=f__canseek(stdin);
--	p->ufmt=1;
--	p->uwrt=0;
--	p= &f__units[6];
--	p->ufd=stdout;
--	p->useek=f__canseek(stdout);
--	p->ufmt=1;
--	p->uwrt=1;
--}
--#ifdef KR_headers
--f__nowreading(x) unit *x;
--#else
--f__nowreading(unit *x)
--#endif
--{
--	long loc;
--	int ufmt, urw;
--	extern char *f__r_mode[], *f__w_mode[];
--
--	if (x->urw & 1)
--		goto done;
--	if (!x->ufnm)
--		goto cantread;
--	ufmt = x->url ? 0 : x->ufmt;
--	loc = ftell(x->ufd);
--	urw = 3;
--	if (!freopen(x->ufnm, f__w_mode[ufmt|2], x->ufd)) {
--		urw = 1;
--		if(!freopen(x->ufnm, f__r_mode[ufmt], x->ufd)) {
-- cantread:
--			errno = 126;
--			return 1;
--			}
--		}
--	fseek(x->ufd,loc,SEEK_SET);
--	x->urw = urw;
-- done:
--	x->uwrt = 0;
--	return 0;
--}
--#ifdef KR_headers
--f__nowwriting(x) unit *x;
--#else
--f__nowwriting(unit *x)
--#endif
--{
--	long loc;
--	int ufmt;
--	extern char *f__w_mode[];
--
--	if (x->urw & 2)
--		goto done;
--	if (!x->ufnm)
--		goto cantwrite;
--	ufmt = x->url ? 0 : x->ufmt;
--	if (x->uwrt == 3) { /* just did write, rewind */
--		if (!(f__cf = x->ufd =
--				freopen(x->ufnm,f__w_mode[ufmt],x->ufd)))
--			goto cantwrite;
--		x->urw = 2;
--		}
--	else {
--		loc=ftell(x->ufd);
--		if (!(f__cf = x->ufd =
--			freopen(x->ufnm, f__w_mode[ufmt |= 2], x->ufd)))
--			{
--			x->ufd = NULL;
-- cantwrite:
--			errno = 127;
--			return(1);
--			}
--		x->urw = 3;
--		fseek(x->ufd,loc,SEEK_SET);
--		}
-- done:
--	x->uwrt = 1;
--	return 0;
--}
--
-- int
--#ifdef KR_headers
--err__fl(f, m, s) int f, m; char *s;
--#else
--err__fl(int f, int m, char *s)
--#endif
--{
--	if (!f)
--		f__fatal(m, s);
--	if (f__doend)
--		(*f__doend)();
--	return errno = m;
--	}
-//GO.SYSIN DD libI77/err.c
-echo libI77/f2ch.add 1>&2
-sed >libI77/f2ch.add <<'//GO.SYSIN DD libI77/f2ch.add' 's/^-//'
--/* If you are using a C++ compiler, append the following to f2c.h
--   for compiling libF77 and libI77. */
--
--#ifdef __cplusplus
--extern "C" {
--extern int abort_(void);
--extern double c_abs(complex *);
--extern void c_cos(complex *, complex *);
--extern void c_div(complex *, complex *, complex *);
--extern void c_exp(complex *, complex *);
--extern void c_log(complex *, complex *);
--extern void c_sin(complex *, complex *);
--extern void c_sqrt(complex *, complex *);
--extern double d_abs(double *);
--extern double d_acos(double *);
--extern double d_asin(double *);
--extern double d_atan(double *);
--extern double d_atn2(double *, double *);
--extern void d_cnjg(doublecomplex *, doublecomplex *);
--extern double d_cos(double *);
--extern double d_cosh(double *);
--extern double d_dim(double *, double *);
--extern double d_exp(double *);
--extern double d_imag(doublecomplex *);
--extern double d_int(double *);
--extern double d_lg10(double *);
--extern double d_log(double *);
--extern double d_mod(double *, double *);
--extern double d_nint(double *);
--extern double d_prod(float *, float *);
--extern double d_sign(double *, double *);
--extern double d_sin(double *);
--extern double d_sinh(double *);
--extern double d_sqrt(double *);
--extern double d_tan(double *);
--extern double d_tanh(double *);
--extern double derf_(double *);
--extern double derfc_(double *);
--extern integer do_fio(ftnint *, char *, ftnlen);
--extern integer do_lio(ftnint *, ftnint *, char *, ftnlen);
--extern integer do_uio(ftnint *, char *, ftnlen);
--extern integer e_rdfe(void);
--extern integer e_rdue(void);
--extern integer e_rsfe(void);
--extern integer e_rsfi(void);
--extern integer e_rsle(void);
--extern integer e_rsli(void);
--extern integer e_rsue(void);
--extern integer e_wdfe(void);
--extern integer e_wdue(void);
--extern integer e_wsfe(void);
--extern integer e_wsfi(void);
--extern integer e_wsle(void);
--extern integer e_wsli(void);
--extern integer e_wsue(void);
--extern int ef1asc_(ftnint *, ftnlen *, ftnint *, ftnlen *);
--extern integer ef1cmc_(ftnint *, ftnlen *, ftnint *, ftnlen *);
--extern double erf(double);
--extern double erf_(float *);
--extern double erfc(double);
--extern double erfc_(float *);
--extern integer f_back(alist *);
--extern integer f_clos(cllist *);
--extern integer f_end(alist *);
--extern void f_exit(void);
--extern integer f_inqu(inlist *);
--extern integer f_open(olist *);
--extern integer f_rew(alist *);
--extern int flush_(void);
--extern void getarg_(integer *, char *, ftnlen);
--extern void getenv_(char *, char *, ftnlen, ftnlen);
--extern short h_abs(short *);
--extern short h_dim(short *, short *);
--extern short h_dnnt(double *);
--extern short h_indx(char *, char *, ftnlen, ftnlen);
--extern short h_len(char *, ftnlen);
--extern short h_mod(short *, short *);
--extern short h_nint(float *);
--extern short h_sign(short *, short *);
--extern short hl_ge(char *, char *, ftnlen, ftnlen);
--extern short hl_gt(char *, char *, ftnlen, ftnlen);
--extern short hl_le(char *, char *, ftnlen, ftnlen);
--extern short hl_lt(char *, char *, ftnlen, ftnlen);
--extern integer i_abs(integer *);
--extern integer i_dim(integer *, integer *);
--extern integer i_dnnt(double *);
--extern integer i_indx(char *, char *, ftnlen, ftnlen);
--extern integer i_len(char *, ftnlen);
--extern integer i_mod(integer *, integer *);
--extern integer i_nint(float *);
--extern integer i_sign(integer *, integer *);
--extern integer iargc_(void);
--extern ftnlen l_ge(char *, char *, ftnlen, ftnlen);
--extern ftnlen l_gt(char *, char *, ftnlen, ftnlen);
--extern ftnlen l_le(char *, char *, ftnlen, ftnlen);
--extern ftnlen l_lt(char *, char *, ftnlen, ftnlen);
--extern void pow_ci(complex *, complex *, integer *);
--extern double pow_dd(double *, double *);
--extern double pow_di(double *, integer *);
--extern short pow_hh(short *, shortint *);
--extern integer pow_ii(integer *, integer *);
--extern double pow_ri(float *, integer *);
--extern void pow_zi(doublecomplex *, doublecomplex *, integer *);
--extern void pow_zz(doublecomplex *, doublecomplex *, doublecomplex *);
--extern double r_abs(float *);
--extern double r_acos(float *);
--extern double r_asin(float *);
--extern double r_atan(float *);
--extern double r_atn2(float *, float *);
--extern void r_cnjg(complex *, complex *);
--extern double r_cos(float *);
--extern double r_cosh(float *);
--extern double r_dim(float *, float *);
--extern double r_exp(float *);
--extern double r_imag(complex *);
--extern double r_int(float *);
--extern double r_lg10(float *);
--extern double r_log(float *);
--extern double r_mod(float *, float *);
--extern double r_nint(float *);
--extern double r_sign(float *, float *);
--extern double r_sin(float *);
--extern double r_sinh(float *);
--extern double r_sqrt(float *);
--extern double r_tan(float *);
--extern double r_tanh(float *);
--extern void s_cat(char *, char **, integer *, integer *, ftnlen);
--extern integer s_cmp(char *, char *, ftnlen, ftnlen);
--extern void s_copy(char *, char *, ftnlen, ftnlen);
--extern int s_paus(char *, ftnlen);
--extern integer s_rdfe(cilist *);
--extern integer s_rdue(cilist *);
--extern integer s_rnge(char *, integer, char *, integer);
--extern integer s_rsfe(cilist *);
--extern integer s_rsfi(icilist *);
--extern integer s_rsle(cilist *);
--extern integer s_rsli(icilist *);
--extern integer s_rsne(cilist *);
--extern integer s_rsni(icilist *);
--extern integer s_rsue(cilist *);
--extern int s_stop(char *, ftnlen);
--extern integer s_wdfe(cilist *);
--extern integer s_wdue(cilist *);
--extern integer s_wsfe(cilist *);
--extern integer s_wsfi(icilist *);
--extern integer s_wsle(cilist *);
--extern integer s_wsli(icilist *);
--extern integer s_wsne(cilist *);
--extern integer s_wsni(icilist *);
--extern integer s_wsue(cilist *);
--extern void sig_die(char *, int);
--extern integer signal_(integer *, void (*)(int));
--extern integer system_(char *, ftnlen);
--extern double z_abs(doublecomplex *);
--extern void z_cos(doublecomplex *, doublecomplex *);
--extern void z_div(doublecomplex *, doublecomplex *, doublecomplex *);
--extern void z_exp(doublecomplex *, doublecomplex *);
--extern void z_log(doublecomplex *, doublecomplex *);
--extern void z_sin(doublecomplex *, doublecomplex *);
--extern void z_sqrt(doublecomplex *, doublecomplex *);
--	}
--#endif
-//GO.SYSIN DD libI77/f2ch.add
-echo libI77/fio.h 1>&2
-sed >libI77/fio.h <<'//GO.SYSIN DD libI77/fio.h' 's/^-//'
--#include "stdio.h"
--#include "errno.h"
--#ifndef NULL
--/* ANSI C */
--#include "stddef.h"
--#endif
--
--#ifndef SEEK_SET
--#define SEEK_SET 0
--#define SEEK_CUR 1
--#define SEEK_END 2
--#endif
--
--#ifdef MSDOS
--#ifndef NON_UNIX_STDIO
--#define NON_UNIX_STDIO
--#endif
--#endif
--
--#ifdef UIOLEN_int
--typedef int uiolen;
--#else
--typedef long uiolen;
--#endif
--
--/*units*/
--typedef struct
--{	FILE *ufd;	/*0=unconnected*/
--	char *ufnm;
--#ifndef MSDOS
--	long uinode;
--	int udev;
--#endif
--	int url;	/*0=sequential*/
--	flag useek;	/*true=can backspace, use dir, ...*/
--	flag ufmt;
--	flag urw;	/* (1 for can read) | (2 for can write) */
--	flag ublnk;
--	flag uend;
--	flag uwrt;	/*last io was write*/
--	flag uscrtch;
--} unit;
--
--extern flag f__init;
--extern cilist *f__elist;	/*active external io list*/
--extern flag f__reading,f__external,f__sequential,f__formatted;
--#undef Void
--#ifdef KR_headers
--#define Void /*void*/
--extern int (*f__getn)();	/* for formatted input */
--extern void (*f__putn)();	/* for formatted output */
--extern void x_putc();
--extern long f__inode();
--extern VOID sig_die();
--extern int (*f__donewrec)(), t_putc(), x_wSL();
--extern int c_sfe(), err__fl(), xrd_SL(), f__putbuf();
--#else
--#define Void void
--#ifdef __cplusplus
--extern "C" {
--#endif
--extern int (*f__getn)(void);	/* for formatted input */
--extern void (*f__putn)(int);	/* for formatted output */
--extern void x_putc(int);
--extern long f__inode(char*,int*);
--extern void sig_die(char*,int);
--extern void f__fatal(int,char*);
--extern int t_runc(alist*);
--extern int f__nowreading(unit*), f__nowwriting(unit*);
--extern int fk_open(int,int,ftnint);
--extern int en_fio(void);
--extern void f_init(void);
--extern int (*f__donewrec)(void), t_putc(int), x_wSL(void);
--extern void b_char(char*,char*,ftnlen), g_char(char*,ftnlen,char*);
--extern int c_sfe(cilist*), z_rnew(void);
--extern int isatty(int);
--extern int err__fl(int,int,char*);
--extern int xrd_SL(void);
--extern int f__putbuf(int);
--#ifdef __cplusplus
--	}
--#endif
--#endif
--extern int (*f__doend)(Void);
--extern FILE *f__cf;	/*current file*/
--extern unit *f__curunit;	/*current unit*/
--extern unit f__units[];
--#define err(f,m,s) {if(f) errno= m; else f__fatal(m,s); return(m);}
--#define errfl(f,m,s) return err__fl((int)f,m,s)
--
--/*Table sizes*/
--#define MXUNIT 100
--
--extern int f__recpos;	/*position in current record*/
--extern int f__cursor;	/* offset to move to */
--extern int f__hiwater;	/* so TL doesn't confuse us */
--
--#define WRITE	1
--#define READ	2
--#define SEQ	3
--#define DIR	4
--#define FMT	5
--#define UNF	6
--#define EXT	7
--#define INT	8
--
--#define buf_end(x) (x->_flag & _IONBF ? x->_ptr : x->_base + BUFSIZ)
-//GO.SYSIN DD libI77/fio.h
-echo libI77/fmt.c 1>&2
-sed >libI77/fmt.c <<'//GO.SYSIN DD libI77/fmt.c' 's/^-//'
--#include "f2c.h"
--#include "fio.h"
--#include "fmt.h"
--#define skip(s) while(*s==' ') s++
--#ifdef interdata
--#define SYLMX 300
--#endif
--#ifdef pdp11
--#define SYLMX 300
--#endif
--#ifdef vax
--#define SYLMX 300
--#endif
--#ifndef SYLMX
--#define SYLMX 300
--#endif
--#define GLITCH '\2'
--	/* special quote character for stu */
--extern int f__cursor,f__scale;
--extern flag f__cblank,f__cplus;	/*blanks in I and compulsory plus*/
--static struct syl f__syl[SYLMX];
--int f__parenlvl,f__pc,f__revloc;
--
-- static
--#ifdef KR_headers
--char *ap_end(s) char *s;
--#else
--char *ap_end(char *s)
--#endif
--{	char quote;
--	quote= *s++;
--	for(;*s;s++)
--	{	if(*s!=quote) continue;
--		if(*++s!=quote) return(s);
--	}
--	if(f__elist->cierr) {
--		errno = 100;
--		return(NULL);
--	}
--	f__fatal(100, "bad string");
--	/*NOTREACHED*/ return 0;
--}
-- static
--#ifdef KR_headers
--op_gen(a,b,c,d)
--#else
--op_gen(int a, int b, int c, int d)
--#endif
--{	struct syl *p= &f__syl[f__pc];
--	if(f__pc>=SYLMX)
--	{	fprintf(stderr,"format too complicated:\n");
--		sig_die(f__fmtbuf, 1);
--	}
--	p->op=a;
--	p->p1=b;
--	p->p2.i[0]=c;
--	p->p2.i[1]=d;
--	return(f__pc++);
--}
--#ifdef KR_headers
--static char *f_list();
--static char *gt_num(s,n,n1) char *s; int *n, n1;
--#else
--static char *f_list(char*);
--static char *gt_num(char *s, int *n, int n1)
--#endif
--{	int m=0,f__cnt=0;
--	char c;
--	for(c= *s;;c = *s)
--	{	if(c==' ')
--		{	s++;
--			continue;
--		}
--		if(c>'9' || c<'0') break;
--		m=10*m+c-'0';
--		f__cnt++;
--		s++;
--	}
--	if(f__cnt==0) {
--		if (!n1)
--			s = 0;
--		*n=n1;
--		}
--	else *n=m;
--	return(s);
--}
--
-- static
--#ifdef KR_headers
--char *f_s(s,curloc) char *s;
--#else
--char *f_s(char *s, int curloc)
--#endif
--{
--	skip(s);
--	if(*s++!='(')
--	{
--		return(NULL);
--	}
--	if(f__parenlvl++ ==1) f__revloc=curloc;
--	if(op_gen(RET1,curloc,0,0)<0 ||
--		(s=f_list(s))==NULL)
--	{
--		return(NULL);
--	}
--	skip(s);
--	return(s);
--}
--
-- static
--#ifdef KR_headers
--ne_d(s,p) char *s,**p;
--#else
--ne_d(char *s, char **p)
--#endif
--{	int n,x,sign=0;
--	struct syl *sp;
--	switch(*s)
--	{
--	default:
--		return(0);
--	case ':': (void) op_gen(COLON,0,0,0); break;
--	case '$':
--		(void) op_gen(NONL, 0, 0, 0); break;
--	case 'B':
--	case 'b':
--		if(*++s=='z' || *s == 'Z') (void) op_gen(BZ,0,0,0);
--		else (void) op_gen(BN,0,0,0);
--		break;
--	case 'S':
--	case 's':
--		if(*(s+1)=='s' || *(s+1) == 'S')
--		{	x=SS;
--			s++;
--		}
--		else if(*(s+1)=='p' || *(s+1) == 'P')
--		{	x=SP;
--			s++;
--		}
--		else x=S;
--		(void) op_gen(x,0,0,0);
--		break;
--	case '/': (void) op_gen(SLASH,0,0,0); break;
--	case '-': sign=1;
--	case '+':	s++;	/*OUTRAGEOUS CODING TRICK*/
--	case '0': case '1': case '2': case '3': case '4':
--	case '5': case '6': case '7': case '8': case '9':
--		if (!(s=gt_num(s,&n,0))) {
-- bad:			*p = 0;
--			return 1;
--			}
--		switch(*s)
--		{
--		default:
--			return(0);
--		case 'P':
--		case 'p': if(sign) n= -n; (void) op_gen(P,n,0,0); break;
--		case 'X':
--		case 'x': (void) op_gen(X,n,0,0); break;
--		case 'H':
--		case 'h':
--			sp = &f__syl[op_gen(H,n,0,0)];
--			sp->p2.s = s + 1;
--			s+=n;
--			break;
--		}
--		break;
--	case GLITCH:
--	case '"':
--	case '\'':
--		sp = &f__syl[op_gen(APOS,0,0,0)];
--		sp->p2.s = s;
--		if((*p = ap_end(s)) == NULL)
--			return(0);
--		return(1);
--	case 'T':
--	case 't':
--		if(*(s+1)=='l' || *(s+1) == 'L')
--		{	x=TL;
--			s++;
--		}
--		else if(*(s+1)=='r'|| *(s+1) == 'R')
--		{	x=TR;
--			s++;
--		}
--		else x=T;
--		if (!(s=gt_num(s+1,&n,0)))
--			goto bad;
--		s--;
--		(void) op_gen(x,n,0,0);
--		break;
--	case 'X':
--	case 'x': (void) op_gen(X,1,0,0); break;
--	case 'P':
--	case 'p': (void) op_gen(P,1,0,0); break;
--	}
--	s++;
--	*p=s;
--	return(1);
--}
--
-- static
--#ifdef KR_headers
--e_d(s,p) char *s,**p;
--#else
--e_d(char *s, char **p)
--#endif
--{	int i,im,n,w,d,e,found=0,x=0;
--	char *sv=s;
--	s=gt_num(s,&n,1);
--	(void) op_gen(STACK,n,0,0);
--	switch(*s++)
--	{
--	default: break;
--	case 'E':
--	case 'e':	x=1;
--	case 'G':
--	case 'g':
--		found=1;
--		if (!(s=gt_num(s,&w,0))) {
-- bad:
--			*p = 0;
--			return 1;
--			}
--		if(w==0) break;
--		if(*s=='.') {
--			if (!(s=gt_num(s+1,&d,0)))
--				goto bad;
--			}
--		else d=0;
--		if(*s!='E' && *s != 'e')
--			(void) op_gen(x==1?E:G,w,d,0);	/* default is Ew.dE2 */
--		else {
--			if (!(s=gt_num(s+1,&e,0)))
--				goto bad;
--			(void) op_gen(x==1?EE:GE,w,d,e);
--			}
--		break;
--	case 'O':
--	case 'o':
--		i = O;
--		im = OM;
--		goto finish_I;
--	case 'Z':
--	case 'z':
--		i = Z;
--		im = ZM;
--		goto finish_I;
--	case 'L':
--	case 'l':
--		found=1;
--		if (!(s=gt_num(s,&w,0)))
--			goto bad;
--		if(w==0) break;
--		(void) op_gen(L,w,0,0);
--		break;
--	case 'A':
--	case 'a':
--		found=1;
--		skip(s);
--		if(*s>='0' && *s<='9')
--		{	s=gt_num(s,&w,1);
--			if(w==0) break;
--			(void) op_gen(AW,w,0,0);
--			break;
--		}
--		(void) op_gen(A,0,0,0);
--		break;
--	case 'F':
--	case 'f':
--		if (!(s=gt_num(s,&w,0)))
--			goto bad;
--		found=1;
--		if(w==0) break;
--		if(*s=='.') {
--			if (!(s=gt_num(s+1,&d,0)))
--				goto bad;
--			}
--		else d=0;
--		(void) op_gen(F,w,d,0);
--		break;
--	case 'D':
--	case 'd':
--		found=1;
--		if (!(s=gt_num(s,&w,0)))
--			goto bad;
--		if(w==0) break;
--		if(*s=='.') {
--			if (!(s=gt_num(s+1,&d,0)))
--				goto bad;
--			}
--		else d=0;
--		(void) op_gen(D,w,d,0);
--		break;
--	case 'I':
--	case 'i':
--		i = I;
--		im = IM;
-- finish_I:
--		if (!(s=gt_num(s,&w,0)))
--			goto bad;
--		found=1;
--		if(w==0) break;
--		if(*s!='.')
--		{	(void) op_gen(i,w,0,0);
--			break;
--		}
--		if (!(s=gt_num(s+1,&d,0)))
--			goto bad;
--		(void) op_gen(im,w,d,0);
--		break;
--	}
--	if(found==0)
--	{	f__pc--; /*unSTACK*/
--		*p=sv;
--		return(0);
--	}
--	*p=s;
--	return(1);
--}
-- static
--#ifdef KR_headers
--char *i_tem(s) char *s;
--#else
--char *i_tem(char *s)
--#endif
--{	char *t;
--	int n,curloc;
--	if(*s==')') return(s);
--	if(ne_d(s,&t)) return(t);
--	if(e_d(s,&t)) return(t);
--	s=gt_num(s,&n,1);
--	if((curloc=op_gen(STACK,n,0,0))<0) return(NULL);
--	return(f_s(s,curloc));
--}
--
-- static
--#ifdef KR_headers
--char *f_list(s) char *s;
--#else
--char *f_list(char *s)
--#endif
--{
--	for(;*s!=0;)
--	{	skip(s);
--		if((s=i_tem(s))==NULL) return(NULL);
--		skip(s);
--		if(*s==',') s++;
--		else if(*s==')')
--		{	if(--f__parenlvl==0)
--			{
--				(void) op_gen(REVERT,f__revloc,0,0);
--				return(++s);
--			}
--			(void) op_gen(GOTO,0,0,0);
--			return(++s);
--		}
--	}
--	return(NULL);
--}
--
--#ifdef KR_headers
--pars_f(s) char *s;
--#else
--pars_f(char *s)
--#endif
--{
--	f__parenlvl=f__revloc=f__pc=0;
--	if(f_s(s,0) == NULL)
--	{
--		return(-1);
--	}
--	return(0);
--}
--#define STKSZ 10
--int f__cnt[STKSZ],f__ret[STKSZ],f__cp,f__rp;
--flag f__workdone, f__nonl;
--
-- static
--#ifdef KR_headers
--type_f(n)
--#else
--type_f(int n)
--#endif
--{
--	switch(n)
--	{
--	default:
--		return(n);
--	case RET1:
--		return(RET1);
--	case REVERT: return(REVERT);
--	case GOTO: return(GOTO);
--	case STACK: return(STACK);
--	case X:
--	case SLASH:
--	case APOS: case H:
--	case T: case TL: case TR:
--		return(NED);
--	case F:
--	case I:
--	case IM:
--	case A: case AW:
--	case O: case OM:
--	case L:
--	case E: case EE: case D:
--	case G: case GE:
--	case Z: case ZM:
--		return(ED);
--	}
--}
--#ifdef KR_headers
--integer do_fio(number,ptr,len) ftnint *number; ftnlen len; char *ptr;
--#else
--integer do_fio(ftnint *number, char *ptr, ftnlen len)
--#endif
--{	struct syl *p;
--	int n,i;
--	for(i=0;i<*number;i++,ptr+=len)
--	{
--loop:	switch(type_f((p= &f__syl[f__pc])->op))
--	{
--	default:
--		fprintf(stderr,"unknown code in do_fio: %d\n%s\n",
--			p->op,f__fmtbuf);
--		err(f__elist->cierr,100,"do_fio");
--	case NED:
--		if((*f__doned)(p))
--		{	f__pc++;
--			goto loop;
--		}
--		f__pc++;
--		continue;
--	case ED:
--		if(f__cnt[f__cp]<=0)
--		{	f__cp--;
--			f__pc++;
--			goto loop;
--		}
--		if(ptr==NULL)
--			return((*f__doend)());
--		f__cnt[f__cp]--;
--		f__workdone=1;
--		if((n=(*f__doed)(p,ptr,len))>0)
--			errfl(f__elist->cierr,errno,"fmt");
--		if(n<0)
--			err(f__elist->ciend,(EOF),"fmt");
--		continue;
--	case STACK:
--		f__cnt[++f__cp]=p->p1;
--		f__pc++;
--		goto loop;
--	case RET1:
--		f__ret[++f__rp]=p->p1;
--		f__pc++;
--		goto loop;
--	case GOTO:
--		if(--f__cnt[f__cp]<=0)
--		{	f__cp--;
--			f__rp--;
--			f__pc++;
--			goto loop;
--		}
--		f__pc=1+f__ret[f__rp--];
--		goto loop;
--	case REVERT:
--		f__rp=f__cp=0;
--		f__pc = p->p1;
--		if(ptr==NULL)
--			return((*f__doend)());
--		if(!f__workdone) return(0);
--		if((n=(*f__dorevert)()) != 0) return(n);
--		goto loop;
--	case COLON:
--		if(ptr==NULL)
--			return((*f__doend)());
--		f__pc++;
--		goto loop;
--	case NONL:
--		f__nonl = 1;
--		f__pc++;
--		goto loop;
--	case S:
--	case SS:
--		f__cplus=0;
--		f__pc++;
--		goto loop;
--	case SP:
--		f__cplus = 1;
--		f__pc++;
--		goto loop;
--	case P:	f__scale=p->p1;
--		f__pc++;
--		goto loop;
--	case BN:
--		f__cblank=0;
--		f__pc++;
--		goto loop;
--	case BZ:
--		f__cblank=1;
--		f__pc++;
--		goto loop;
--	}
--	}
--	return(0);
--}
--en_fio(Void)
--{	ftnint one=1;
--	return(do_fio(&one,(char *)NULL,(ftnint)0));
--}
-- VOID
--fmt_bg(Void)
--{
--	f__workdone=f__cp=f__rp=f__pc=f__cursor=0;
--	f__cnt[0]=f__ret[0]=0;
--}
-//GO.SYSIN DD libI77/fmt.c
-echo libI77/fmt.h 1>&2
-sed >libI77/fmt.h <<'//GO.SYSIN DD libI77/fmt.h' 's/^-//'
--struct syl
--{	int op;
--	int p1;
--	union { int i[2]; char *s;} p2;
--	};
--#define RET1 1
--#define REVERT 2
--#define GOTO 3
--#define X 4
--#define SLASH 5
--#define STACK 6
--#define I 7
--#define ED 8
--#define NED 9
--#define IM 10
--#define APOS 11
--#define H 12
--#define TL 13
--#define TR 14
--#define T 15
--#define COLON 16
--#define S 17
--#define SP 18
--#define SS 19
--#define P 20
--#define BN 21
--#define BZ 22
--#define F 23
--#define E 24
--#define EE 25
--#define D 26
--#define G 27
--#define GE 28
--#define L 29
--#define A 30
--#define AW 31
--#define O 32
--#define NONL 33
--#define OM 34
--#define Z 35
--#define ZM 36
--extern int f__pc,f__parenlvl,f__revloc;
--typedef union
--{	real pf;
--	doublereal pd;
--} ufloat;
--typedef union
--{	short is;
--#ifndef KR_headers
--	signed
--#endif
--		char ic;
--	integer il;
--#ifdef Allow_TYQUAD
--	longint ili;
--#endif
--} Uint;
--#ifdef KR_headers
--extern int (*f__doed)(),(*f__doned)();
--extern int (*f__dorevert)();
--extern int rd_ed(),rd_ned();
--extern int w_ed(),w_ned();
--#else
--#ifdef __cplusplus
--extern "C" {
--#endif
--extern int (*f__doed)(struct syl*, char*, ftnlen),(*f__doned)(struct syl*);
--extern int (*f__dorevert)(void);
--extern void fmt_bg(void);
--extern int pars_f(char*);
--extern int rd_ed(struct syl*, char*, ftnlen),rd_ned(struct syl*);
--extern int w_ed(struct syl*, char*, ftnlen),w_ned(struct syl*);
--extern int wrt_E(ufloat*, int, int, int, ftnlen);
--extern int wrt_F(ufloat*, int, int, ftnlen);
--extern int wrt_L(Uint*, int, ftnlen);
--#ifdef __cplusplus
--	}
--#endif
--#endif
--extern flag f__cblank,f__cplus,f__workdone, f__nonl;
--extern char *f__fmtbuf;
--extern int f__scale;
--#define GET(x) if((x=(*f__getn)())<0) return(x)
--#define VAL(x) (x!='\n'?x:' ')
--#define PUT(x) (*f__putn)(x)
--extern int f__cursor;
--
--#undef TYQUAD
--#ifndef Allow_TYQUAD
--#undef longint
--#define longint long
--#else
--#define TYQUAD 14
--#endif
--
--#ifdef KR_headers
--extern char *f__icvt();
--#else
--extern char *f__icvt(longint, int*, int*, int);
--#endif
-//GO.SYSIN DD libI77/fmt.h
-echo libI77/fmtlib.c 1>&2
-sed >libI77/fmtlib.c <<'//GO.SYSIN DD libI77/fmtlib.c' 's/^-//'
--/*	@(#)fmtlib.c	1.2	*/
--#define MAXINTLENGTH 23
--
--#include "f2c.h"
--#ifndef Allow_TYQUAD
--#undef longint
--#define longint long
--#undef ulongint
--#define ulongint unsigned long
--#endif
--
--#ifdef KR_headers
--char *f__icvt(value,ndigit,sign, base) longint value; int *ndigit,*sign;
-- register int base;
--#else
--char *f__icvt(longint value, int *ndigit, int *sign, int base)
--#endif
--{
--	static char buf[MAXINTLENGTH+1];
--	register int i;
--	ulongint uvalue;
--
--	if(value > 0) {
--		uvalue = value;
--		*sign = 0;
--		}
--	else if (value < 0) {
--		uvalue = -value;
--		*sign = 1;
--		}
--	else {
--		*sign = 0;
--		*ndigit = 1;
--		buf[MAXINTLENGTH-1] = '0';
--		return &buf[MAXINTLENGTH-1];
--		}
--	i = MAXINTLENGTH;
--	do {
--		buf[--i] = (uvalue%base) + '0';
--		uvalue /= base;
--		}
--		while(uvalue > 0);
--	*ndigit = MAXINTLENGTH - i;
--	return &buf[i];
--	}
-//GO.SYSIN DD libI77/fmtlib.c
-echo libI77/fp.h 1>&2
-sed >libI77/fp.h <<'//GO.SYSIN DD libI77/fp.h' 's/^-//'
--#define FMAX 40
--#define EXPMAXDIGS 8
--#define EXPMAX 99999999
--/* FMAX = max number of nonzero digits passed to atof() */
--/* EXPMAX = 10^EXPMAXDIGS - 1 = largest allowed exponent absolute value */
--
--#ifdef V10 /* Research Tenth-Edition Unix */
--#include "local.h"
--#endif
--
--/* MAXFRACDIGS and MAXINTDIGS are for wrt_F -- bounds (not necessarily
--   tight) on the maximum number of digits to the right and left of
-- * the decimal point.
-- */
--
--#ifdef VAX
--#define MAXFRACDIGS 56
--#define MAXINTDIGS 38
--#else
--#ifdef CRAY
--#define MAXFRACDIGS 9880
--#define MAXINTDIGS 9864
--#else
--/* values that suffice for IEEE double */
--#define MAXFRACDIGS 344
--#define MAXINTDIGS 308
--#endif
--#endif
-//GO.SYSIN DD libI77/fp.h
-echo libI77/ftell_.c 1>&2
-sed >libI77/ftell_.c <<'//GO.SYSIN DD libI77/ftell_.c' 's/^-//'
--#include "f2c.h"
--#include "fio.h"
--
-- static FILE *
--#ifdef KR_headers
--unit_chk(Unit, who) integer Unit; char *who;
--#else
--unit_chk(integer Unit, char *who)
--#endif
--{
--	if (Unit >= MXUNIT || Unit < 0)
--		f__fatal(101, who);
--	return f__units[Unit].ufd;
--	}
--
-- integer
--#ifdef KR_headers
--ftell_(Unit) integer *Unit;
--#else
--ftell_(integer *Unit)
--#endif
--{
--	FILE *f;
--	return (f = unit_chk(*Unit, "ftell")) ? ftell(f) : -1L;
--	}
--
-- int
--#ifdef KR_headers
--fseek_(Unit, offset, whence) integer *Unit, *offset, *whence;
--#else
--fseek_(integer *Unit, integer *offset, integer *whence)
--#endif
--{
--	FILE *f;
--	int w = (int)*whence;
--#ifdef SEEK_SET
--	static int wohin[3] = { SEEK_SET, SEEK_CUR, SEEK_END };
--#endif
--	if (w < 0 || w > 2)
--		w = 0;
--#ifdef SEEK_SET
--	w = wohin[w];
--#endif
--	return	!(f = unit_chk(*Unit, "fseek"))
--		|| fseek(f, *offset, w) ? 1 : 0;
--	}
-//GO.SYSIN DD libI77/ftell_.c
-echo libI77/iio.c 1>&2
-sed >libI77/iio.c <<'//GO.SYSIN DD libI77/iio.c' 's/^-//'
--#include "f2c.h"
--#include "fio.h"
--#include "fmt.h"
--extern char *f__icptr;
--char *f__icend;
--extern icilist *f__svic;
--int f__icnum;
--extern int f__hiwater;
--z_getc(Void)
--{
--	if(f__recpos++ < f__svic->icirlen) {
--		if(f__icptr >= f__icend) err(f__svic->iciend,(EOF),"endfile");
--		return(*(unsigned char *)f__icptr++);
--		}
--	return '\n';
--}
--
-- void
--#ifdef KR_headers
--z_putc(c)
--#else
--z_putc(int c)
--#endif
--{
--	if (f__icptr < f__icend && f__recpos++ < f__svic->icirlen)
--		*f__icptr++ = c;
--}
--z_rnew(Void)
--{
--	f__icptr = f__svic->iciunit + (++f__icnum)*f__svic->icirlen;
--	f__recpos = 0;
--	f__cursor = 0;
--	f__hiwater = 0;
--	return 1;
--}
--
-- static int
--z_endp(Void)
--{
--	(*f__donewrec)();
--	return 0;
--	}
--
--#ifdef KR_headers
--c_si(a) icilist *a;
--#else
--c_si(icilist *a)
--#endif
--{
--	f__elist = (cilist *)a;
--	f__fmtbuf=a->icifmt;
--	f__curunit = 0;
--	f__sequential=f__formatted=1;
--	f__external=0;
--	if(pars_f(f__fmtbuf)<0)
--		err(a->icierr,100,"startint");
--	fmt_bg();
--	f__cblank=f__cplus=f__scale=0;
--	f__svic=a;
--	f__icnum=f__recpos=0;
--	f__cursor = 0;
--	f__hiwater = 0;
--	f__icptr = a->iciunit;
--	f__icend = f__icptr + a->icirlen*a->icirnum;
--	f__cf = 0;
--	return(0);
--}
--
-- int
--iw_rev(Void)
--{
--	if(f__workdone)
--		z_endp();
--	f__hiwater = f__recpos = f__cursor = 0;
--	return(f__workdone=0);
--	}
--
--#ifdef KR_headers
--integer s_rsfi(a) icilist *a;
--#else
--integer s_rsfi(icilist *a)
--#endif
--{	int n;
--	if(n=c_si(a)) return(n);
--	f__reading=1;
--	f__doed=rd_ed;
--	f__doned=rd_ned;
--	f__getn=z_getc;
--	f__dorevert = z_endp;
--	f__donewrec = z_rnew;
--	f__doend = z_endp;
--	return(0);
--}
--
--z_wnew(Void)
--{
--	if (f__recpos < f__hiwater) {
--		f__icptr += f__hiwater - f__recpos;
--		f__recpos = f__hiwater;
--		}
--	while(f__recpos++ < f__svic->icirlen)
--		*f__icptr++ = ' ';
--	f__recpos = 0;
--	f__cursor = 0;
--	f__hiwater = 0;
--	f__icnum++;
--	return 1;
--}
--#ifdef KR_headers
--integer s_wsfi(a) icilist *a;
--#else
--integer s_wsfi(icilist *a)
--#endif
--{	int n;
--	if(n=c_si(a)) return(n);
--	f__reading=0;
--	f__doed=w_ed;
--	f__doned=w_ned;
--	f__putn=z_putc;
--	f__dorevert = iw_rev;
--	f__donewrec = z_wnew;
--	f__doend = z_endp;
--	return(0);
--}
--integer e_rsfi(Void)
--{	int n = en_fio();
--	f__fmtbuf = NULL;
--	return(n);
--}
--integer e_wsfi(Void)
--{
--	int n;
--	n = en_fio();
--	f__fmtbuf = NULL;
--	if(f__svic->icirnum != 1
--	 && (f__icnum >  f__svic->icirnum
--	 || (f__icnum == f__svic->icirnum && (f__recpos | f__hiwater))))
--		err(f__svic->icierr,110,"inwrite");
--	if (f__recpos < f__hiwater)
--		f__recpos = f__hiwater;
--	if (f__recpos >= f__svic->icirlen)
--		err(f__svic->icierr,110,"recend");
--	if (!f__recpos && f__icnum)
--		return n;
--	while(f__recpos++ < f__svic->icirlen)
--		*f__icptr++ = ' ';
--	return n;
--}
-//GO.SYSIN DD libI77/iio.c
-echo libI77/ilnw.c 1>&2
-sed >libI77/ilnw.c <<'//GO.SYSIN DD libI77/ilnw.c' 's/^-//'
--#include "f2c.h"
--#include "fio.h"
--#include "lio.h"
--extern char *f__icptr;
--extern char *f__icend;
--extern icilist *f__svic;
--extern int f__icnum;
--#ifdef KR_headers
--extern void z_putc();
--#else
--extern void z_putc(int);
--#endif
--
-- static int
--z_wSL(Void)
--{
--	while(f__recpos < f__svic->icirlen)
--		z_putc(' ');
--	return z_rnew();
--	}
--
-- static void
--#ifdef KR_headers
--c_liw(a) icilist *a;
--#else
--c_liw(icilist *a)
--#endif
--{
--	f__reading = 0;
--	f__external = 0;
--	f__formatted = 1;
--	f__putn = z_putc;
--	L_len = a->icirlen;
--	f__donewrec = z_wSL;
--	f__svic = a;
--	f__icnum = f__recpos = 0;
--	f__cursor = 0;
--	f__cf = 0;
--	f__curunit = 0;
--	f__icptr = a->iciunit;
--	f__icend = f__icptr + a->icirlen*a->icirnum;
--	f__elist = (cilist *)a;
--	}
--
-- integer
--#ifdef KR_headers
--s_wsni(a) icilist *a;
--#else
--s_wsni(icilist *a)
--#endif
--{
--	cilist ca;
--
--	c_liw(a);
--	ca.cifmt = a->icifmt;
--	x_wsne(&ca);
--	z_wSL();
--	return 0;
--	}
--
-- integer
--#ifdef KR_headers
--s_wsli(a) icilist *a;
--#else
--s_wsli(icilist *a)
--#endif
--{
--	f__lioproc = l_write;
--	c_liw(a);
--	return(0);
--	}
--
--integer e_wsli(Void)
--{
--	z_wSL();
--	return(0);
--	}
-//GO.SYSIN DD libI77/ilnw.c
-echo libI77/inquire.c 1>&2
-sed >libI77/inquire.c <<'//GO.SYSIN DD libI77/inquire.c' 's/^-//'
--#include "f2c.h"
--#include "fio.h"
--#include "string.h"
--#ifdef KR_headers
--integer f_inqu(a) inlist *a;
--#else
--#ifdef MSDOS
--#undef abs
--#undef min
--#undef max
--#include "io.h"
--#endif
--integer f_inqu(inlist *a)
--#endif
--{	flag byfile;
--	int i, n;
--	unit *p;
--	char buf[256];
--	long x;
--	if(a->infile!=NULL)
--	{	byfile=1;
--		g_char(a->infile,a->infilen,buf);
--#ifdef NON_UNIX_STDIO
--		x = access(buf,0) ? -1 : 0;
--		for(i=0,p=NULL;i<MXUNIT;i++)
--			if(f__units[i].ufd != NULL
--			 && f__units[i].ufnm != NULL
--			 && !strcmp(f__units[i].ufnm,buf)) {
--				p = &f__units[i];
--				break;
--				}
--#else
--		x=f__inode(buf, &n);
--		for(i=0,p=NULL;i<MXUNIT;i++)
--			if(f__units[i].uinode==x
--			&& f__units[i].ufd!=NULL
--			&& f__units[i].udev == n) {
--				p = &f__units[i];
--				break;
--				}
--#endif
--	}
--	else
--	{
--		byfile=0;
--		if(a->inunit<MXUNIT && a->inunit>=0)
--		{
--			p= &f__units[a->inunit];
--		}
--		else
--		{
--			p=NULL;
--		}
--	}
--	if(a->inex!=NULL)
--		if(byfile && x != -1 || !byfile && p!=NULL)
--			*a->inex=1;
--		else *a->inex=0;
--	if(a->inopen!=NULL)
--		if(byfile) *a->inopen=(p!=NULL);
--		else *a->inopen=(p!=NULL && p->ufd!=NULL);
--	if(a->innum!=NULL) *a->innum= p-f__units;
--	if(a->innamed!=NULL)
--		if(byfile || p!=NULL && p->ufnm!=NULL)
--			*a->innamed=1;
--		else	*a->innamed=0;
--	if(a->inname!=NULL)
--		if(byfile)
--			b_char(buf,a->inname,a->innamlen);
--		else if(p!=NULL && p->ufnm!=NULL)
--			b_char(p->ufnm,a->inname,a->innamlen);
--	if(a->inacc!=NULL && p!=NULL && p->ufd!=NULL)
--		if(p->url)
--			b_char("DIRECT",a->inacc,a->inacclen);
--		else	b_char("SEQUENTIAL",a->inacc,a->inacclen);
--	if(a->inseq!=NULL)
--		if(p!=NULL && p->url)
--			b_char("NO",a->inseq,a->inseqlen);
--		else	b_char("YES",a->inseq,a->inseqlen);
--	if(a->indir!=NULL)
--		if(p==NULL || p->url)
--			b_char("YES",a->indir,a->indirlen);
--		else	b_char("NO",a->indir,a->indirlen);
--	if(a->infmt!=NULL)
--		if(p!=NULL && p->ufmt==0)
--			b_char("UNFORMATTED",a->infmt,a->infmtlen);
--		else	b_char("FORMATTED",a->infmt,a->infmtlen);
--	if(a->inform!=NULL)
--		if(p!=NULL && p->ufmt==0)
--		b_char("NO",a->inform,a->informlen);
--		else b_char("YES",a->inform,a->informlen);
--	if(a->inunf)
--		if(p!=NULL && p->ufmt==0)
--			b_char("YES",a->inunf,a->inunflen);
--		else if (p!=NULL) b_char("NO",a->inunf,a->inunflen);
--		else b_char("UNKNOWN",a->inunf,a->inunflen);
--	if(a->inrecl!=NULL && p!=NULL)
--		*a->inrecl=p->url;
--	if(a->innrec!=NULL && p!=NULL && p->url>0)
--		*a->innrec=ftell(p->ufd)/p->url+1;
--	if(a->inblank && p!=NULL && p->ufmt)
--		if(p->ublnk)
--			b_char("ZERO",a->inblank,a->inblanklen);
--		else	b_char("NULL",a->inblank,a->inblanklen);
--	return(0);
--}
-//GO.SYSIN DD libI77/inquire.c
+-/* 15 Nov. 1999: endfile.c: set state to writing (b->uwrt = 1) when an */
+-/*		endfile statement requires copying the file. */
+-/*		(Otherwise an immediately following rewind statement */
+-/*		could make the file appear empty.)  Also, supply a */
+-/*		missing (long) cast in the sprintf call. */
+-/*		 sfe.c: add #ifdef ALWAYS_FLUSH logic, for formatted I/O: */
+-/*		Compiling libf2c with -DALWAYS_FLUSH should prevent losing */
+-/*		any data in buffers should the program fault.  It also */
+-/*		makes the program run more slowly. */
+-/* 20 April 2000: rsne.c, xwsne.c: tweaks that only matter if ftnint and */
+-/*		ftnlen are of different fundamental types (different numbers */
+-/*		of bits).  Since these files will not compile when this */
+-/*		change matters, the above VERSION string remains unchanged. */
+-/* 4 July 2000: adjustments to permit compilation by C++ compilers; */
+-/*		VERSION string remains unchanged. */
+-/* 5 Dec. 2000: lread.c: under namelist input, when reading a logical array, */
+-/*		treat Tstuff= and Fstuff= as new assignments rather than as */
+-/*		logical constants. */
+-/* 22 Feb. 2001: endfile.c: adjust to use truncate() unless compiled with */
+-/*		-DNO_TRUNCATE (or with -DMSDOS). */
+-/* 1 March 2001: endfile.c:  switch to ftruncate (absent -DNO_TRUNCATE), */
+-/*		thus permitting truncation of scratch files on true Unix */
+-/*		systems, where scratch files have no name.  Add an fflush() */
+-/*		(surprisingly) needed on some Linux systems. */
+//GO.SYSIN DD libI77/i77vers.c
 echo libI77/libI77.xsum 1>&2
 sed >libI77/libI77.xsum <<'//GO.SYSIN DD libI77/libI77.xsum' 's/^-//'
 -Notice	76f23b4	1212
--README	e95521e3	9847
--Version.c	f71ca0fe	15585
--backspace.c	6ce0fa3	1258
--close.c	fa1c7d38	1325
--dfe.c	10a51640	2540
--dolio.c	17595b24	404
--due.c	fa31bcf7	1550
--endfile.c	f0daa7a3	2028
--err.c	15580826	6084
+-README	f35cf24	10373
+-backspace.c	e0d51378	1325
+-close.c	173f01de	1393
+-dfe.c	1c0fb024	2623
+-dolio.c	19c9fbd9	471
+-due.c	f3cfad3e	1622
+-endfile.c	c8afabe	2634
+-err.c	e063fc02	6200
 -f2ch.add	ef66bf17	6060
 -fio.h	f0d3912d	2533
--fmt.c	142a0bf3	8297
--fmt.h	eb79935b	1876
--fmtlib.c	ee65cded	798
+-fmt.c	12a28af0	8392
+-fmt.h	fed48db7	1933
+-fmtlib.c	eefc6a27	865
 -fp.h	100fb355	665
--ftell_.c	15d44fd9	827
--iio.c	bf62563	2573
--ilnw.c	15569eae	1058
--inquire.c	1c399d2c	2536
+-ftell_.c	e845eedb	894
+-i77vers.c	f757ca5b	17062
+-iio.c	e9200b91	2662
+-ilnw.c	fe0ab14b	1125
+-inquire.c	6ef0c61	2722
 -lio.h	a087b39	1564
--lread.c	f950a15d	13037
--lwrite.c	16866b71	4478
--makefile	1720cb4d	2278
--open.c	e0a4c789	5534
+-lread.c	eb3c2be3	14705
+-lwrite.c	e696edf4	4551
+-makefile	8a4b152	2372
+-open.c	129f3506	5625
 -rawio.h	1ab49f7c	718
--rdfmt.c	1e14da4b	8812
--rewind.c	87b080b	408
--rsfe.c	1efce593	1402
--rsli.c	ecce3ca0	1718
--rsne.c	13ef12c2	11470
--sfe.c	d88816a	597
--sue.c	ee6f6d53	1803
--typesize.c	e5660590	319
--uio.c	fe44d524	1547
--util.c	eea263	916
--wref.c	f86e7116	4508
--wrtfmt.c	f0dc45c3	7421
--wsfe.c	b76e8bd	1236
--wsle.c	127bf5f2	630
--wsne.c	dc449f1	412
--xwsne.c	16641f3c	1135
+-rdfmt.c	13bd6a83	8886
+-rewind.c	e4c6236f	475
+-rsfe.c	eb9e882c	1492
+-rsli.c	11f59b61	1785
+-rsne.c	11f0c6ea	11546
+-sfe.c	d24f06	767
+-sue.c	f02b5022	1875
+-typesize.c	eee307ae	386
+-uio.c	e354a770	1619
+-util.c	f32cdf46	983
+-wref.c	1736a3be	4585
+-wrtfmt.c	113fc4f9	7506
+-wsfe.c	44cfb3d	1303
+-wsle.c	fe50b4c9	697
+-wsne.c	428bfda	479
+-xwsne.c	185c4bdc	1174
 //GO.SYSIN DD libI77/libI77.xsum

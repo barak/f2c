@@ -1,5 +1,5 @@
 /****************************************************************
-Copyright 1990-1, 1993-6, 1999 by AT&T, Lucent Technologies and Bellcore.
+Copyright 1990-1, 1993-6, 1999-2001 by AT&T, Lucent Technologies and Bellcore.
 
 Permission to use, copy, modify, and distribute this software
 and its documentation for any purpose and without fee is hereby
@@ -27,7 +27,7 @@ use or performance of this software.
 #include "format.h"
 
 #define MAX_INIT_LINE 100
-#define NAME_MAX 64
+#define VNAME_MAX 64
 
 static int memno2info Argdcl((int, Namep*));
 
@@ -86,7 +86,7 @@ do_init_data(outfile, infile)
 do_init_data(FILE *outfile, FILE *infile)
 #endif
 {
-    char varname[NAME_MAX], ovarname[NAME_MAX];
+    char varname[VNAME_MAX], ovarname[VNAME_MAX];
     ftnint offset;
     ftnint type;
     int vargroup;	/* 0 --> init, 1 --> equiv, 2 --> common */
@@ -146,10 +146,10 @@ do_init_data(FILE *outfile, FILE *infile)
 wr_char_len(outfile, dimp, n, extra1)
 	FILE *outfile;
 	struct Dimblock *dimp;
-	int n;
+	ftnint n;
 	int extra1;
 #else
-wr_char_len(FILE *outfile, struct Dimblock *dimp, int n, int extra1)
+wr_char_len(FILE *outfile, struct Dimblock *dimp, ftnint n, int extra1)
 #endif
 {
 	int i, nd;
@@ -157,10 +157,10 @@ wr_char_len(FILE *outfile, struct Dimblock *dimp, int n, int extra1)
 	ftnint j, rv;
 
 	if (!dimp) {
-		nice_printf (outfile, extra1 ? "[%d+1]" : "[%d]", n);
+		nice_printf (outfile, extra1 ? "[%ld+1]" : "[%ld]", (long)n);
 		return n + extra1;
 		}
-	nice_printf(outfile, "[%d", n);
+	nice_printf(outfile, "[%ld", (long)n);
 	nd = dimp->ndim;
 	rv = n;
 	for(i = 0; i < nd; i++) {
@@ -465,7 +465,11 @@ data_value(FILE *infile, ftnint offset, int type)
 
 /* Add this value to the end of the list */
 
+#ifdef NO_LONG_LONG
 	if (ONEOF(type, MSKREAL|MSKCOMPLEX))
+#else
+	if (ONEOF(type, MSKREAL|MSKCOMPLEX|M(TYQUAD)))
+#endif
 		newval = cpstring(pointer);
 	else
 		newval = (char *)atol(pointer);
@@ -521,7 +525,7 @@ wr_output_values(FILE *outfile, Namep namep, chainp values)
 /* Handle array initializations away from scalars */
 
 	if (namep && namep -> vdim)
-		wr_array_init (outfile, namep -> vtype, values);
+		wr_array_init (outfile, type, values);
 
 	else if (values->nextp && type != TYCHAR)
 		overlapping();
@@ -538,8 +542,15 @@ wr_output_values(FILE *outfile, Namep namep, chainp values)
 			out_const (outfile, &Const);
 			free (Const.Const.ccp);
 			}
-		else
+		else {
+#ifndef NO_LONG_LONG
+			if (type == TYQUAD)
+				Const.Const.cd[1] = 123.456; /* kludge */
+				/* kludge assumes max(sizeof(char*), */
+				/* sizeof(long long)) <= sizeof(double) */
+#endif
 			out_const (outfile, &Const);
+			}
 		}
 	}
 
@@ -620,12 +631,15 @@ wr_array_init(FILE *outfile, int type, chainp values)
 		} /* case TYCHAR */
 	        break;
 
+#ifdef TYQUAD
+	    case TYQUAD:
+#ifndef NO_LONG_LONG
+		Const.Const.cd[1] = 123.456;
+#endif
+#endif
 	    case TYINT1:
 	    case TYSHORT:
 	    case TYLONG:
-#ifdef TYQUAD
-	    case TYQUAD:
-#endif
 	    case TYREAL:
 	    case TYDREAL:
 	    case TYLOGICAL:
@@ -692,12 +706,12 @@ make_one_const(int type, union Constant *storage, chainp values)
 	    while (index > main_index++)
 		*str_ptr++ = ' ';
 
-		k = (Ulong) (((chainp) values->datap)->nextp->nextp->datap);
+		k = (int)(Ulong)(((chainp)values->datap)->nextp->nextp->datap);
 		if ((Ulong)((chainp)values->datap)->nextp->datap == TYBLANK) {
 			b = k;
 			break;
 			}
-		*str_ptr = k;
+		*str_ptr = (char)k;
 		values = values -> nextp;
 	} /* for str_ptr */
 	*str_ptr = '\0';
@@ -740,7 +754,7 @@ rdname(FILE *infile, int *vargroupp, char *name)
 
     *vargroupp = c - '0';
     for (i = 1;; i++) {
-	if (i >= NAME_MAX)
+	if (i >= VNAME_MAX)
 		Fatal("rdname: oversize name");
 	c = getc (infile);
 	if (feof (infile))
@@ -936,7 +950,7 @@ fill_dcl(outfile, t, k, L) FILE *outfile; int t; int k; ftnint L;
 fill_dcl(FILE *outfile, int t, int k, ftnint L)
 #endif
 {
-	nice_printf(outfile, "%s fill_%d[%ld];\n", typename[t], k, L);
+	nice_printf(outfile, "%s fill_%d[%ld];\n", Typename[t], k, L);
 	}
 
  static int
@@ -1055,7 +1069,7 @@ wr_equiv_init(FILE *outfile, int memno, chainp *Values, int iscomm)
 				dtype = typepref[xtype];
 				z = ISREAL(dtype) ? cpstring("0.") : (char *)0;
 				k = typesize[dtype];
-				if (j = L % k)
+				if (j = (int)(L % k))
 					L += k - j;
 				v = mkchain((char *)L,
 					mkchain((char *)(Ulong)dtype,
@@ -1128,7 +1142,7 @@ wr_equiv_init(FILE *outfile, int memno, chainp *Values, int iscomm)
 			if (curtype != -1) {
 				L1 = (loc - loc0)/dL;
 				nice_printf(outfile, "%s e_%d%s;\n",
-					typename[curtype], ++k,
+					Typename[curtype], ++k,
 					Len(L1,curtype));
 				}
 			curtype = dtype;
@@ -1211,11 +1225,16 @@ wr_equiv_init(FILE *outfile, int memno, chainp *Values, int iscomm)
 			case TYINT1:
 			case TYSHORT:
 			case TYLONG:
-#ifdef TYQUAD
+#ifdef TYQUAD0
 			case TYQUAD:
 #endif
 				nice_printf(outfile, "%ld", Const.ci);
 				break;
+#ifndef NO_LONG_LONG
+			case TYQUAD:
+				nice_printf(outfile, "%s", Const.cds[0]);
+				break;
+#endif
 			case TYREAL:
 				nice_printf(outfile, "%s",
 					flconst(real_buf, Const.cds[0]));

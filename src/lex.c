@@ -1,5 +1,5 @@
 /****************************************************************
-Copyright 1990, 1992 - 1997, 1999 by AT&T, Lucent Technologies and Bellcore.
+Copyright 1990, 1992 - 1997, 1999, 2000 by AT&T, Lucent Technologies and Bellcore.
 
 Permission to use, copy, modify, and distribute this software
 and its documentation for any purpose and without fee is hereby
@@ -24,6 +24,11 @@ use or performance of this software.
 #include "defs.h"
 #include "tokdefs.h"
 #include "p1defs.h"
+
+#ifdef _WIN32
+#undef MSDOS
+#define MSDOS
+#endif
 
 #ifdef NO_EOF_CHAR_CHECK
 #undef EOF_CHAR
@@ -389,7 +394,7 @@ doinclude(char *name)
 		t = inclp;
 		inclp = ALLOC(Inclfile);
 		inclp->inclnext = t;
-		prevlin = thislin = 0;
+		prevlin = thislin = lineno = 0;
 		infname = inclp->inclname = name;
 		infile = inclp->inclfp = fp;
 		lastline = 0;
@@ -771,6 +776,7 @@ top:
 				p = b + 6;
 			else {
  bad_cpp:
+				lineno = thislin;
 				errstr("Bad # line: \"%s\"", b);
 				goto top;
 				}
@@ -779,7 +785,14 @@ top:
 			L = *p - '0';
 			while((c = *++p) >= '0' && c <= '9')
 				L = 10*L + c - '0';
-			if (c != ' ' || *++p != '"')
+			while(c == ' ')
+				c = *++p;
+			if (!c) {
+				/* accept "# 1234" */
+				thislin = L - 1;
+				goto top;
+				}
+			if (c != '"')
 				goto bad_cpp;
 			bend = p;
 			while(*++p != '"')
@@ -1536,11 +1549,15 @@ gettok(Void)
 
 		if(toklen > MAXNAMELEN)
 		{
-			char buff[MAXNAMELEN+50];
-			sprintf(buff, toklen >= MAXNAMELEN+10
-				? "name %.*s... too long, truncated to %.*s"
-				: "name %s too long, truncated to %.*s",
+			char buff[2*MAXNAMELEN+50];
+			if (toklen >= MAXNAMELEN+10)
+			    sprintf(buff,
+				"name %.*s... too long, truncated to %.*s",
 				MAXNAMELEN+6, token, MAXNAMELEN, token);
+			else
+			    sprintf(buff,
+				"name %s too long, truncated to %.*s",
+				token, MAXNAMELEN, token);
 			err(buff);
 			toklen = MAXNAMELEN;
 			token[MAXNAMELEN] = '\0';
@@ -1721,4 +1738,12 @@ unclassifiable(Void)
 			}
 	*se = 0;
 	errstr("unclassifiable statement (starts \"%s\")", sbuf);
+	}
+
+ void
+endcheck(Void)
+{
+	if (nextch <= lastch)
+		warn("ignoring text after \"end\".");
+	lexstate = RETEOS;
 	}

@@ -1,6 +1,8 @@
 f2c for debian
 --------------
 
+Original source downloaded from ftp://netlib.bell-labs.com/netlib/f2c.
+
 This version of f2c automatically converts the header file
 f2c.h to not use long ints when compiled on alpha architecture,
 as this generates incorrect code for EQUIVALENCEs (64 bit longs
@@ -8,4 +10,10 @@ are used on the alpha), and is not compatible with g77.  On
 other platforms the file is used as is.   Similar changes
 may turn out to be needed on other 64 bit architectures.
 
-Alan Bain <afrb2@debian.org>
+The libF77 has been MODIFIED to work on MC68k machines.  Thus the 
+libf77 file now differs from that in the original version.  I hope
+this will be temporary until the M68K is fully supported by f2c.  This
+only affects the new -trapuv (trap unitialised values) flag which 
+requires the co-processor exception control mask to be set up.
+
+  Alan Bain <afrb2@debian.org>  Wed, 4 Jul 2001

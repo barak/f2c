@@ -1,5 +1,5 @@
 /****************************************************************
-Copyright 1990, 1992, 1993, 1994 by AT&T, Lucent Technologies and Bellcore.
+Copyright 1990, 1992-1994, 2001 by AT&T, Lucent Technologies and Bellcore.
 
 Permission to use, copy, modify, and distribute this software
 and its documentation for any purpose and without fee is hereby
@@ -42,6 +42,17 @@ prconi(FILEP fp, ftnint n)
 	fprintf(fp, "\t%ld\n", n);
 }
 
+#ifndef NO_LONG_LONG
+ void
+#ifdef KR_headers
+prconq(fp, n) FILEP fp; Llong n;
+#else
+prconq(FILEP fp, Llong n)
+#endif
+{
+	fprintf(fp, "\t%lld\n", n);
+	}
+#endif
 
 
 /* Put out a constant address */
@@ -427,7 +438,8 @@ prolog(outfile, p)
 prolog(FILE *outfile, register chainp p)
 #endif
 {
-	int addif, addif0, i, nd, size;
+	int addif, addif0, i, nd;
+	ftnint size;
 	int *ac;
 	register Namep q;
 	register struct Dimblock *dp;
