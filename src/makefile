@@ -30,13 +30,15 @@ all: xsum.out f2c
 f2c: $(OBJECTS)
 	$(CC) $(LDFLAGS) $(OBJECTS) -o f2c
 
-gram.c:	gram.head gram.dcl gram.expr gram.exec gram.io defs.h tokdefs.h
-	( sed <tokdefs.h "s/#define/%token/" ;\
-		cat gram.head gram.dcl gram.expr gram.exec gram.io ) >gram.in
-	$(YACC) $(YFLAGS) gram.in
-	@echo "(There should be 4 shift/reduce conflicts.)"
-	sed 's/^# line.*/\/* & *\//' y.tab.c >gram.c
-	rm -f gram.in y.tab.c
+## Modern Bisons complain about gram.in so use the gram.c provided by netlib
+
+#gram.c:	gram.head gram.dcl gram.expr gram.exec gram.io defs.h tokdefs.h
+#	( sed <tokdefs.h "s/#define/%token/" ;\
+#	cat gram.head gram.dcl gram.expr gram.exec gram.io ) >gram.in
+#	$(YACC) $(YFLAGS) gram.in
+#	@echo "(There should be 4 shift/reduce conflicts.)"
+#	sed 's/^# line.*/\/* & *\//' y.tab.c >gram.c
+#	rm -f gram.in y.tab.c
 
 $(OBJECTSd): defs.h ftypes.h defines.h machdefs.h sysdep.h
 
@@ -75,7 +77,7 @@ f2c.t: f2c.1t
 #	nroff -man f2c.1t | col -b | uniq >f2c.1
 
 clean:
-	rm -f gram.c *.o f2c tokdefs.h f2c.t
+	rm -f  *.o f2c tokdefs.h f2c.t
 
 b = Notice README cds.c data.c defines.h defs.h equiv.c error.c \
 	exec.c expr.c f2c.1 f2c.1t f2c.h format.c format.h formatdata.c \

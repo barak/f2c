@@ -1,0 +1,70 @@
+f2c (19971204-3) unstable; urgency=low
+  
+  * Fixed fc script so as not to use /tmp in insecure fashion
+    closing bug #19790 -- use of /tmp/*$$
+  * Added man page for fc (thanks to Peter Maydell) 
+    closing bug reported by lintian
+  * Changed debian/rules order for gencontrol and shlibdeps
+    closing bug #17429
+  * Made -mieee-fp an ix86 architecture only option
+    closing bugs #17430, #21247
+ -- Alan Bain <afrb2@cam.ac.uk>  Thu, 7 May 1998 22:00:00 +0100
+f2c (19971204-2) unstable; urgency=low
+
+  * Fixed shlibs problems by adding shlibs file and removing 
+    references to ldconfig in scripts.
+  * Updated to latest standards
+
+ -- Alan Bain <afrb2@cam.ac.uk>  Sat, 14 Mar 1998 21:00:00 +0000
+f2c (19971204-1) unstable; urgency=low
+
+  * Latest netlib sources
+  
+ -- Alan Bain <afrb2@cam.ac.uk>  Fri, 16 Jan 1998 18:00:00 +0000
+
+f2c (970219) unstable; urgency=low
+
+  * Release based on netlib sources containing f2c as of 19/02/97.
+  * Extensive tests for a large f77 project.
+
+ -- Alan Bain <alanb@chiark.greenend.org.uk>  Sun, 16 Nov 1997 21:20:00 +0000
+
+f2c (961209) unstable; urgency=low
+
+  * Release based on netlib sources on 26/1/97, containing
+    f2c from 09/12/97.
+  * Fix bugs
+  * Change to new source packaging format
+  * Libraries are now stripped
+
+ -- Alan Bain <alanb@chiark.greenend.org.uk>  Fri, 28 Feb 1997 19:30:00 +0100
+Thu Jul 25 10:43:03 1996  Dirk Eddelbuettel  <edd@miles.econ.queensu.ca>
+
+	* interim release coordinated with the new maintainer, Alan Bain,
+	  based on the netlib sources as of July 25, 1996 which contain 
+	  the f2c release of July 17, 1996
+	
+	* debian.rules: added arch=$(shell dpkg --print-architecture)    
+
+	* debian.rules: removed -m486 from GCCOPTS, changed to -O2
+
+	* debian.rules: now builts the libI77 and libF77 directories
+ 	  in build target out of libi77 and libf77 source files; libI77
+	  and libF77 are removed by clean target
+
+	* debian.rules: install debian.README as /usr/doc/copyright/$(package)
+
+	* debian.rules: install documentation: f2c.ps, changes, readme
+
+	* debian.rules: install fc script as /usr/bin/fc
+	
+	* debian.rules, debian.control: changed to new coding standard
+	
+	* source package contains exacr copy of ftp://netlib.att.com/f2c/
+	  (but the msdos and .cap directories)
+
+f2c 16 Oct 95 - adf
+Changed package description to make it more concise.
+
+f2c 951007 Debian 1 - adf
+Initial release.

@@ -1,0 +1,124 @@
+#!/usr/bin/make -f
+#   -*- mode: makefile; -*-
+
+# debian.rules file - for f2c, libraries, header file, etc.
+
+
+package=f2c
+
+arch=$(shell dpkg --print-architecture)
+dir=$(package)-$(version)
+file=$(package)_$(version)-$(debian)
+flibmajorver=2
+flibver=2.1
+
+
+# Optimization options.
+GCCOP2=-ansi -O2 -fomit-frame-pointer -mieee-fp -D_POSIX_SOURCE -DDEBIAN
+GCCOP1=-ansi -O2 -fomit-frame-pointer -D_POSIX_SOURCE -DDEBIAN
+
+## Chose which options to use depending upon
+## whether or not target is i386
+
+ifeq ($(arch),i386) 
+   GCCOPT=$(GCCOP2)
+else 
+   GCCOPT=$(GCCOP1)
+endif
+
+build:
+	$(checkdir)
+	$(MAKE) -C "./src" CFLAGS="$(GCCOP1)" xsum
+
+## Avoid using -mieee-fp on anything other than the i386 platform
+## as it is a gcc i386 specific option
+
+        
+	if [ $(arch) == "i386" ] ;\
+           then echo "Building for i386" ;\
+        fi
+
+	$(MAKE) -C "./src" CFLAGS="$(GCCOPT)" ;\
+
+	sh libi77 
+	sh libf77
+## These take gcc options from GCCOPT 
+	$(MAKE) -f ./debian/make_lib INTSIZE=f2c
+	$(MAKE) -f ./debian/make_lib INTSIZE=f2c_i2
+	strip libf2c.so.2.1
+	strip libf2c_i2.so.2.1
+	touch build
+
+clean:
+	$(checkdir)
+	$(MAKE) -C src clean
+	rm -rf libF77 libI77
+	rm -f libf2c* *.tmp __*
+	cd src && rm -f xsum xsum1.out xsum.out; $(MAKE) -i clean
+	rm -f hello hello.o hello.c verify.out hello.P
+	rm -f build build_f2c build_f2c_i2
+	rm -rf debian/tmp *~
+
+binary-indep:	checkroot build
+${checkdir}
+
+
+binary-arch: checkroot 
+	rm -rf debian/tmp
+	install -d debian/tmp debian/tmp/DEBIAN
+	install -d debian/tmp/usr/doc/${package}
+	cp debian/shlibs debian/tmp/DEBIAN/shlibs
+	install -d -m 0755             debian/tmp/usr/bin
+	install -s -m 0755 src/f2c     debian/tmp/usr/bin/f2c
+	install -c -m 0755 fc          debian/tmp/usr/bin/fc
+	install -d -m 0755             debian/tmp/usr/man/man1
+	install -c -m 0644 fc.1        debian/tmp/usr/man/man1/fc.1
+	install -c -m 0644 src/f2c.1t  debian/tmp/usr/man/man1/f2c.1
+	gzip -9v debian/tmp/usr/man/man1/f2c.1
+	install -d -m 0755             debian/tmp/usr/lib
+	install -c -m 0644 libf2c.a    debian/tmp/usr/lib/libf2c.a
+	install -c -m 0644 libf2c_i2.a debian/tmp/usr/lib/libf2c_i2.a
+	install -d -m 0755             debian/tmp/usr/include
+	install -c -m 0644 src/f2c.h   debian/tmp/usr/include/f2c.h
+	install -c -m 0644 libf2c.so.$(flibver) \
+			            debian/tmp/usr/lib/libf2c.so.$(flibver)
+	install -c -m 0644 libf2c_i2.so.$(flibver) \
+		                    debian/tmp/usr/lib/libf2c_i2.so.$(flibver)
+
+	(cd debian/tmp/usr/lib; ln -s libf2c.so.$(flibver) libf2c.so.$(flibmajorver); \
+	ln -s libf2c_i2.so.$(flibver) libf2c_i2.so.$(flibmajorver) )
+
+	install -d -m 0755             debian/tmp/usr/doc/$(package)
+	install -c -m 0644 f2c.ps      debian/tmp/usr/doc/$(package)
+	install -c -m 0644 changes     debian/tmp/usr/doc/$(package)
+	install -c -m 0644 readme      debian/tmp/usr/doc/$(package)
+	install -c -m 0644 debian/changelog \
+                                    debian/tmp/usr/doc/f2c/changelog.Debian
+	(cd debian/tmp/usr/doc/$(package); gzip -9v *)
+	install -c -m 0644 debian/copyright \
+			            debian/tmp/usr/doc/f2c/copyright
+	dpkg-shlibdeps ./src/f2c
+	dpkg-gencontrol
+	chown -R root.root debian/tmp
+	chmod -R go-ws debian/tmp
+	dpkg --build debian/tmp  ..
+
+## Below Here is Generic
+
+define checkdir
+	test -f ./src/$(package).1t
+endef
+
+binary:	binary-indep binary-arch
+
+source diff:
+	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
+
+dist:  binary source diff changes     
+
+checkroot:
+	$(checkdir)
+	test root = "`whoami`"
+
+.PHONY: binary source diff clean checkroot changes dist
+

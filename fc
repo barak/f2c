@@ -43,8 +43,7 @@ PATH=/v/bin:/bin:/usr/bin
 
 #		-P		emit .P files
 
-s=/tmp/stderr_$$
-t=/tmp/f77_$$.o
+s=`tempfile --mode 600`
 CC=${CC_f2c:-'cc -common'}
 EFL=${EFL:-efl}
 EFLFLAGS=${EFLFLAGS:-'system=portable deltastno=10'}
@@ -54,7 +53,7 @@ F2C=${F2C:-f2c}
 F2CFLAGS=${F2CFLAGS:='-ARw8 -Nn802 -Nx400'}
 CPP=${CPP:-/lib/cpp}
 rc=0
-trap "rm -f $s $t; exit \$rc" 0
+trap "rm -f $s; exit \$rc" 0
 OUTF=a.out
 cOPT=1
 set -- `getopt cCD:gI:N:Oo:Suw6 "$@"`
