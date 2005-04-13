@@ -1,3 +1,13 @@
+f2c (20010821-3.2) stable-security; urgency=high
+
+  * Non-maintainer upload by the Security Team
+  * Corrected the patch to create proper temporary files by not shadowing
+    global scope variables with local scope ones.  Thanks to Dan McMahill
+    from NetBSD [src/sysdep.c, patches/patch.CAN-2005-0017.f2c,
+    CAN-2005-0017]
+
+ -- Martin Schulze <joey@infodrom.org>  Wed, 13 Apr 2005 20:46:45 +0200
+
 f2c (20010821-3.1) stable-security; urgency=high
 
   * Non-maintainer upload by the Security Team
