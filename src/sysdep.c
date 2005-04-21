@@ -97,7 +97,9 @@ Un_link_all(int cdelete)
 	if (!debugflag) {
 		unlink(c_functions);
 		unlink(initfname);
+		unlink(initbname);
 		unlink(p1_file);
+		unlink(p1_bakfile);
 		unlink(sortfname);
 		unlink(blkdfname);
 		if (cdelete && coutput)
@@ -121,13 +123,13 @@ set_tmp_names(Void)
 	p1_bakfile = p1_file + k;
 	sortfname = p1_bakfile + k;
 #else
-	char c_functions[] = TMPDIR "/f2c_func_XXXXXX";
-	char initfname[]   = TMPDIR "/f2c_rc_XXXXXX";
-	char initbname[]   = TMPDIR "/f2c_rc.b_XXXXXX";
-	char blkdfname[]   = TMPDIR "/f2c_blkd_XXXXXX";
-	char p1_file[]     = TMPDIR "/f2c_p1f_XXXXXX";
-	char p1_bakfile[]  = TMPDIR "/f2c_p1fb_XXXXXX";
-	char sortfname[]   = TMPDIR "/f2c_sort_XXXXXX";
+	sprintf(c_functions, "%s/f2c_func_XXXXXX", tmpdir);
+	sprintf(initfname,   "%s/f2c_rc_XXXXXX", tmpdir);
+	sprintf(initbname,   "%s/f2c_rc.b_XXXXXX", tmpdir);
+	sprintf(blkdfname,   "%s/f2c_blkd_XXXXXX", tmpdir);
+	sprintf(p1_file,     "%s/f2c_p1f_XXXXXX", tmpdir);
+	sprintf(p1_bakfile,  "%s/f2c_p1fb_XXXXXX", tmpdir);
+	sprintf(sortfname,   "%s/f2c_sort_XXXXXX", tmpdir);
 #endif
 	{
 #ifdef MSDOS

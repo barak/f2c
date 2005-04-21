@@ -1,3 +1,13 @@
+f2c (20020621-3.2) unstable; urgency=HIGH
+
+  * NMU again for same security issues.
+  * Corrected the patch to create proper temporary files by not shadowing
+    global scope variables with local scope ones.  Thanks to Dan McMahill
+    from NetBSD [src/sysdep.c, patches/patch.CAN-2005-0017.f2c,
+    CAN-2005-0017]
+
+ -- Joey Hess <joeyh@debian.org>  Thu, 21 Apr 2005 12:32:07 -0400
+
 f2c (20020621-3.1) unstable; urgency=HIGH
 
   * NMU for security issues. Closes: #292792
