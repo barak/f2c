@@ -26,14 +26,14 @@ use or performance of this software.
 
 char binread[] = "rb", textread[] = "r";
 char binwrite[] = "wb", textwrite[] = "w";
-char *c_functions	= "c_functions";
+char c_functions[64];
 char *coutput		= "c_output";
-char *initfname		= "raw_data";
-char *initbname		= "raw_data.b";
-char *blkdfname		= "block_data";
-char *p1_file		= "p1_file";
-char *p1_bakfile	= "p1_file.BAK";
-char *sortfname		= "init_file";
+char initfname[64];
+char initbname[64];
+char blkdfname[64];
+char p1_file[64];
+char p1_bakfile[64];
+char sortfname[64];
 char *proto_fname	= "proto_file";
 
 char link_msg[]		= "-lf2c -lm"; /* was "-lF77 -lI77 -lm -lc"; */
@@ -123,13 +123,13 @@ set_tmp_names(Void)
 	p1_bakfile = p1_file + k;
 	sortfname = p1_bakfile + k;
 #else
-	sprintf(c_functions, "%s/f2c_func_XXXXXX", tmpdir);
-	sprintf(initfname,   "%s/f2c_rc_XXXXXX", tmpdir);
-	sprintf(initbname,   "%s/f2c_rc.b_XXXXXX", tmpdir);
-	sprintf(blkdfname,   "%s/f2c_blkd_XXXXXX", tmpdir);
-	sprintf(p1_file,     "%s/f2c_p1f_XXXXXX", tmpdir);
-	sprintf(p1_bakfile,  "%s/f2c_p1fb_XXXXXX", tmpdir);
-	sprintf(sortfname,   "%s/f2c_sort_XXXXXX", tmpdir);
+	snprintf(c_functions, sizeof(c_functions), "%s/f2c_func_XXXXXX", tmpdir);
+	snprintf(initfname,  sizeof(initfname),   "%s/f2c_rc_XXXXXX", tmpdir);
+	snprintf(initbname,  sizeof(initbname),   "%s/f2c_rc.b_XXXXXX", tmpdir);
+	snprintf(blkdfname,  sizeof(blkdfname),   "%s/f2c_blkd_XXXXXX", tmpdir);
+	snprintf(p1_file,    sizeof(p1_file),     "%s/f2c_p1f_XXXXXX", tmpdir);
+	snprintf(p1_bakfile, sizeof(p1_bakfile),  "%s/f2c_p1fb_XXXXXX", tmpdir);
+	snprintf(sortfname,  sizeof(sortfname),   "%s/f2c_sort_XXXXXX", tmpdir);
 #endif
 	{
 #ifdef MSDOS

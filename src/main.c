@@ -215,13 +215,13 @@ static arg_info table[] = {
     f2c_entry ("dneg", P_NO_ARGS, P_INT, &dneg, YES)
 }; /* table */
 
-extern char *c_functions;	/* "c_functions"	*/
+extern char c_functions[];	/* "c_functions"	*/
 extern char *coutput;		/* "c_output"		*/
-extern char *initfname;		/* "raw_data"		*/
-extern char *blkdfname;		/* "block_data"		*/
-extern char *p1_file;		/* "p1_file"		*/
-extern char *p1_bakfile;	/* "p1_file.BAK"	*/
-extern char *sortfname;		/* "init_file"		*/
+extern char initfname[];	/* "raw_data"		*/
+extern char blkdfname[];	/* "block_data"		*/
+extern char p1_file[];		/* "p1_file"		*/
+extern char p1_bakfile[];	/* "p1_file.BAK"	*/
+extern char sortfname[];	/* "init_file"		*/
 extern char *proto_fname;	/* "proto_file"		*/
 FILE *protofile;
 

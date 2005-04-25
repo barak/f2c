@@ -64,7 +64,7 @@ extern FILEP blkdfile;		/* BLOCK DATA file */
 extern int current_ftn_file;
 extern int maxcontin;
 
-extern char *blkdfname, *initfname, *sortfname;
+extern char blkdfname[], initfname[], sortfname[];
 extern long headoffset;		/* Since the header block requires data we
 				   don't know about until AFTER each
 				   function has been processed, we keep a

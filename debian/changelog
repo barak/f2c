@@ -1,3 +1,13 @@
+f2c (20020621-3.3) unstable; urgency=medium
+
+  * Re-NMU for same issue.
+  * Use preallocated buffers for our tmpfile names, instead of using
+    randomly-sized strings and scribbling on memory.  Closes: #305971.
+    (Patch by Steve Langasek.)
+  * Lowered upload urgency to get a little more testing this time.
+
+ -- Joey Hess <joeyh@debian.org>  Mon, 25 Apr 2005 14:32:09 -0400
+
 f2c (20020621-3.2) unstable; urgency=HIGH
 
   * NMU again for same security issues.
