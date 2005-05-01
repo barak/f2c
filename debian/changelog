@@ -1,3 +1,11 @@
+f2c (20020621-3.4) unstable; urgency=high
+
+  * Re-NMU for same issue, yay
+  * Fix a remaining extern char * that needs to be extern char[]; build
+    tested to actually work this time. ;)  Really-closes: #305971.
+
+ -- Steve Langasek <vorlon@debian.org>  Sat, 30 Apr 2005 20:03:18 -0700
+
 f2c (20020621-3.3) unstable; urgency=medium
 
   * Re-NMU for same issue.

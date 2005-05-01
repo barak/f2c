@@ -90,7 +90,7 @@ start_formatting(Void)
     FILE *infile;
     static int wrote_one = 0;
     extern int usedefsforcommon;
-    extern char *p1_file, *p1_bakfile;
+    extern char p1_file[], p1_bakfile[];
 
     this_proc_name[0] = '\0';
     last_was_label = 0;
