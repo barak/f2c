@@ -79,7 +79,6 @@ binary-arch: checkroot
 	install -d debian/tmp/usr/share/doc/${package}
 	cp debian/shlibs debian/tmp/DEBIAN/shlibs
 	install -c -m 0755 debian/postinst debian/tmp/DEBIAN
-	install -c -m 0755 debian/prerm debian/tmp/DEBIAN
 	install -d -m 0755             debian/tmp/usr/bin
 	install -s -m 0755 src/f2c     debian/tmp/usr/bin/f2c
 	install -c -m 0755 fc          debian/tmp/usr/bin/fc

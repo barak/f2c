@@ -1,8 +1,4 @@
 #!/bin/sh
 set -e
 ldconfig
-if [ "$1" = "configure" ]; then
-       if [ -d /usr/doc -a ! -e /usr/doc/f2c -a -d /usr/share/doc/f2c ]; then
-        ln -sf ../share/doc/f2c /usr/doc/f2c
-  fi
-fi
+

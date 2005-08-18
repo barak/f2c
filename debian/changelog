@@ -1,3 +1,9 @@
+f2c (20020621-4) unstable; urgency=low
+  * Removed /usr/doc symlink (closes: bug#322830)
+  * NMU fixed bugs (closes: bug#292792, bug# 305971)
+
+ -- Alan Bain <afrb2@debian.org>  Thu, 18 Aug 2005 19:27:10 +0100
+ 
 f2c (20020621-3.4) unstable; urgency=high
 
   * Re-NMU for same issue, yay
