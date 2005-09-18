@@ -11,7 +11,7 @@
 #	may be useful as way to pass system-specific stuff to the C compiler.
 #	The script below simply appends to the initial CFLAGS value.
 
-PATH=/usr/bin:/bin:/usr/bin
+PATH=/usr/local/bin:/bin:/usr/bin
 
 # f77-style shell script to compile and load fortran, C, and assembly codes
 
@@ -82,7 +82,7 @@ PATH=/usr/bin:/bin:/usr/bin
 #				or to cpp (for .F files) to remove def
 
 s=`tempfile --prefix=stderr` || { echo "$0: Cannot create temporary file" ; exit 1; }
-t=`tempfile --suffix=.o --prefix=f77` || { echo "$0: Cannot create temporary file"; exit 1; }
+t=`tempfile --suffix=.o --prefix=f77` || { echo "$0: Cannot create temporary file" ; exit 1; }
 trap "rm -f $s $t; exit \$rc" 0
 ### On some systems (e.g., IRIX), -common prevents complaints
 ### about multiple definitions of COMMON blocks.

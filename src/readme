@@ -1,7 +1,14 @@
-Type "make" to check the validity of the f2c source and compile f2c.
+To compile f2c on Linux or Unix systems, copy makefile.u to makefile,
+edit makefile if necessary (see the comments in it and below) and
+type "make" (or maybe "nmake", depending on your system).
 
-On a PC, you may need to compile xsum.c with -DMSDOS (i.e., with
-MSDOS #defined).
+To compile f2c.exe on MS Windows systems with Microsoft Visual C++,
+
+	copy makefile.vc makefile
+	nmake
+
+With other PC compilers, you may need to compile xsum.c with -DMSDOS
+(i.e., with MSDOS #defined).
 
 If your compiler does not understand ANSI/ISO C syntax (i.e., if
 you have a K&R C compiler), compile with -DKR_headers .
@@ -75,27 +82,33 @@ You may need to make this change if you run f2c and get an error
 message of the form
 	Compiler error ... cannot open intermediate file ...
 
-On many systems, it is best to combine libF77 and libI77 into a single
-library, say libf2c, as suggested in "readme from f2c".  If you do not
-do this, then you should adjust the definition of link_msg in sysdep.c
-appropriately (e.g., replacing "-lf2c" by "-lF77 -lI77").  On Unix
-systems, the easiest way to create libf2c.a is to make libF77/libF77.a
-and libI77/libI77.a (after reading and heeding libF77/README and
-libI77/README), and then to say
+In the days of yore, two libraries, libF77 and libI77, were used with
+f77 (the Fortran compiler on which f2c is based).  Separate source for
+these libraries is still available from netlib, but it is more
+convenient to combine them into a single library, libf2c.  Source for
+this combined library is also available from netlib in f2c/libf2c.zip,
+e.g.,
+	http://netlib.bell-labs.com/netlib/f2c/libf2c.zip
+or
+	http://www.netlib.org/f2c/libf2c.zip
 
-	cp libF77/libF77.a libf2c.a
-	ar ruv libf2c.a libI77/*.o
-	ranlib libf2c.a
+(and similarly for other netlib mirrors).  After unzipping libf2c.zip,
+copy the relevant makefile.* to makefile, edit makefile if necessary
+(see the comments in it and in libf2c/README) and invoke "make" or
+"nmake".  The resulting library is called *f2c.lib on MS Windows
+systems and libf2c.a or libf2c.so on Linux and Unix systems;
+makefile.u just shows how to make libf2c.a.  Details on creating the
+shared-library variant, libf2c.so, are system-dependent; some that
+have worked under Linux appear below.  For some other systems, you can
+glean the details from the system-dependent makefile variants in
+directory http://www.netlib.org/ampl/solvers/funclink or
+http://netlib.bell-labs.com/netlib/ampl/solvers/funclink, etc.
 
-The last step, ranlib, may not be necessary on your system.  On
-other systems, just compile all the .c files in libF77 and libI77,
-and put the resulting objects (except one or both of the Version
-objects) into a library, called perhaps f2c.lib .
-
-In general, under Linux it is necessary to compile libI77 with
--DNON_UNIX_STDIO .  Under at least one variant of Linux, you can make
-and install a shared-library version of libf2c by compiling libI77
-with -DNON_UNIX_STDIO, creating libf2c.a as above, and then executing
+In general, under Linux it is necessary to compile libf2c (or libI77)
+with -DNON_UNIX_STDIO .  Under at least one variant of Linux, you can
+make and install a shared-library version of libf2c by compiling
+libI77 with -DNON_UNIX_STDIO, creating libf2c.a as above, and then
+executing
 
 	mkdir t
 	ln lib?77/*.o t
@@ -164,11 +177,10 @@ based on DEC Alpha chips, such as the T3E; on such machines, you may
 need to make a suitable adjustment, e.g., add #undef CRAY to sysdep.h.
 
 
-Please send bug reports to dmg@bell-labs.com .  The old index file
-(now called "readme" due to unfortunate changes in netlib conventions:
-"send readme from f2c") will report recent changes in the recent-change
-log at its end; all changes will be shown in the "changes" file
-("send changes from f2c").  To keep current source, you will need to
-request xsum0.out and version.c, in addition to the changed source
-files.  Changes first appear on netlib@netlib.bell-labs.com, and in due
-time propagate to the other netlib sites that are kept current.
+Please send bug reports to dmg at acm.org (with " at " changed to "@").
+The old index file (now called "readme" due to unfortunate changes in
+netlib conventions:  "send readme from f2c") will report recent
+changes in the recent-change log at its end; all changes will be shown
+in the "changes" file ("send changes from f2c").  To keep current
+source, you will need to request xsum0.out and version.c, in addition
+to the changed source files.

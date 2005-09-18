@@ -967,6 +967,17 @@ opconv_fudge(FILE *fp, struct Exprblock *e)
 					out_addr(fp, ap);
 					nice_printf(fp, ".r");
 					return 1;
+				  case UNAM_REF:
+					nice_printf(fp, "(%s) %s_%s(",
+					 s, ap->user.name->cvarname,
+					 ap->cmplx_sub ? "subscr" : "ref");
+					out_args(fp, ap->memoffset);
+					nice_printf(fp, ").r");
+					return 1;
+				  default:
+					fatali(
+					 "Bad uname_tag %d in opconv_fudge",
+						ap->uname_tag);
 				  }
 			  case TEXPR:
 				e = (Exprp)np;

@@ -90,7 +90,7 @@ start_formatting(Void)
     FILE *infile;
     static int wrote_one = 0;
     extern int usedefsforcommon;
-    extern char p1_file[], p1_bakfile[];
+    extern char *p1_file, *p1_bakfile;
 
     this_proc_name[0] = '\0';
     last_was_label = 0;
@@ -2275,7 +2275,45 @@ p1getq(infile, result) FILE *infile; Llong *result;
 p1getq(FILE *infile, Llong *result)
 #endif
 {
+#ifdef __FreeBSD__
+#ifndef NO_FSCANF_LL_BUG
+#define FSCANF_LL_BUG
+#endif
+#endif
+#ifdef FSCANF_LL_BUG
+	ULlong x = 0;
+	int c, have_c = 0;
+	for(;;) {
+		c = getc(infile);
+		if (c == EOF)
+			break;
+		if (c <= ' ') {
+			if (!have_c)
+				continue;
+			goto done;
+			}
+		if (c >= '0' && c <= '9')
+			c -= '0';
+		else if (c >= 'a' && c <= 'f')
+			c += 10 - 'a';
+		else if (c >= 'A' && c <= 'F')
+			c += 10 - 'A';
+		else {
+ done:
+			ungetc(c, infile);
+			break;
+			}
+		x = x << 4 | c;
+		have_c = 1;
+		}
+	if (have_c) {
+		*result = (Llong)x;
+		return 1;
+		}
+	return 0;
+#else
 	return fscanf(infile, "%llx", result);
+#endif
 	}
 #endif
 

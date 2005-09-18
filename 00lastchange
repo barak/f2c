@@ -1,3 +1,4 @@
-Fri Sep  6 18:39:24 EDT 2002
-  libf2c.zip: rsne.c: fix bug with multiple repeat counts in reading
-namelists, e.g., &nl a(2) = 3*1.0, 2*2.0, 3*3.0 /
+Sun May  1 21:45:46 MDT 2005
+sysdep.c:  fix a possible fault under -DMSDOS and improper handling
+of a tmpnam failure under the unusual combination of both -DNO_MKDTEMP
+and -DNO_MKSTEMP (without -DNO_TEMPDIR).

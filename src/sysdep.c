@@ -26,17 +26,23 @@ use or performance of this software.
 
 char binread[] = "rb", textread[] = "r";
 char binwrite[] = "wb", textwrite[] = "w";
-char c_functions[64];
+char *c_functions	= "c_functions";
 char *coutput		= "c_output";
-char initfname[64];
-char initbname[64];
-char blkdfname[64];
-char p1_file[64];
-char p1_bakfile[64];
-char sortfname[64];
+char *initfname		= "raw_data";
+char *initbname		= "raw_data.b";
+char *blkdfname		= "block_data";
+char *p1_file		= "p1_file";
+char *p1_bakfile	= "p1_file.BAK";
+char *sortfname		= "init_file";
 char *proto_fname	= "proto_file";
 
-char link_msg[]		= "-lf2c -lm"; /* was "-lF77 -lI77 -lm -lc"; */
+char link_msg[]	= "on Microsoft Windows system, link with libf2c.lib;\n\
+	on Linux or Unix systems, link with .../path/to/libf2c.a -lm\n\
+	or, if you install libf2c.a in a standard place, with -lf2c -lm\n\
+	-- in that order, at the end of the command line, as in\n\
+		cc *.o -lf2c -lm\n\
+	Source for libf2c is in /netlib/f2c/libf2c.zip, e.g.,\n\n\
+		http://www.netlib.org/f2c/libf2c.zip";
 
 char *outbuf = "", *outbtail;
 
@@ -63,15 +69,7 @@ char *outbuf = "", *outbtail;
 static char **spargv, **pfname;
 #endif
 
-#ifndef TMPDIR
-#ifdef MSDOS
-#define TMPDIR ""
-#else
-#define TMPDIR "/tmp"
-#endif
-#endif
-
-char *tmpdir = TMPDIR;
+char *tmpdir = "";
 
 #ifdef __cplusplus
 #define Cextern extern "C"
@@ -97,9 +95,9 @@ Un_link_all(int cdelete)
 	if (!debugflag) {
 		unlink(c_functions);
 		unlink(initfname);
-		unlink(initbname);
+                unlink(initbname);
 		unlink(p1_file);
-		unlink(p1_bakfile);
+                unlink(p1_bakfile);
 		unlink(sortfname);
 		unlink(blkdfname);
 		if (cdelete && coutput)
@@ -107,14 +105,26 @@ Un_link_all(int cdelete)
 		}
 	}
 
- void
-set_tmp_names(Void)
+#ifndef NO_TEMPDIR
+ static void
+rmtdir(Void)
 {
-#ifdef MSDOS
-	int k;
-	if (debugflag == 1)
-		return;
-	k = strlen(tmpdir) + 24;
+	char *s;
+	if (*(s = tmpdir)) {
+		tmpdir = "";
+		rmdir(s);
+		}
+	}
+#endif /*NO_TEMPDIR*/
+
+#ifndef MSDOS
+#include "sysdep.hd"
+#endif
+
+ static void
+alloc_names(Void)
+{
+	int k = strlen(tmpdir) + 24;
 	c_functions = (char *)ckalloc(7*k);
 	initfname = c_functions + k;
 	initbname = initfname + k;
@@ -122,16 +132,11 @@ set_tmp_names(Void)
 	p1_file = blkdfname + k;
 	p1_bakfile = p1_file + k;
 	sortfname = p1_bakfile + k;
-#else
-	snprintf(c_functions, sizeof(c_functions), "%s/f2c_func_XXXXXX", tmpdir);
-	snprintf(initfname,  sizeof(initfname),   "%s/f2c_rc_XXXXXX", tmpdir);
-	snprintf(initbname,  sizeof(initbname),   "%s/f2c_rc.b_XXXXXX", tmpdir);
-	snprintf(blkdfname,  sizeof(blkdfname),   "%s/f2c_blkd_XXXXXX", tmpdir);
-	snprintf(p1_file,    sizeof(p1_file),     "%s/f2c_p1f_XXXXXX", tmpdir);
-	snprintf(p1_bakfile, sizeof(p1_bakfile),  "%s/f2c_p1fb_XXXXXX", tmpdir);
-	snprintf(sortfname,  sizeof(sortfname),   "%s/f2c_sort_XXXXXX", tmpdir);
-#endif
-	{
+	}
+
+ void
+set_tmp_names(Void)
+{
 #ifdef MSDOS
 	char buf[64], *s, *t;
 #ifdef _WIN32
@@ -139,6 +144,8 @@ set_tmp_names(Void)
 	char volname[512], f2c[24], fsname[512], *name1;
 	int i;
 
+	if (debugflag == 1)
+		return;
 	i = sprintf(f2c, "%x", _getpid());
 	if (!GetVolumeInformation(NULL, volname, sizeof(volname), &volser, &maxlen,
 			&flags, fsname, sizeof(fsname))
@@ -146,6 +153,8 @@ set_tmp_names(Void)
 		strcpy(f2c, "f2c_");
 #else
 	static char f2c[] = "f2c_";
+	if (debugflag == 1)
+		return;
 #endif
 
 	if (!*tmpdir || *tmpdir == '.' && !tmpdir[1])
@@ -163,28 +172,78 @@ set_tmp_names(Void)
 		*t = 0;
 		t = buf;
 		}
+	alloc_names();
 	sprintf(c_functions, "%s%sfunc", t, f2c);
 	sprintf(initfname, "%s%srd", t, f2c);
 	sprintf(blkdfname, "%s%sblkd", t, f2c);
 	sprintf(p1_file, "%s%sp1f", t, f2c);
 	sprintf(p1_bakfile, "%s%sp1fb", t, f2c);
 	sprintf(sortfname, "%s%ssort", t, f2c);
-	sprintf(initbname, "%s.b", initfname);
-#else
+#else /*!MSDOS*/
+	long pid;
 
-	if (mkstemp(c_functions) == -1
-	    || mkstemp(initfname) == -1
-	    || mkstemp(initbname) == -1
-	    || mkstemp(blkdfname) == -1
-	    || mkstemp(p1_file) == -1
-	    || mkstemp(p1_bakfile) == -1
-	    || mkstemp(sortfname) == -1) {
-	  fprintf(stderr, "Cannot create temporary files\n");
-	  Un_link_all(0);
-	  exit(1);
-	}
+#define L_TDNAME 20
+#ifdef NO_MKDTEMP
+#ifdef NO_MKSTEMP
+#undef  L_TDNAME
+#define L_TDNAME L_tmpnam
 #endif
-	}
+#endif
+	static char tdbuf[L_TDNAME];
+
+	if (debugflag == 1)
+		return;
+	pid = getpid();
+	if (!*tmpdir) {
+#ifdef NO_TEMPDIR
+		tmpdir = "/tmp";
+#else
+#ifdef NO_MKDTEMP
+#ifdef NO_MKSTEMP
+		if (!(tmpdir = tmpnam(tdbuf))) {
+			fprintf(stderr, "tmpnam failed (for -T)\n");
+			exit(1);
+			}
+#else
+		int f;
+		strcpy(tdbuf, "/tmp/f2ctd_XXXXXX");
+		f = mkstemp(tdbuf);
+		if (f >= 0) {
+			close(f);
+			remove(tmpdir = tdbuf);
+			}
+		else {
+			fprintf(stderr, "mkstemp failed (for -T)\n");
+			exit(1);
+			}
+#endif /*NO_MKSTEMP*/
+		if (mkdir(tdbuf,0700)) {
+			fprintf(stderr, "mkdir failed (for -T)\n");
+			exit(1);
+			}
+#else /*!NO_MKDTEMP*/
+		strcpy(tdbuf, "/tmp/f2ctd_XXXXXX");
+		if (!(tmpdir = mkdtemp(tdbuf))) {
+			fprintf(stderr, "mkdtemp failed (for -T)\n");
+			exit(1);
+			}
+#endif /*NO_MKDTEMP*/
+		if (!debugflag)
+			atexit(rmtdir);
+#endif /*NO_TEMPDIR*/
+		}
+	alloc_names();
+        /* What follows is safe if tmpdir is really
+        a private diectory created by us -- otherwise
+        the file could be a sym link somewhere else....*/
+	sprintf(c_functions, "%s/f2c%ld_func", tmpdir, pid);
+	sprintf(initfname, "%s/f2c%ld_rd", tmpdir, pid);
+	sprintf(blkdfname, "%s/f2c%ld_blkd", tmpdir, pid);
+	sprintf(p1_file, "%s/f2c%ld_p1f", tmpdir, pid);
+	sprintf(p1_bakfile, "%s/f2c%ld_p1fb", tmpdir, pid);
+	sprintf(sortfname, "%s/f2c%ld_sort", tmpdir, pid);
+#endif /*MSDOS*/
+	sprintf(initbname, "%s.b", initfname);
 	if (debugflag)
 		fprintf(diagfile, "%s %s %s %s %s %s\n", c_functions,
 			initfname, blkdfname, p1_file, p1_bakfile, sortfname);

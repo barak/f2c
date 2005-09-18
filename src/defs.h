@@ -64,7 +64,7 @@ extern FILEP blkdfile;		/* BLOCK DATA file */
 extern int current_ftn_file;
 extern int maxcontin;
 
-extern char blkdfname[], initfname[], sortfname[];
+extern char *blkdfname, *initfname, *sortfname;
 extern long headoffset;		/* Since the header block requires data we
 				   don't know about until AFTER each
 				   function has been processed, we keep a
@@ -991,6 +991,7 @@ void	out_for Argdcl((FILEP, tagptr, tagptr, tagptr));
 void	out_init(Void);
 void	outbuf_adjust(Void);
 void	p1_label Argdcl((long));
+void	paren_used Argdcl((struct Primblock*));
 void	prcona Argdcl((FILEP, long));
 void	prconi Argdcl((FILEP, long));
 #ifndef NO_LONG_LONG

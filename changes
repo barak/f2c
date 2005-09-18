@@ -3332,3 +3332,92 @@ Fri Sep  6 18:39:24 EDT 2002
   libf2c.zip: rsne.c: fix bug with multiple repeat counts in reading
 namelists, e.g., &nl a(2) = 3*1.0, 2*2.0, 3*3.0 /
 (Bug found by Jim McDonald, reported by Toon Moene.)
+
+Fri Oct  4 10:23:51 EDT 2002
+  libf2c.zip: uninit.c: on IRIX systems, omit references to shell
+variables (a dreg).  This only matters with f2c -trapuv .
+
+Thu Dec 12 22:16:00 EST 2002
+  proc.c: tweak to omit "* 1" from "a_offset = 1 + a_dim1 * 1;".
+  libf2c.zip: uninit.c: adjust to work with HP-UX B.11.11 as well as
+HP-UX B.10.20; f77vers.c not changed.
+
+Tue Feb 11 08:19:54 EST 2003
+  Fix a fault with f2c -s on the following example of invalid Fortran
+(reported by Nickolay A. Khokhlov); "function" should appear before
+"cat" on the first line:
+	character*(*) cat(a, b)
+	character*(*) a, b
+	cat = a // b
+	end
+  Issue warnings about inappropriate uses of arrays a, b, c and pass
+a temporary for d in
+	real a(2), b(2), c(2), d
+	call foo((a), 1*b, +c, +d)
+	end
+(correcting bugs reported by Arnaud Desitter).
+
+Thu Mar  6 22:48:08 EST 2003
+  output.c: fix a bug leading to "Unexpected tag 4 in opconv_fudge"
+when f2c -s processes the real part of a complex array reference.
+Example (simplified from netlib/linpack/zchdc.f):
+
+	subroutine foo(a,work,n,k)
+	integer k, n
+	complex*16 a(n,n), work(n)
+	work(k) = dcmplx(dsqrt(dreal(a(k,k))),0.0d0)
+	end
+
+(Thanks to Nickolay A. Khokhlov for the bug report.)
+
+Thu Mar 20 13:50:12 EST 2003
+  format.c:  code around a bug (reported by Nelson H. F. Beebe) in
+some versions of FreeBSD.  Compiling with __FreeBSD__ but not
+NO_FSCANF_LL_BUG #defined or with FSCANF_LL_BUG #defined causes
+special logic to replace  fscanf(infile, "%llx", result)  with
+custom logic.  Here's an example (from Beebe) where the bug bit:
+	integer*8 m, n
+	m = 9223372036854775807
+	end
+
+Fri Mar 21 13:14:05 EST 2003
+  libf2c.zip: err.c: before writing to a file after reading from it,
+do an f_seek(file, 0, SEEK_CUR) to make writing legal in ANSI C.
+
+Fri Jun  6 14:56:44 EDT 2003
+libf2c.zip:  add comments about libf2c.so (and a rule that works under
+Linux, after an adjustment to the CFLAGS = line) to libf2c/makefile.u.
+
+Sat Oct 25 07:57:53 MDT 2003
+README, main.c, sysdep.c:  adjust comments about libf2c and expand the
+comments thereon in the C that f2c writes (since too few people read
+the README files).  Change makefile to makefile.u (with the
+expectation that people will "cp makefile.u makefile" and edit
+makefile if necessary) and add makefile.vc (for Microsoft Visual C++).
+
+Thu Oct  7 23:25:28 MDT 2004
+names.c: for convenience of MSVC++ users, map "cdecl" to "cdecl__".
+
+Fri Mar  4 18:40:48 MST 2005
+sysdep.c, makefile.u, new file sysdeptest.c:  changes in response to a
+message forwarded by Eric Grosse from Thierry Carrez <koon@gentoo.org>
+(who is apparently unaware of f2c's -T option) about an unlikely
+security issue:  that a local attacker could plant symbolic links in
+/tmp corresponding to temporary file names that f2c generates and thus
+cause overwriting of arbitrary files.  Today's change is that if
+neither -T nor the unusual debugging flag -Dn is specified and the
+system is not an MS-Windows system (which cannot have symbolic links,
+as far as I know), then f2c's temporary files will be written in a
+temporary directory that is readable and writable only by the user and
+that is removed at the end of f2c's execution.  To disable today's
+change, compile sysdep.c with -DNO_TEMPDIR (i.e., with NO_TEMPDIR
+#defined).
+
+Sun Mar 27 20:06:49 MST 2005
+sysdep.c: in set_tmp_names(), fix botched placement of
+"if (debugflag == 1) return;":  move it below declarations.
+
+Sun May  1 21:45:46 MDT 2005
+sysdep.c:  fix a possible fault under -DMSDOS and improper handling
+of a tmpnam failure under the unusual combination of both -DNO_MKDTEMP
+and -DNO_MKSTEMP (without -DNO_TEMPDIR).

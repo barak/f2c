@@ -215,13 +215,13 @@ static arg_info table[] = {
     f2c_entry ("dneg", P_NO_ARGS, P_INT, &dneg, YES)
 }; /* table */
 
-extern char c_functions[];	/* "c_functions"	*/
+extern char *c_functions;	/* "c_functions"	*/
 extern char *coutput;		/* "c_output"		*/
-extern char initfname[];	/* "raw_data"		*/
-extern char blkdfname[];	/* "block_data"		*/
-extern char p1_file[];		/* "p1_file"		*/
-extern char p1_bakfile[];	/* "p1_file.BAK"	*/
-extern char sortfname[];	/* "init_file"		*/
+extern char *initfname;		/* "raw_data"		*/
+extern char *blkdfname;		/* "block_data"		*/
+extern char *p1_file;		/* "p1_file"		*/
+extern char *p1_bakfile;	/* "p1_file.BAK"	*/
+extern char *sortfname;		/* "init_file"		*/
 extern char *proto_fname;	/* "proto_file"		*/
 FILE *protofile;
 
@@ -636,8 +636,8 @@ sed \"s/^\\/\\*>>>'\\(.*\\)'<<<\\*\\/\\$/cat >'\\1' <<'\\/*<<<\\1>>>*\\/'/\" | /
 		nice_printf (c_output, "/* %s -- translated by f2c ", file_name);
 		nice_printf (c_output, "(version %s).\n", F2C_version);
 		nice_printf (c_output,
-	"   You must link the resulting object file with the libraries:\n\
-	%s   (in that order)\n*/\n\n", link_msg);
+	"   You must link the resulting object file with libf2c:\n\
+	%s\n*/\n\n", link_msg);
 		}
 	if (Ansi == 2)
 		nice_printf(c_output,

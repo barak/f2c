@@ -1,3 +1,15 @@
+f2c (20050501-1) unstable; urgency=low
+  * Separated libf2c2 into a separate package to be more
+    standards compilant.
+  * New upstream release of f2c. This addresses
+    * Bug fix for f2c -s processing of real part of complex array reference.
+    * Warnings issued about inappropriate use of arrays.
+    * Upstream author fix for [CAN-2005-0017] so when -T not specified
+      the temporary files are created in a private directory created by
+      mkdtemp() and removed after execution.
+
+ -- Alan Bain <afrb2@debian.org>  Sun, 18 Sep 2005 21:19:48 +0100
+
 f2c (20020621-4) unstable; urgency=low
   * Removed /usr/doc symlink (closes: bug#322830)
   * NMU fixed bugs (closes: bug#292792, bug# 305971)

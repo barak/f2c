@@ -1,29 +1,29 @@
 -----BEGIN PGP SIGNED MESSAGE-----
 
-# netlib-bl master Thu Aug 23 03:34:48 EDT 2001
+# netlib-bl master Mon May 2 10:35:05 EDT 2005
 # http://cm.bell-labs.com/netlib/crc/netlib-bl.html
-0vWoAgSiLc0dsO5OWr2Z/A	00lastchange
-YBxtn7BI6UH8hRRd/uDtTg	changes
-Txl9/i69EKXe9huT3iiYcg	disclaimer
-d9XlZqW6JqaZSjpOSpYnPQ	f2c.1
-YFV1UrYSLQOUtw2eZIEF3g	f2c.1t
+ca9ldhXIOpqcoKAFtkrpfQ	00lastchange
+fly3ZKomK206GNH46wxSFQ	README
+bQwtwmCYEwnHdw0KBdsOMw	changes
+Yrjzy3qMAF2HkSn5epGX6g	disclaimer
+F345KmWVpdP3bJkyG1hYuw	f2c.1
+P9Inhk/7xaifTvBs3ayVUg	f2c.1t
 uCBnCwhHF1lHUnE0rGdjLg	f2c.h
 lZXtU687uJADS6DbdQlMDg	f2c.ps
 /YNZWAvBdp1LISATY8pk8w	fc
 hfcSe0J/Ms21jOUSm0Dv7w	getopt.c
 S7uYe8gs6s7EiE4MEy9YVQ	index
-w4hoDzRvMJ5Xe4fY5RRomA	libf2c.zip
-/4kI34qORnTEgiIJsK80VA	libf77
-8Gg3ZHz6BZ4b64u5QN+KOg	libi77
+AR83FbksrS6e5xk+BKqskA	libf2c.zip
+O/TqQ82nJEUC/RmonEDSzw	libf77
+OOmkboAzOZoQAVNdaNobmQ	libi77
 JOAQtI7OATPEPHcgO29oOA	permission
-USDyeJ+SAO1GoJ+NYhJxhA	readme
 
 -----BEGIN PGP SIGNATURE-----
 Version: 2.6.2
 
-iQCVAwUBO4SyGr5pvxO9gjtZAQFB0QP/Wig+Z8QZGtP80QJ3Y+MvTYfitCY88wu7
-G0UJUSPviliWPy8krtq/4rdnlTlmW3DI9o0LHJTO/ZQCHLYBFb8HRY3+sskiA+pB
-uGzZU4FpHEpNtqUUz1M32m22QUYVFufo2aM0YYB9Kq2OsWWpRJbRWvy2mwX9d9Xq
-a50Q7LWyYYU=
-=9hgN
+iQCVAwUBQnY6m75pvxO9gjtZAQGZpgP/aOOeQGvFzlr3IdxoRI8mkHdNcm4BLiND
+Ai7yY2dc/L/n++AvI8RcZdAL+Mh/9sZwZfiDi163VGilBn9EkNzXRwhR6XF6VkWK
+N7CHvwRaAm/7G/Bce83fw8zB4z4k4o/zxVgEKHVcWTgue5mWGVJGkUGuRnoKZH1W
+TJtP8NTtrkI=
+=zwKr
 -----END PGP SIGNATURE-----
