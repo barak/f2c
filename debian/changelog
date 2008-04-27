@@ -1,3 +1,9 @@
+f2c (20061008-1) unstable; urgency=low
+  * new upstream source (closes: bug#401094)
+  * correction to handling of integer*8 subscripts
+  
+ -- Alan Bain <afrb2@debian.org>  Sun, 27 Apr 2008 19:40:03 +0100
+
 f2c (20050501-3) unstable; urgency=low
   * Correct date error in previous changelog.
  -- Alan Bain <afrb2@debian.org>  Sun, 27 Apr 2008 16:45:03 +0100

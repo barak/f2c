@@ -11,6 +11,8 @@ file	f2c/f2c.h
 file	f2c/f2c.ps
 lang	Postscript
 
+file	f2c/f2c.pdf
+
 file	f2c/fc
 lang	Bourne shell script
 

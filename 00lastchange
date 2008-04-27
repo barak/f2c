@@ -1,4 +1,6 @@
-Sun May  1 21:45:46 MDT 2005
-sysdep.c:  fix a possible fault under -DMSDOS and improper handling
-of a tmpnam failure under the unusual combination of both -DNO_MKDTEMP
-and -DNO_MKSTEMP (without -DNO_TEMPDIR).
+Sat Apr  5 21:39:57 MDT 2008
+  libf2c.zip: tweaks for political C++ and const correctness, and
+to fix ctype trouble in some recent Linux versions.  No behavior
+should change.
+Sun Apr  6 22:38:56 MDT 2008
+  libf2c.zip: adjust alternate makefiles to reflect yesterday's change.

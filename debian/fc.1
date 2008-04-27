@@ -11,30 +11,28 @@
 .\" Updated by Alan Bain (afrb2@cam.ac.uk), 15/05/1999
 .\" added reference to -o in command specification
 .\" and to -U in options
-.\" Updated by Alan Bain (afrb2@debian.org), 28/4/2008
-.\" mention -v and --version options, change hyphens to minus signs
 .\"
 .TH FC 1 "May 1999"
 .SH NAME
 fc \- frontend script to the f2c fortran compiler
 .SH SYNOPSIS
 .B /usr/bin/fc 
-.RB [ \-o
+.RB [ -o
 .IR objfile ]
-.RB [ \-c ]
-.RB [ \-S ]
-.RB [ \-C ]
-.RB [ \-u ]
-.RB [ \-w ]
-.RB [ \-w66 ]
-.RB [ \-D
+.RB [ -c ]
+.RB [ -S ]
+.RB [ -C ]
+.RB [ -u ]
+.RB [ -w ]
+.RB [ -w66 ]
+.RB [ -D
 .IR switch ]
-.RB [ \-I
+.RB [ -I
 .IR includepath ]
-.RB [ \-Ntnnn ]
-.RB [ \-P ]
+.RB [ -Ntnnn ]
+.RB [ -P ]
 .I files
-.RB [ \-l
+.RB [ -l
 .IR library ]
 .SH DESCRIPTION
 .LP
@@ -67,41 +65,38 @@ suffix are treated as RATFOR source files.
 
 .SH OPTIONS
 .TP 8
-.I \-o objfile
+.I -o objfile
 Produce an output executable named
 .I objfile
 rather than using the default name a.out.
 .TP 8
-.I \-c
+.I -c
 Do not call the linker; instead, leave relocatable object files
 as *.o.
 .TP 8
-.I \-S
+.I -S
 Produce assembly output as file.s
 .TP 8
-.I \-C
+.I -C
 Compile in extra code to check that array subscripts are in bounds.
 .TP 8
-.I \-l library
+.I -l library
 Libraries specified with this option are passed to the linker.
 .TP 8
-.I \-U def
+.I -U def
 Definitions specified with this option are passed to C compiler (for .c files)
 or to cpp (for .F files) to remove definition.
 .TP 8
-.I \-u
+.I -u
 Complain about undeclared variables.
 .TP 8
-.I \-v, \-\-version
-Print version of f2c in use
-.TP 8
-.I \-w
+.I -w
 Omit all warning messages.
 .TP 8
-.I \-w66
+.I -w66
 Omit Fortran 66 (Fortran IV) compatibility warning messages.
 .TP 8
-.I \-D switch
+.I -D switch
 The given switch is passed to the C compiler (for .c files), to cpp 
 (for .F files) and to f2c.
 .TP 8
