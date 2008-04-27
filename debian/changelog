@@ -1,3 +1,7 @@
+f2c (20050501-3) unstable; urgency=low
+  * Correct date error in previous changelog.
+ -- Alan Bain <afrb2@debian.org>  Sun, 27 Apr 2008 16:45:03 +0100
+
 f2c (20050501-2) unstable; urgency=low
   * removed empty /usr/include dir
   * remove bashism from debian rules (closes: bug#477579)
@@ -5,7 +9,7 @@ f2c (20050501-2) unstable; urgency=low
   * package is not orphaned (closes: bug#465909)
   * generate md5sums
 
- -- Alan Bain <afrb2@debian.org>  Sun, 18 Sep 2008 16:15:03 +0100
+ -- Alan Bain <afrb2@debian.org>  Sun, 27 Apr 2008 16:15:03 +0100
 
 f2c (20050501-1) unstable; urgency=low
   * Separated libf2c2 into a separate package to be more
