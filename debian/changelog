@@ -1,3 +1,8 @@
+f2c (20061008-2) unstable; urgency=low
+  * fixes for IA64 architecture, segmentation violation on invocation
+  
+ -- Alan Bain <afrb2@debian.org>  Sat, 10 May 2008 10:55:03 +0100
+
 f2c (20061008-1) unstable; urgency=low
   * new upstream source (closes: bug#401094)
   * correction to handling of integer*8 subscripts

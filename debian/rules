@@ -29,8 +29,8 @@ file=$(package)_$(version)-$(debian)
 
 
 # Optimization options.
-GCCOP2=-ansi $(CDEBUGFLAGS) -fomit-frame-pointer -mieee-fp -D_POSIX_SOURCE -DDEBIAN
-GCCOP1=-ansi $(CDEBUGFLAGS) -fomit-frame-pointer -D_POSIX_SOURCE -DDEBIAN
+GCCOP2=-ansi $(CDEBUGFLAGS) -fomit-frame-pointer -mieee-fp -D_GNU_SOURCE -DDEBIAN
+GCCOP1=-ansi $(CDEBUGFLAGS) -fomit-frame-pointer -D_GNU_SOURCE -DDEBIAN
 
 ## Chose which options to use depending upon
 ## whether or not target is i386
