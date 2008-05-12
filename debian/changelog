@@ -1,3 +1,7 @@
+f2c (20061008-3) unstable; urgency=low
+  * remove use of DH_COMPAT from debian/rules
+ -- Alan Bain <afrb2@debian.org>  Mon, 12 May 2008 22:15:24 +0100
+
 f2c (20061008-2) unstable; urgency=low
   * fixes for IA64 architecture, segmentation violation on invocation
   

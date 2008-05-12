@@ -5,7 +5,6 @@
 
 
 package=f2c
-export DH_COMPAT=5
 
 INSTALL = /usr/bin/install
 INSTALL_PROGRAM = $(INSTALL) -o root -g root -m 0755
