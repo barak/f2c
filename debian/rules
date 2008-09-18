@@ -5,6 +5,23 @@
 
 
 package=f2c
+export DH_COMPAT=5
+
+INSTALL = /usr/bin/install
+INSTALL_PROGRAM = $(INSTALL) -o root -g root -m 0755
+
+CDEBUGFLAGS = -g
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+   CDEBUGFLAGS += -O0
+else
+   CDEBUGFLAGS += -O2
+endif
+
+ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+    INSTALL_PROGRAM += -s
+endif
+
+
 
 arch=$(shell dpkg --print-architecture)
 dir=$(package)-$(version)
@@ -12,8 +29,8 @@ file=$(package)_$(version)-$(debian)
 
 
 # Optimization options.
-GCCOP2=-ansi -O2 -fomit-frame-pointer -mieee-fp -D_POSIX_SOURCE -DDEBIAN
-GCCOP1=-ansi -O2 -fomit-frame-pointer -D_POSIX_SOURCE -DDEBIAN
+GCCOP2=-ansi $(CDEBUGFLAGS) -fomit-frame-pointer -mieee-fp -D_POSIX_SOURCE -DDEBIAN
+GCCOP1=-ansi $(CDEBUGFLAGS) -fomit-frame-pointer -D_POSIX_SOURCE -DDEBIAN
 
 ## Chose which options to use depending upon
 ## whether or not target is i386
@@ -31,7 +48,7 @@ build:
 ## as it is a gcc i386 specific option
 
         
-	if [ $(arch) == "i386" ] ;\
+	if [ $(arch) = "i386" ] ;\
            then echo "Building for i386" ;\
         fi
 
@@ -56,14 +73,13 @@ binary-arch: checkroot
 	install -d debian/tmp debian/tmp/DEBIAN
 	install -d debian/tmp/usr/share/doc/${package}
 	install -d -m 0755             debian/tmp/usr/bin
-	install -s -m 0755 src/f2c     debian/tmp/usr/bin/f2c
+	$(INSTALL_PROGRAM)  src/f2c     debian/tmp/usr/bin/f2c
 	install -c -m 0755 fc          debian/tmp/usr/bin/fc
 	install -d -m 0755             debian/tmp/usr/share/man/man1
 	install -c -m 0644 fc.1        debian/tmp/usr/share/man/man1/fc.1
 	install -c -m 0644 f2c.1t  debian/tmp/usr/share/man/man1/f2c.1
 	gzip -9v debian/tmp/usr/share/man/man1/f2c.1
 	gzip -9v debian/tmp/usr/share/man/man1/fc.1
-	install -d -m 0755             debian/tmp/usr/include
 
 	install -d -m 0755             debian/tmp/usr/share/doc/$(package)
 	install -c -m 0644 f2c.ps      debian/tmp/usr/share/doc/$(package)
@@ -79,6 +95,7 @@ binary-arch: checkroot
 
 	dpkg-shlibdeps ./src/f2c
 	dpkg-gencontrol -isp
+	dh_md5sums
 	chown -R root.root debian/tmp
 	chmod -R go-ws debian/tmp
 	dpkg --build debian/tmp  ..

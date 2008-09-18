@@ -1,3 +1,12 @@
+f2c (20050501-2) unstable; urgency=low
+  * removed empty /usr/include dir
+  * remove bashism from debian rules (closes: bug#477579)
+  * handle nostrip option (closes: bug#436825)
+  * package is not orphaned (closes: bug#465909)
+  * generate md5sums
+
+ -- Alan Bain <afrb2@debian.org>  Sun, 18 Sep 2008 16:15:03 +0100
+
 f2c (20050501-1) unstable; urgency=low
   * Separated libf2c2 into a separate package to be more
     standards compilant.
@@ -75,7 +84,7 @@ f2c (20010821-1) unstable; urgency=low
   * -trapuv works correctly on PPC closing bug #117789
   * -trapuv code generates suitable error on IA64 closing ##110494
     and #104613
- -- Alan Bain <afrb2@debian,org>  Fri, 9 November 2001 17:00:00 -0800
+ -- Alan Bain <afrb2@debian.org>  Fri, 9 November 2001 17:00:00 -0800
 f2c (20010618-3) unstable; urgency=low
   * corrected libF77/uninit.c to correctly set up the FPU registers on
     M68K machines, closing bug #103287
