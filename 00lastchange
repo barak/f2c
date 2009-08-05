@@ -1,6 +1,2 @@
-Sat Apr  5 21:39:57 MDT 2008
-  libf2c.zip: tweaks for political C++ and const correctness, and
-to fix ctype trouble in some recent Linux versions.  No behavior
-should change.
-Sun Apr  6 22:38:56 MDT 2008
-  libf2c.zip: adjust alternate makefiles to reflect yesterday's change.
+Sat Apr 11 18:06:00 MDT 2009
+  src/sysdep.c src/sysdeptest.c: tweak for MacOSX (include <unistd.h>).

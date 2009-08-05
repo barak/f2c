@@ -49,11 +49,11 @@ pread.c	1fbd30ab	17831
 proc.c	649db52	39174
 put.c	af0be95	10345
 putpcc.c	7669b2f	46093
-sysdep.c	14398cd6	15829
+sysdep.c	fe71c52a	15893
 sysdep.h	e7826434	2755
-sysdeptest.c	4370183	388
+sysdeptest.c	c92b2d4	408
 tokens	188b7c5d	733
 usignal.h	1c4ce909	124
 vax.c	8b21b83	12436
-version.c	e8eb5e17	107
+version.c	f2970a3	107
 xsum.c	e05654a7	6653

@@ -1,3 +1,11 @@
+f2c (20090411-1) unstable; urgency=low
+  * new upstream source
+  * remove .CT macro from manpage as not supported by groff
+  * remove .comment section from f2c binary
+  * update the f2c manpage to reference correct libraries
+
+ -- Alan Bain <afrb2@debian.org>  Wed, 5 Aug 2009 21:00:07 +0100
+
 f2c (20061008-3) unstable; urgency=low
   * remove use of DH_COMPAT from debian/rules
  -- Alan Bain <afrb2@debian.org>  Mon, 12 May 2008 22:15:24 +0100

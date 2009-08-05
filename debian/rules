@@ -73,6 +73,10 @@ binary-arch: checkroot
 	install -d debian/tmp/usr/share/doc/${package}
 	install -d -m 0755             debian/tmp/usr/bin
 	$(INSTALL_PROGRAM)  src/f2c     debian/tmp/usr/bin/f2c
+ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+	strip --remove-section=.comment --remove-section=.note debian/tmp/usr/bin/f2c
+endif
+	
 	install -c -m 0755 fc          debian/tmp/usr/bin/fc
 	install -d -m 0755             debian/tmp/usr/share/man/man1
 	install -c -m 0644 fc.1        debian/tmp/usr/share/man/man1/fc.1
@@ -94,7 +98,7 @@ binary-arch: checkroot
 
 	dpkg-shlibdeps ./src/f2c
 	dpkg-gencontrol -isp
-	dh_md5sums
+	dh_md5sums --tmpdir=debian/tmp
 	chown -R root.root debian/tmp
 	chmod -R go-ws debian/tmp
 	dpkg --build debian/tmp  ..

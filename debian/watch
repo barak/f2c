@@ -1,0 +1,7 @@
+# Netlib
+# Unfortunately it is not easy to determine the version
+# number from upstream.  It is contained in a source code
+# file src/version.c
+# http://www.netlib.org/f2c/index.html
+
+

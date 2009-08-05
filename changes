@@ -3455,5 +3455,14 @@ should change.
 Sun Apr  6 22:38:56 MDT 2008
   libf2c.zip: adjust alternate makefiles to reflect yesterday's change.
 
+Wed Nov 26 23:23:27 MST 2008
+  libf2c.zip: add brief discussion of MacOSX to comments in makefile.u.
+
+Fri Jan  2 23:13:25 MST 2009
+  libf2c.zip: add  -DNO_ISATTY to CFLAGS assignment in makefile.vc.
+
+Sat Apr 11 18:06:00 MDT 2009
+  src/sysdep.c src/sysdeptest.c: tweak for MacOSX (include <unistd.h>).
+
 NOTE:  the old libf77 and libi77 bundles are no longer being updated.
 Use libf2c.zip instead.

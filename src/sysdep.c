@@ -119,6 +119,9 @@ rmtdir(Void)
 
 #ifndef MSDOS
 #include "sysdep.hd"
+#ifndef NO_MKDTEMP
+#include <unistd.h> /* for mkdtemp */
+#endif
 #endif
 
  static void

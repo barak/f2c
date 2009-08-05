@@ -19,7 +19,6 @@
 .hy 14
 ..
 .TH F2C 1
-.CT 1 prog_other
 .SH NAME
 f2c \- Convert Fortran 77 to C or C++
 . \" f\^2c changed to f2c in the previous line for the benefit of
@@ -356,14 +355,22 @@ output file
 .F /usr/include/f2c.h
 header file
 .TP
-.F /usr/lib/libF77.a
-intrinsic function library
+.F /usr/lib/libf2c.a
+static link intrinsic and I/O library
 .TP
-.F /usr/lib/libI77.a
-Fortran I/O library
+.F /usr/lib/libf2c_i2.a
+static link intrinsic and I/O library for use with 
+files translated using the
+\-i2 f\^2c option
 .TP
-.F /lib/libc.a
-C library, see section 3
+.F /usr/lib/libf2c.so
+shared object intrinsic and I/O library
+.TP
+.F /usr/lib/libf2c_i2.so
+shared object intrinsic and I/O library for use with
+files translated using the 
+\-i2 f\^2c option
+.TP
 .SH "SEE ALSO"
 S. I. Feldman and
 P. J. Weinberger,

@@ -114,6 +114,8 @@ file	f2c/src/sysdep.c
 
 file	f2c/src/sysdep.h
 
+file	f2c/src/sysdeptest.c
+
 file	f2c/src/tokens
 
 file	f2c/src/tokdefs.h
