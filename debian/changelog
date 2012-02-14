@@ -1,3 +1,9 @@
+f2c (20090411-2) unstable; urgency=low
+
+  * update packaging
+
+ -- Barak A. Pearlmutter <bap@debian.org>  Tue, 14 Feb 2012 13:22:09 +0000
+
 f2c (20090411-1) unstable; urgency=low
   * new upstream source
   * remove .CT macro from manpage as not supported by groff
