@@ -1,8 +1,13 @@
-f2c (20090411-2) unstable; urgency=low
+f2c (20100827-1) unstable; urgency=low
 
   * update packaging
+  * new upstream version
+  * remove debian-specific fc, upstream caught up
+  * use compiler options for optimisation and warning
+  * quilt patch for C warnings
+  * quilt patch for man page hyphens
 
- -- Barak A. Pearlmutter <bap@debian.org>  Tue, 14 Feb 2012 13:22:09 +0000
+ -- Barak A. Pearlmutter <bap@debian.org>  Tue, 14 Feb 2012 15:53:51 +0000
 
 f2c (20090411-1) unstable; urgency=low
   * new upstream source
