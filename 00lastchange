@@ -1,2 +1,0 @@
-Sat Apr 11 18:06:00 MDT 2009
-  src/sysdep.c src/sysdeptest.c: tweak for MacOSX (include <unistd.h>).

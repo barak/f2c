@@ -1,7 +1,7 @@
 Notice	76f23b4	1212
-README	fa4c1d7	8002
+README	f11dd32a	7973
 cds.c	147aded1	4221
-data.c	ef4591d5	10692
+data.c	e53078ae	10697
 defines.h	fd9fa7c5	8720
 defs.h	e48cebb	34523
 equiv.c	fdeff25	9340
@@ -11,7 +11,7 @@ expr.c	6bfe005	72276
 f2c.1	b0441b2	7532
 f2c.1t	bf1f87	7574
 f2c.h	e770b7d8	4688
-format.c	bc32336	59652
+format.c	f97004df	59746
 format.h	b396862	458
 formatdata.c	11a95834	28870
 ftypes.h	9a0b38c	1616
@@ -41,7 +41,7 @@ niceprintf.h	c31f08c	412
 output.c	ee3a3cc5	43483
 output.h	fa6797d9	2103
 p1defs.h	1b02743	5741
-p1output.c	144da42f	14361
+p1output.c	6fd9954	14376
 parse.h	18d34e6b	1119
 parse_args.c	eb2fd4ea	14145
 pccdefs.h	1b4fbbee	1195
@@ -55,5 +55,5 @@ sysdeptest.c	c92b2d4	408
 tokens	188b7c5d	733
 usignal.h	1c4ce909	124
 vax.c	8b21b83	12436
-version.c	f2970a3	107
+version.c	f48eeae3	107
 xsum.c	e05654a7	6653

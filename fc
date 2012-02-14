@@ -154,7 +154,7 @@ do
 		shift 2
 		;;
 
-	-m)	CFLAGS="$CFLAGS -m$2"
+	-m)	CC="$CC -m$2"
 		shift 2
 		;;
 
