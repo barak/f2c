@@ -6,30 +6,19 @@
 %:
 	dh $@ --parallel
 
-# Optimization options.
-# GCCOP2=-ansi $(CDEBUGFLAGS) -fomit-frame-pointer -mieee-fp -D_GNU_SOURCE -DDEBIAN
-# GCCOP1=-ansi $(CDEBUGFLAGS) -fomit-frame-pointer -D_GNU_SOURCE -DDEBIAN
-
-## Chose which options to use depending upon
-## whether or not target is i386
-
-# ifeq ($(arch),i386) 
-#    GCCOPT=$(GCCOP2)
-# else 
-#    GCCOPT=$(GCCOP1)
-# endif
-
 override_dh_auto_build:
-	$(MAKE) -C src -f makefile.u
+	dh_auto_build -- \
+	 CFLAGS+='-g -O2 -Wall -Wno-parentheses -Wno-char-subscripts -Wno-uninitialized'
 
-override_dh_auto_clean:
-	$(MAKE) -C src -f makefile.u clean
+override_dh_auto_test:
+
+override_dh_auto_install:
+
+override_dh_installchangelog:
+	dh_installchangelog changes
 
 override_dh_strip:
 	dh_strip
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	strip --verbose --remove-section=.comment --remove-section=.note debian/f2c/usr/bin/f2c
 endif
-
-override_dh_installchangelog:
-	dh_installchangelog changes
