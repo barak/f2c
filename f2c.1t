@@ -127,7 +127,8 @@ Include original Fortran source as comments.
 .B -cd
 Do not recognize cdabs, cdcos, cdexp, cdlog, cdsin, and cdsqrt
 as synonyms for the double complex intrinsics
-zabs, zcos, zexp, zlog, zsin, and zsqrt, respectively.
+zabs, zcos, zexp, zlog, zsin, and zsqrt, respectively,
+nor dreal as a synonym for dble.
 .TP
 .BI -d dir
 Write
@@ -241,7 +242,8 @@ confirms the default, which imitates
 .IR f\^77 .
 .TP
 .B -r
-Cast values of REAL functions (including intrinsics) to REAL.
+Cast REAL arguments of intrinsic functions and values of REAL
+functions (including intrinsics) to REAL.
 .TP
 .B -r8
 Promote

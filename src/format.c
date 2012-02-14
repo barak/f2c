@@ -1,5 +1,5 @@
 /****************************************************************
-Copyright 1990 - 1996 by AT&T, Lucent Technologies and Bellcore.
+Copyright 1990-1996, 1999 by AT&T, Lucent Technologies and Bellcore.
 
 Permission to use, copy, modify, and distribute this software
 and its documentation for any purpose and without fee is hereby
@@ -385,8 +385,8 @@ do_p1_name_pointer(FILE *infile)
     if (status == EOF)
 	err ("do_p1_name_pointer:  Missing pointer at end of file\n");
     else if (status == 0 || namep == (Namep) NULL)
-	erri ("do_p1_name_pointer:  Illegal name pointer in p1 file: '%x'\n",
-		(int) namep);
+	erri ("do_p1_name_pointer:  Illegal name pointer in p1 file: '#%lx'\n",
+		(unsigned long) namep);
 
     return (expptr) namep;
 } /* do_p1_name_pointer */
@@ -2425,6 +2425,8 @@ proto(FILE *outfile,  Argtypes *at,  char *fname)
 			nice_printf(outfile, "%schar **", comma);
 		else if (k >= 200) {
 			k -= 200;
+			if (k >= 100)
+				k -= 100;
 			nice_printf(outfile, "%s%s", comma,
 				usedcasts[k] = casttypes[k]);
 			}

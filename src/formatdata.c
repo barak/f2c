@@ -1,5 +1,5 @@
 /****************************************************************
-Copyright 1990, 1991, 1993-6 by AT&T, Lucent Technologies and Bellcore.
+Copyright 1990-1, 1993-6, 1999 by AT&T, Lucent Technologies and Bellcore.
 
 Permission to use, copy, modify, and distribute this software
 and its documentation for any purpose and without fee is hereby
@@ -30,6 +30,8 @@ use or performance of this software.
 #define NAME_MAX 64
 
 static int memno2info Argdcl((int, Namep*));
+
+typedef unsigned long Ulong;
 
  extern char *initbname;
 
@@ -335,8 +337,8 @@ wr_one_init(FILE *outfile, char *varname, chainp *Values, int keepit)
 			write_char_init(outfile, Values, namep);
 			goto done;
 			}
-		last = (int)cp->nextp->datap == TYBLANK
-			? loc + (int)cp->nextp->nextp->datap
+		last = (Ulong)cp->nextp->datap == TYBLANK
+			? loc + (Ulong)cp->nextp->nextp->datap
 			: loc + 1;
 		}
 	if (halign && info.name->tag == TNAME) {
@@ -360,7 +362,7 @@ wr_one_init(FILE *outfile, char *varname, chainp *Values, int keepit)
 	size = typesize[type];
 	loc = 0;
 	for(; values; values = values->nextp) {
-		if ((int)((chainp)values->datap)->nextp->datap == TYCHAR) {
+		if ((Ulong)((chainp)values->datap)->nextp->datap == TYCHAR) {
 			write_char_init(outfile, Values, namep);
 			goto done;
 			}
@@ -476,7 +478,7 @@ data_value(FILE *infile, ftnint offset, int type)
 	pointer = end_ptr;
     } /* while *pointer */
 
-    return mkchain((char *)offset, mkchain((char *)LONG_CAST type, vals));
+    return mkchain((char *)offset, mkchain((char *)(Ulong)type, vals));
 } /* data_value */
 
  static void
@@ -603,9 +605,9 @@ wr_array_init(FILE *outfile, int type, chainp values)
 			nice_printf(outfile, "\" \"");
 			k = 0;
 			}
-		this_char = (int) ((chainp) values->datap)->
+		this_char = (int)(Ulong) ((chainp) values->datap)->
 				nextp->nextp->datap;
-		if ((int)((chainp)values->datap)->nextp->datap == TYBLANK) {
+		if ((Ulong)((chainp)values->datap)->nextp->datap == TYBLANK) {
 			main_index += this_char;
 			k += this_char;
 			while(--this_char >= 0)
@@ -613,7 +615,7 @@ wr_array_init(FILE *outfile, int type, chainp values)
 			values = values -> nextp;
 			continue;
 			}
-		nice_printf(outfile, str_fmt[this_char], this_char);
+		nice_printf(outfile, str_fmt[this_char]);
 		k++;
 		} /* case TYCHAR */
 	        break;
@@ -679,19 +681,19 @@ make_one_const(int type, union Constant *storage, chainp values)
 	for(k = 1, prev = CHNULL, v = values; v; prev = v, v = v->nextp)
 	    ;
 	if (prev != CHNULL)
-	    k = ((int) (((chainp) prev->datap)->datap)) + 2;
+	    k = ((int)(Ulong) (((chainp) prev->datap)->datap)) + 2;
 		/* + 2 above for null char at end */
 	str = Alloc (k);
 	for (str_ptr = str; values; str_ptr++) {
-	    int index = (int) (((chainp) values->datap)->datap);
+	    int index = (int)(Ulong) (((chainp) values->datap)->datap);
 
 	    if (index < main_index)
 		overlapping();
 	    while (index > main_index++)
 		*str_ptr++ = ' ';
 
-		k = (int) (((chainp) values->datap)->nextp->nextp->datap);
-		if ((int)((chainp)values->datap)->nextp->datap == TYBLANK) {
+		k = (Ulong) (((chainp) values->datap)->nextp->nextp->datap);
+		if ((Ulong)((chainp)values->datap)->nextp->datap == TYBLANK) {
 			b = k;
 			break;
 			}
@@ -834,7 +836,7 @@ do_string(FILE *outfile, register chainp v, ftnint *nloc)
 	loc = (ftnint)cp->datap;
 	comma = "";
 	for(v0 = v;;) {
-		switch((int)cp->nextp->datap) {
+		switch((Ulong)cp->nextp->datap) {
 			case TYBLANK:
 				k = (ftnint)cp->nextp->nextp->datap;
 				loc += k;
@@ -883,7 +885,7 @@ Ado_string(FILE *outfile, register chainp v, ftnint *nloc)
 	cp = (chainp)v->datap;
 	loc = (ftnint)cp->datap;
 	for(v0 = v;;) {
-		switch((int)cp->nextp->datap) {
+		switch((Ulong)cp->nextp->datap) {
 			case TYBLANK:
 				k = (ftnint)cp->nextp->nextp->datap;
 				loc += k;
@@ -892,7 +894,7 @@ Ado_string(FILE *outfile, register chainp v, ftnint *nloc)
 				break;
 			case TYCHAR:
 				k = (ftnint)cp->nextp->nextp->datap;
-				nice_printf(outfile, str_fmt[k], k);
+				nice_printf(outfile, str_fmt[k]);
 				loc++;
 				break;
 			default:
@@ -927,6 +929,63 @@ Len(long L, int type)
 	return buf;
 	}
 
+ static void
+#ifdef KR_headers
+fill_dcl(outfile, t, k, L) FILE *outfile; int t; int k; ftnint L;
+#else
+fill_dcl(FILE *outfile, int t, int k, ftnint L)
+#endif
+{
+	nice_printf(outfile, "%s fill_%d[%ld];\n", typename[t], k, L);
+	}
+
+ static int
+#ifdef KR_headers
+fill_type(L, loc, xtype) ftnint L; ftnint loc; int xtype;
+#else
+fill_type(ftnint L, ftnint loc, int xtype)
+#endif
+{
+	int ft, ft1, szshort;
+
+	if (xtype == TYCHAR)
+		return xtype;
+	szshort = typesize[TYSHORT];
+	ft = L % szshort ? TYCHAR : type_choice[L/szshort % 4];
+	ft1 = loc % szshort ? TYCHAR : type_choice[loc/szshort % 4];
+	if (typesize[ft] > typesize[ft1])
+		ft = ft1;
+	return ft;
+	}
+
+ static ftnint
+#ifdef KR_headers
+get_fill(dloc, loc, t0, t1, L0, L1, xtype) ftnint dloc; ftnint loc; int *t0; int *t1; ftnint *L0; ftnint *L1; int xtype;
+#else
+get_fill(ftnint dloc, ftnint loc, int *t0, int *t1, ftnint *L0, ftnint *L1, int xtype)
+#endif
+{
+	ftnint L, L2, loc0;
+
+	if (L = loc % typesize[xtype]) {
+		loc0 = loc;
+		loc += L = typesize[xtype] - L;
+		if (L % typesize[TYSHORT])
+			*t0 = TYCHAR;
+		else
+			L /= typesize[*t0 = fill_type(L, loc0, xtype)];
+		}
+	if (dloc < loc + typesize[xtype])
+		return 0;
+	*L0 = L;
+	L2 = (dloc - loc) / typesize[xtype];
+	loc += L2*typesize[xtype];
+	if (dloc -= loc)
+		dloc /= typesize[*t1 = fill_type(dloc, loc, xtype)];
+	*L1 = dloc;
+	return L2;
+	}
+
  void
 #ifdef KR_headers
 wr_equiv_init(outfile, memno, Values, iscomm)
@@ -939,12 +998,13 @@ wr_equiv_init(FILE *outfile, int memno, chainp *Values, int iscomm)
 #endif
 {
 	struct Equivblock *eqv;
-	int btype, curtype, dtype, filltype, filltype1, j, k, wasblank, xtype;
+	int btype, curtype, dtype, filltype, j, k, n, t0, t1;
+	int wasblank, xfilled, xtype;
 	static char Blank[] = "";
 	register char *comma = Blank;
 	register chainp cp, v;
 	chainp sentinel, values, v1, vlast;
-	ftnint L, L1, dL, dloc, loc, loc0;
+	ftnint L, L0, L1, L2, dL, dloc, loc, loc0;
 	union Constant Const;
 	char imag_buf[50], real_buf[50];
 	int szshort = typesize[TYSHORT];
@@ -978,8 +1038,10 @@ wr_equiv_init(FILE *outfile, int memno, chainp *Values, int iscomm)
 
 	if (halign && typealign[typepref[xtype]] < typealign[htype])
 		xtype = htype;
+	xtype = typepref[xtype];
 	*Values = values = revchain(vlast = *Values);
 
+	xfilled = 2;
 	if (xtype != TYCHAR) {
 
 		/* unless the data include a value of the appropriate
@@ -996,7 +1058,7 @@ wr_equiv_init(FILE *outfile, int memno, chainp *Values, int iscomm)
 				if (j = L % k)
 					L += k - j;
 				v = mkchain((char *)L,
-					mkchain((char *)LONG_CAST dtype,
+					mkchain((char *)(Ulong)dtype,
 						mkchain(z, CHNULL)));
 				vlast = vlast->nextp =
 					mkchain((char *)v, CHNULL);
@@ -1004,9 +1066,13 @@ wr_equiv_init(FILE *outfile, int memno, chainp *Values, int iscomm)
 				break;
 				}
 			cp = (chainp)v->datap;
-			if (basetype[(int)cp->nextp->datap] == btype)
+			if (basetype[(Ulong)cp->nextp->datap] == btype)
 				break;
 			dloc = (ftnint)cp->datap;
+			if (get_fill(dloc, loc, &t0, &t1, &L0, &L1, xtype)) {
+				xfilled = 0;
+				break;
+				}
 			L1 = dloc - loc;
 			if (L1 > 0
 			 && !(L1 % szshort)
@@ -1014,10 +1080,10 @@ wr_equiv_init(FILE *outfile, int memno, chainp *Values, int iscomm)
 			 && btype <= type_choice[L1/szshort % 4]
 			 && btype <= type_choice[loc/szshort % 4])
 				break;
-			dtype = (int)cp->nextp->datap;
-			loc = dloc + dtype == TYBLANK
+			dtype = (int)(Ulong)cp->nextp->datap;
+			loc = dloc + (dtype == TYBLANK
 					? (ftnint)cp->nextp->nextp->datap
-					: typesize[dtype];
+					: typesize[dtype]);
 			}
 		}
 	sentinel = mkchain((char *)L, mkchain((char *)TYERROR,CHNULL));
@@ -1027,7 +1093,7 @@ wr_equiv_init(FILE *outfile, int memno, chainp *Values, int iscomm)
 
 	k = TYLONG;
 	for(v = values; v; v = v->nextp)
-		if (ONEOF((int)((chainp)v->datap)->nextp->datap,
+		if (ONEOF((Ulong)((chainp)v->datap)->nextp->datap,
 				M(TYDREAL)|M(TYDCOMPLEX))) {
 			k = TYDREAL;
 			break;
@@ -1044,14 +1110,14 @@ wr_equiv_init(FILE *outfile, int memno, chainp *Values, int iscomm)
 		L = dloc - loc;
 		if (L < 0) {
 			overlapping();
-			if ((int)cp->nextp->datap != TYERROR) {
+			if ((Ulong)cp->nextp->datap != TYERROR) {
 				v1 = cp;
 				frchain(&v1);
 				v->datap = 0;
 				}
 			continue;
 			}
-		dtype = (int)cp->nextp->datap;
+		dtype = (int)(Ulong)cp->nextp->datap;
 		if (dtype == TYBLANK) {
 			dtype = TYCHAR;
 			wasblank = 1;
@@ -1069,19 +1135,19 @@ wr_equiv_init(FILE *outfile, int memno, chainp *Values, int iscomm)
 			loc0 = dloc;
 			}
 		if (L > 0) {
-			if (xtype == TYCHAR)
-				filltype = TYCHAR;
-			else {
-				filltype = L % szshort ? TYCHAR
-						: type_choice[L/szshort % 4];
-				filltype1 = loc % szshort ? TYCHAR
-						: type_choice[loc/szshort % 4];
-				if (typesize[filltype] > typesize[filltype1])
-					filltype = filltype1;
-				}
+			filltype = fill_type(L, loc, xtype);
 			L1 = L / typesize[filltype];
-			nice_printf(outfile, "%s fill_%d[%ld];\n",
-				typename[filltype], ++k, L1);
+			if (!xfilled && (L2 = get_fill(dloc, loc, &t0, &t1,
+							&L0, &L1, xtype))) {
+				xfilled = 1;
+				if (L0)
+					fill_dcl(outfile, t0, ++k, L0);
+				fill_dcl(outfile, xtype, ++k, L2);
+				if (L1)
+					fill_dcl(outfile, t1, ++k, L1);
+				}
+			else
+				fill_dcl(outfile, filltype, ++k, L1);
 			loc = dloc;
 			}
 		if (wasblank) {
@@ -1097,17 +1163,29 @@ wr_equiv_init(FILE *outfile, int memno, chainp *Values, int iscomm)
 		? extsymtab[memno].cextname
 		: equiv_name(eqvmemno, CNULL));
 	loc = 0;
+	xfilled &= 2;
 	for(v = values; ; v = v->nextp) {
 		cp = (chainp)v->datap;
 		if (!cp)
 			continue;
-		dtype = (int)cp->nextp->datap;
+		dtype = (int)(Ulong)cp->nextp->datap;
 		if (dtype == TYERROR)
 			break;
 		dloc = (ftnint)cp->datap;
 		if (dloc > loc) {
-			nice_printf(outfile, "%s{0}", comma);
-			comma = ", ";
+			n = 1;
+			if (!xfilled && (L2 = get_fill(dloc, loc, &t0, &t1,
+							&L0, &L1, xtype))) {
+				xfilled = 1;
+				if (L0)
+					n = 2;
+				if (L1)
+					n++;
+				}
+			while(n--) {
+				nice_printf(outfile, "%s{0}", comma);
+				comma = ", ";
+				}
 			loc = dloc;
 			}
 		if (comma != Blank)

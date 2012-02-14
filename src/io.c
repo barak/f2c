@@ -321,10 +321,8 @@ setfmt(lp)
 setfmt(struct Labelblock *lp)
 #endif
 {
-	int n, parity;
-	char *s0;
-	register char *s, *se, *t;
-	register k;
+	char *s, *s0, *sc, *se, *t;
+	int k, n, parity;
 
 	s0 = s = lexline(&n);
 	se = t = s + n;
@@ -351,46 +349,49 @@ setfmt(struct Labelblock *lp)
 	/* fix MYQUOTES (\002's) and \\'s */
 
 	parity = 1;
-	while(s < se)
-		switch(*s++) {
-			case 2:
-				if ((parity ^= 1) && *s == 2) {
-					t -= 2;
-					++s;
-					}
-				else
-					t += 3;
-				break;
-			case '"':
-			case '\\':
-				t++; break;
+	str_fmt['%'] = "%";
+	while(s < se) {
+		k = *(unsigned char *)s++;
+		if (k == 2) {
+			if ((parity ^= 1) && *s == 2) {
+				t -= 2;
+				++s;
+				}
+			else
+				t += 3;
 			}
+		else {
+			sc = str_fmt[k];
+			while(*++sc)
+				t++;
+			}
+		}
 	s = s0;
 	parity = 1;
 	if (lp) {
 		lp->fmtstring = t = mem((int)(t - s + 1), 0);
-		while(s < se)
-			switch(k = *s++) {
-				case 2:
-					if ((parity ^= 1) && *s == 2)
-						s++;
-					else {
-						t[0] = '\\';
-						t[1] = '0';
-						t[2] = '0';
-						t[3] = '2';
-						t += 4;
-						}
-					break;
-				case '"':
-				case '\\':
-					*t++ = '\\';
-					/* no break */
-				default:
-					*t++ = k;
+		while(s < se) {
+			k = *(unsigned char *)s++;
+			if (k == 2) {
+				if ((parity ^= 1) && *s == 2)
+					s++;
+				else {
+					t[0] = '\\';
+					t[1] = '0';
+					t[2] = '0';
+					t[3] = '2';
+					t += 4;
+					}
 				}
+			else {
+				sc = str_fmt[k];
+				do *t++ = *sc++;
+				   while(*sc);
+				}
+			}
 		*t = 0;
 		}
+	str_fmt['%'] = "%%";
 	flline();
 }
 

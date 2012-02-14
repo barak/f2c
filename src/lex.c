@@ -1,5 +1,5 @@
 /****************************************************************
-Copyright 1990, 1992 - 1997 by AT&T, Lucent Technologies and Bellcore.
+Copyright 1990, 1992 - 1997, 1999 by AT&T, Lucent Technologies and Bellcore.
 
 Permission to use, copy, modify, and distribute this software
 and its documentation for any purpose and without fee is hereby
@@ -72,10 +72,11 @@ LOCAL int code;		/* Card type; INITIAL, CONTINUE or EOF */
 LOCAL int lexstate	= NEWSTMT;
 LOCAL char *sbuf;	/* Main buffer for Fortran source input. */
 LOCAL char *send;	/* Was = sbuf+20*66 with sbuf[1390]. */
+LOCAL char *shend;	/* reflects elbow room for #line lines */
 LOCAL int maxcont;
 LOCAL int nincl	= 0;	/* Current number of include files */
 LOCAL long firstline;
-LOCAL char *laststb, *stb0;
+LOCAL char *infname1, *infname2, *laststb, *stb0;
 extern int addftnsrc;
 static char **linestart;
 LOCAL int ncont;
@@ -642,6 +643,14 @@ top:
 
 	lineno = prevlin;
 	prevlin = thislin;
+	if (infname2) {
+		free(infname);
+		infname = infname2;
+		if (inclp)
+			inclp->inclname = infname;
+		}
+	infname2 = infname1;
+	infname1 = 0;
 	return(STINITIAL);
 }
 
@@ -752,7 +761,7 @@ top:
 			while((c = getc(infile)) != '\n')
 				if (c == EOF)
 					return STEOF;
-				else if (endcd < bend)
+				else if (endcd < shend)
 					*endcd++ = c;
 			++thislin;
 			*endcd = 0;
@@ -779,14 +788,20 @@ top:
 			*p = 0;
 			i = p - bend++;
 			thislin = L - 1;
-			if (!infname || strcmp(infname, bend)) {
-				if (infname)
-					free(infname);
+			if (!infname1 || strcmp(infname1, bend)) {
+				if (infname1)
+					free(infname1);
+				if (infname && !strcmp(infname, bend)) {
+					infname1 = 0;
+					goto top;
+					}
 				lastfile = 0;
-				infname = Alloc(i);
-				strcpy(infname, bend);
-				if (inclp)
-					inclp->inclname = infname;
+				infname1 = Alloc(i);
+				strcpy(infname1, bend);
+				if (!infname) {
+					infname = infname1;
+					infname1 = 0;
+					}
 				}
 			goto top;
 			}
@@ -1298,8 +1313,9 @@ initkey(Void)
 		keyend[j] = p;
 		}
 	i = (maxcontin + 2) * 66;
-	sbuf = (char *)ckalloc(i + 70);
+	sbuf = (char *)ckalloc(i + 70 + MAX_SHARPLINE_LEN);
 	send = sbuf + i;
+	shend = send + MAX_SHARPLINE_LEN;
 	maxcont = maxcontin + 1;
 	linestart = (char **)ckalloc(maxcont*sizeof(char*));
 	comstart['c'] = comstart['C'] = comstart['*'] = comstart['!'] =
@@ -1585,28 +1601,26 @@ numconst:
 			    && isalpha_(* USC (nextch+2)))
 				break;
 			else	havdot = YES;
-		else if( !intonly && (*nextch=='d' || *nextch=='e') )
-		{
-			p = nextch;
-			havexp = YES;
-			if(*nextch == 'd')
-				havdbl = YES;
-			if(nextch<lastch)
-				if(nextch[1]=='+' || nextch[1]=='-')
-					++nextch;
-			if( ! isdigit(*++nextch) )
-			{
-				nextch = p;
-				havdbl = havexp = NO;
-				break;
+		else if( ! isdigit(* USC nextch) ) {
+			if( !intonly && (*nextch=='d' || *nextch=='e') ) {
+				p = nextch;
+				havexp = YES;
+				if(*nextch == 'd')
+					havdbl = YES;
+				if(nextch<lastch)
+					if(nextch[1]=='+' || nextch[1]=='-')
+						++nextch;
+				if( ! isdigit(*++nextch) ) {
+					nextch = p;
+					havdbl = havexp = NO;
+					break;
+					}
+				for(++nextch ;
+				    nextch<=lastch && isdigit(* USC nextch);
+				    ++nextch);
+				}
+			break;
 			}
-			for(++nextch ;
-			    nextch<=lastch && isdigit(* USC nextch);
-			    ++nextch);
-			break;
-		}
-		else if( ! isdigit(* USC nextch) )
-			break;
 	}
 	p = token;
 	i = n1;

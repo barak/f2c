@@ -1,5 +1,5 @@
 /****************************************************************
-Copyright 1990, 1991, 1993, 1994 by AT&T, Lucent Technologies and Bellcore.
+Copyright 1990, 1991, 1993, 1994, 1999 by AT&T, Lucent Technologies and Bellcore.
 
 Permission to use, copy, modify, and distribute this software
 and its documentation for any purpose and without fee is hereby
@@ -199,7 +199,7 @@ p1_const(register Constp cp)
 	    break;
 	case TYCHAR:
 	    if (vleng && !ISICON (vleng))
-		erri("p1_const:  bad vleng '%d'\n", (int) vleng);
+		erri("p1_const:  bad vleng '%ld'\n", (long)vleng);
 	    else
 		fprintf(pass1_file, "%d: %d %lx\n", P1_CONST, type,
 			cpexpr((expptr)cp));

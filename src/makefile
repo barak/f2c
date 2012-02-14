@@ -1,9 +1,8 @@
 #	Makefile for f2c, a Fortran 77 to C converter
 
 .SUFFIXES: .c .o
-g = -g
 CC = cc
-CFLAGS = $g
+CFLAGS = -O
 SHELL = /bin/sh
 YACC = yacc
 YFLAGS =
@@ -30,7 +29,12 @@ all: xsum.out f2c
 f2c: $(OBJECTS)
 	$(CC) $(LDFLAGS) $(OBJECTS) -o f2c
 
-gram.c:	gram.head gram.dcl gram.expr gram.exec gram.io defs.h tokdefs.h
+# The following used to be a rule for gram.c rather than gram1.c, but
+# there are too many broken variants of yacc around, so now we
+# distribute a correctly function gram.c (derived with a Unix variant
+# of the yacc from plan9).
+
+gram1.c: gram.head gram.dcl gram.expr gram.exec gram.io defs.h tokdefs.h
 	( sed <tokdefs.h "s/#define/%token/" ;\
 		cat gram.head gram.dcl gram.expr gram.exec gram.io ) >gram.in
 	$(YACC) $(YFLAGS) gram.in
@@ -75,11 +79,14 @@ f2c.t: f2c.1t
 #	nroff -man f2c.1t | col -b | uniq >f2c.1
 
 clean:
-	rm -f gram.c *.o f2c tokdefs.h f2c.t
+	rm -f *.o f2c tokdefs.h f2c.t
+
+veryclean: clean
+	rm -f xsum
 
 b = Notice README cds.c data.c defines.h defs.h equiv.c error.c \
 	exec.c expr.c f2c.1 f2c.1t f2c.h format.c format.h formatdata.c \
-	ftypes.h gram.dcl gram.exec gram.expr gram.head gram.io \
+	ftypes.h gram.c gram.dcl gram.exec gram.expr gram.head gram.io \
 	init.c intr.c io.c iob.h lex.c machdefs.h main.c \
 	malloc.c mem.c memset.c misc.c names.c names.h niceprintf.c \
 	niceprintf.h output.c output.h p1defs.h p1output.c \

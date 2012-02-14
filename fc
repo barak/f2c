@@ -1,5 +1,11 @@
 #!/bin/sh
-PATH=/v/bin:/bin:/usr/bin
+
+# NOTE: you may need to adjust the references to /usr/local/... below
+#	(or remove them if they're not needed on your system).
+#	See also the comments starting with ### below.
+
+PATH=/usr/local/bin:/bin:/usr/bin
+
 # f77-style shell script to compile and load fortran, C, and assembly codes
 
 #	usage:	f77 [options] files [-l library]
@@ -14,7 +20,9 @@ PATH=/v/bin:/bin:/usr/bin
 
 #		-S		leave assembler output on file.s
 
-#		-l library	(passed to ld).
+#		-L libdir	(passed to ld)
+
+#		-l library	(passed to ld)
 
 #		-u		complain about undeclared variables
 
@@ -29,6 +37,8 @@ PATH=/v/bin:/bin:/usr/bin
 #				Assembly language files ending in .s .
 #				efl source files ending in .e .
 #				RATFOR files ending in .r .
+#				Object files ending in .o .
+#				Shared libraries ending in .so .
 
 #				f2c prototype files ending in .P ; such
 #				files only affect subsequent files.
@@ -43,23 +53,32 @@ PATH=/v/bin:/bin:/usr/bin
 
 #		-P		emit .P files
 
+#		-U def		passed to C compiler (for .c files)
+#				or to cpp (for .F files) to remove def
+
 s=/tmp/stderr_$$
 t=/tmp/f77_$$.o
-CC=${CC_f2c:-'cc -common'}
+### On some systems (e.g., IRIX), -common prevents complaints
+### about multiple definitions of COMMON blocks.
+#CC=${CC_f2c:-'cc -common'}
+CC=${CC_f2c:-'cc'}
 EFL=${EFL:-efl}
 EFLFLAGS=${EFLFLAGS:-'system=portable deltastno=10'}
 RATFOR=${RATFOR:-ratfor}
 RFLAGS=${RFLAGS:-'-6&'}
-F2C=${F2C:-f2c}
-F2CFLAGS=${F2CFLAGS:='-ARw8 -Nn802 -Nx400'}
+F2C=${F2C:-/usr/local/bin/f2c}
+F2CFLAGS=${F2CFLAGS:='-ARw8 -Nn802 -Nq300 -Nx400'}
 CPP=${CPP:-/lib/cpp}
 rc=0
 trap "rm -f $s $t; exit \$rc" 0
 OUTF=a.out
+OUTO=
 cOPT=1
-set -- `getopt cCD:gI:N:Oo:Suw6 "$@"`
+set -- `getopt cCD:gI:L:N:OU:o:Suw6 "$@"`
 case $? in 0);; *) rc=$?; exit;; esac
-CPPFLAGS=
+CPPFLAGS=${CPPFLAGS:-'-I/usr/local/include'}
+CFLAGSF2C=${CFLAGSF2C:-'-I/usr/local/include'}
+OFILES=
 while
 	test X"$1" != X--
 do
@@ -85,13 +104,18 @@ do
 		shift 2
 		;;
 
+	-U)	CPPFLAGS="$CPPFLAGS -U$2"
+		shift 2
+		;;
+
 	-o)	OUTF=$2
+		OUTO=$2
 		shift 2
 		;;
 
 	-O)	case $2 in -1) O=-O1;; -2) O=-O2;; -3) O=-O3;; *) O=-O;; esac
 		case $O in -O);; *) shift;; esac
-		CFLAGS="$CFLAGS $O"
+		CFLAGS="$CFLAGS $O -Olimit 2000"
 		shift
 		;;
 
@@ -103,6 +127,16 @@ do
 		case $2 in -6) F2CFLAGS="$F2CFLAGS"66; shift
 			case $2 in -6) shift;; esac;; esac
 		shift
+		;;
+
+	-L)	OFILES="$OFILES $1$2"
+		shift 2
+		case $cOPT in 1) cOPT=2;; esac
+		;;
+
+	-L*)	OFILES="$OFILES $1"
+		shift
+		case $cOPT in 1) cOPT=2;; esac
 		;;
 
 	-N)	F2CFLAGS="$F2CFLAGS $1""$2"
@@ -126,6 +160,7 @@ do
 	esac
 done
 shift
+case $cOPT in 0) case $OUTO in '');; *) CFLAGS="$CFLAGS -o $OUTO";; esac;; esac
 while
 	test -n "$1"
 do
@@ -149,7 +184,7 @@ do
 				;;
 			esac
 		case $rc in 0);; *) exit;; esac
-                $CC -c $CFLAGS $b.c 2>$s
+                $CC -c $CFLAGSF2C $CFLAGS $b.c 2>$s
 		rc=$?
 		sed '/parameter .* is not referenced/d;/warning: too many parameters/d' $s 1>&2
 		case $rc in 0);; *) exit;; esac
@@ -164,7 +199,7 @@ do
 		case $? in 0);; *) rc=$?; exit;; esac
 		$F2C $F2CFLAGS $b.f
 		case $? in 0);; *) rc=$?; exit;; esac
-                $CC -c $CFLAGS $b.c
+                $CC -c $CFLAGSF2C $CFLAGS $b.c
 		case $? in 0);; *) rc=$?; exit;; esac
 		OFILES="$OFILES $b.o"
 		rm $b.[cf]
@@ -177,7 +212,7 @@ do
 		case $? in 0);; *) rc=$?; exit;; esac
 		$F2C $F2CFLAGS $b.f
 		case $? in 0);; *) rc=$?; exit;; esac
-		$CC -c $CFLAGS $b.c
+		$CC -c $CFLAGSF2C $CFLAGS $b.c
 		case $? in 0);; *) rc=$?; exit;; esac
 		OFILES="$OFILES $b.o"
 		rm $b.[cf]
@@ -196,7 +231,7 @@ do
 	*.c)
 		echo $1: 1>&2
 		OFILE=`basename $1 .c`.o
-                $CC -c $CPPFLAGS $CFLAGS $1
+                $CC -c $CFLAGSF2C $CPPFLAGS $CFLAGS $1
 		rc=$?; case $rc in 0);; *) rc=$?; exit;; esac
 		OFILES="$OFILES $OFILE"
 		case $cOPT in 1) cOPT=2;; esac
@@ -207,18 +242,24 @@ do
 		case $cOPT in 1) cOPT=2;; esac
 		shift
 		;;
-	-l)
-		OFILES="$OFILES -l$2"
+	*.so)
+		OFILES="$OFILES $1"
+		case $cOPT in 1) cOPT=2;; esac
+		shift
+		;;
+	-[lL])
+		OFILES="$OFILES $1$2"
 		shift 2
 		case $cOPT in 1) cOPT=2;; esac
 		;;
-	-l*)
+	-[lL]*)
 		OFILES="$OFILES $1"
 		shift
 		case $cOPT in 1) cOPT=2;; esac
 		;;
 	-o)
-		OUTF=$2; shift 2;;
+		case $cOPT in 0) CFLAGS="$CFLAGS -o $2";; *) OUTF=$2;; esac
+		shift 2;;
 	*.P)
 		F2CFLAGS="$F2CFLAGS $1"
 		shift
@@ -231,6 +272,10 @@ do
 	esac
 done
 
-case $cOPT in 2) $CC -o $OUTF -u MAIN__ $OFILES -lf2c -lm;; esac
+### On some (IRIX) systems, -Wl,-dont_warn_unused prevents complaints
+### about unnecessary -l options.
+
+#case $cOPT in 2) $CC -Wl,-dont_warn_unused -o $OUTF -u MAIN__ -L/usr/local/lib $OFILES -lf2c -lm;; esac
+case $cOPT in 2) $CC -o $OUTF -u MAIN__ -L/usr/local/lib $OFILES -lf2c -lm;; esac
 rc=$?
 exit $rc

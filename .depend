@@ -17,6 +17,7 @@ F format.c
 F format.h
 F formatdata.c
 F ftypes.h
+F gram.c
 F gram.dcl
 F gram.exec
 F gram.expr
