@@ -1,0 +1,33 @@
+From: "Barak A. Pearlmutter" <barak+git@cs.nuim.ie>
+Date: Tue, 14 Feb 2012 13:43:17 +0000
+Subject: src/makefile.u tweaks
+
+---
+ src/makefile.u |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/makefile.u b/src/makefile.u
+index 0f12022..7550218 100644
+--- a/src/makefile.u
++++ b/src/makefile.u
+@@ -7,8 +7,8 @@ SHELL = /bin/sh
+ YACC = yacc
+ YFLAGS =
+ 
+-.c.o:
+-	$(CC) -c $(CFLAGS) $*.c
++#.c.o:
++#	$(CC) -c $(CFLAGS) $*.c
+ 
+ OBJECTSd = main.o init.o gram.o lex.o proc.o equiv.o data.o format.o \
+ 	  expr.o exec.o intr.o io.o misc.o error.o mem.o names.o \
+@@ -27,7 +27,7 @@ OBJECTS = $(OBJECTSd) $(MALLOC)
+ all: f2c
+ 
+ f2c: $(OBJECTS)
+-	$(CC) $(LDFLAGS) $(OBJECTS) -o f2c
++	$(CC) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@
+ 
+ # The following used to be a rule for gram.c rather than gram1.c, but
+ # there are too many broken variants of yacc around, so now we
+-- 
