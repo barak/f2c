@@ -3,5 +3,7 @@
 # number from upstream.  It is contained in a source code
 # file src/version.c
 # http://www.netlib.org/f2c/index.html
+# which can be directly accessed as
+# http://www.netlib.org/f2c/src/version.c
 
 
