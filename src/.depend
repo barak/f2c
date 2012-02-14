@@ -30,7 +30,8 @@ F iob.h
 F lex.c
 F machdefs.h
 F main.c
-F makefile
+F makefile.u
+F makefile.vc
 F malloc.c
 F mem.c
 F memset.c
@@ -53,6 +54,7 @@ F put.c
 F putpcc.c
 F sysdep.c
 F sysdep.h
+F sysdeptest.c
 F tokens
 F tokdefs.h
 F usignal.h

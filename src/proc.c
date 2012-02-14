@@ -1680,11 +1680,11 @@ setbound(v, nd, dims)
 	int nd;
 	struct Dims *dims;
 #else
-setbound(register Namep v, int nd, struct Dims *dims)
+setbound(Namep v, int nd, struct Dims *dims)
 #endif
 {
-	register expptr q, t;
-	register struct Dimblock *p;
+	expptr q, q0, t;
+	struct Dimblock *p;
 	int i;
 	extern chainp new_vars;
 	char buf[256];
@@ -1763,17 +1763,25 @@ setbound(register Namep v, int nd, struct Dims *dims)
 	}
 
 	q = dims[nd].lb;
+	q0 = 0;
 	if(q == NULL)
-		q = ICON(1);
+		q = q0 = ICON(1);
 
 	for(i = nd-1 ; i>=0 ; --i)
 	{
 		t = dims[i].lb;
 		if(t == NULL)
 			t = ICON(1);
-		if(p->dims[i].dimsize)
-			q = mkexpr(OPPLUS, t,
-				mkexpr(OPSTAR, cpexpr(p->dims[i].dimsize), q));
+		if(p->dims[i].dimsize) {
+			if (q == q0) {
+				q0 = 0;
+				frexpr(q);
+				q = cpexpr(p->dims[i].dimsize);
+				}
+			else
+				q = mkexpr(OPSTAR, cpexpr(p->dims[i].dimsize), q);
+			q = mkexpr(OPPLUS, t, q);
+			}
 	}
 
 	if( ISCONST(q) )

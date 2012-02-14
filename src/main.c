@@ -636,8 +636,8 @@ sed \"s/^\\/\\*>>>'\\(.*\\)'<<<\\*\\/\\$/cat >'\\1' <<'\\/*<<<\\1>>>*\\/'/\" | /
 		nice_printf (c_output, "/* %s -- translated by f2c ", file_name);
 		nice_printf (c_output, "(version %s).\n", F2C_version);
 		nice_printf (c_output,
-	"   You must link the resulting object file with the libraries:\n\
-	%s   (in that order)\n*/\n\n", link_msg);
+	"   You must link the resulting object file with libf2c:\n\
+	%s\n*/\n\n", link_msg);
 		}
 	if (Ansi == 2)
 		nice_printf(c_output,

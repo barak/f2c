@@ -63,7 +63,9 @@ file	f2c/src/machdefs.h
 
 file	f2c/src/main.c
 
-file	f2c/src/makefile
+file	f2c/src/makefile.u
+
+file	f2c/src/makefile.vc
 
 file	f2c/src/malloc.c
 

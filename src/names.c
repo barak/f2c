@@ -806,9 +806,9 @@ def_commons(FILE *of)
 char *c_keywords[] = {
 	"Long", "Multitype", "Namelist", "Vardesc", "abs", "acos",
 	"addr", "address", "aerr", "alist", "asin", "asm", "atan",
-	"atan2", "aunit", "auto", "break", "c", "case", "catch", "cerr",
-	"char", "ciend", "cierr", "cifmt", "cilist", "cirec", "ciunit",
-	"class", "cllist", "complex", "const", "continue", "cos",
+	"atan2", "aunit", "auto", "break", "c", "case", "catch", "cdecl",
+	"cerr", "char", "ciend", "cierr", "cifmt", "cilist", "cirec",
+	"ciunit", "class", "cllist", "complex", "const", "continue", "cos",
 	"cosh", "csta", "cunit", "d", "dabs", "default", "defined",
 	"delete", "dims", "dmax", "dmin", "do", "double",
 	"doublecomplex", "doublereal", "else", "entry", "enum", "exp",

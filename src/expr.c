@@ -1449,7 +1449,7 @@ mklhs(struct Primblock *p, int subkeep)
 	/* compute the address modified by subscripts */
 
 	if (!replaced)
-		s->memoffset = (subkeep && np->vdim
+		s->memoffset = (subkeep && np->vdim && p->argsp
 				&& (np->vdim->ndim > 1 || np->vtype == TYCHAR
 				&& (!ISCONST(np->vleng)
 				  || np->vleng->constblock.Const.ci != 1)))
@@ -2062,6 +2062,20 @@ zeroconst(expptr e)
 	return 0;
 	}
 
+ void
+#ifdef KR_headers
+paren_used(p) struct Primblock *p;
+#else
+paren_used(struct Primblock *p)
+#endif
+{
+	Namep np;
+
+	p->parenused = 1;
+	if (!p->argsp && (np = p->namep) && np->vdim)
+		warn1("inappropriate operation on unsubscripted array %.50s",
+			np->fvarname);
+	}
 
 #define ICONEQ(z, c)  (ISICON(z) && z->constblock.Const.ci==c)
 #define COMMUTE	{ e = lp;  lp = rp;  rp = e; }
@@ -2412,13 +2426,13 @@ addop:
 retleft:
 	frexpr(rp);
 	if (lp->tag == TPRIM)
-		lp->primblock.parenused = 1;
+		paren_used(&lp->primblock);
 	return(lp);
 
 retright:
 	frexpr(lp);
 	if (rp->tag == TPRIM)
-		rp->primblock.parenused = 1;
+		paren_used(&rp->primblock);
 	return(rp);
 
 error:

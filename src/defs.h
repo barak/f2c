@@ -991,6 +991,7 @@ void	out_for Argdcl((FILEP, tagptr, tagptr, tagptr));
 void	out_init(Void);
 void	outbuf_adjust(Void);
 void	p1_label Argdcl((long));
+void	paren_used Argdcl((struct Primblock*));
 void	prcona Argdcl((FILEP, long));
 void	prconi Argdcl((FILEP, long));
 #ifndef NO_LONG_LONG

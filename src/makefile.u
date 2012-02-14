@@ -69,8 +69,15 @@ put.o: names.h pccdefs.h p1defs.h
 putpcc.o: names.h
 vax.o: defs.h output.h pccdefs.h
 output.h: niceprintf.h
+sysdep.o: sysdep.c sysdep.hd
 
 put.o putpcc.o: pccdefs.h
+
+sysdep.hd:
+	if $(CC) sysdeptest.c; then echo '/*OK*/' > sysdep.hd;\
+	elif $(CC) -DNO_MKDTEMP sysdeptest.c; then echo '#define NO_MKDTEMP' >sysdep.hd;\
+	else echo '#define NO_MKDTEMP' >sysdep.hd; echo '#define NO_MKSTEMP' >>sysdep.hd; fi
+	rm -f a.out
 
 f2c.t: f2c.1t
 	troff -man f2c.1t >f2c.t
@@ -79,7 +86,7 @@ f2c.t: f2c.1t
 #	nroff -man f2c.1t | col -b | uniq >f2c.1
 
 clean:
-	rm -f *.o f2c tokdefs.h f2c.t
+	rm -f *.o f2c sysdep.hd tokdefs.h f2c.t
 
 veryclean: clean
 	rm -f xsum
@@ -87,11 +94,11 @@ veryclean: clean
 b = Notice README cds.c data.c defines.h defs.h equiv.c error.c \
 	exec.c expr.c f2c.1 f2c.1t f2c.h format.c format.h formatdata.c \
 	ftypes.h gram.c gram.dcl gram.exec gram.expr gram.head gram.io \
-	init.c intr.c io.c iob.h lex.c machdefs.h main.c \
+	init.c intr.c io.c iob.h lex.c machdefs.h main.c makefile.u makefile.vc \
 	malloc.c mem.c memset.c misc.c names.c names.h niceprintf.c \
 	niceprintf.h output.c output.h p1defs.h p1output.c \
 	parse.h parse_args.c pccdefs.h pread.c proc.c put.c putpcc.c \
-	sysdep.c sysdep.h tokens usignal.h vax.c version.c xsum.c
+	sysdep.c sysdep.h sysdeptest.c tokens usignal.h vax.c version.c xsum.c
 
 xsum: xsum.c
 	$(CC) $(CFLAGS) -o xsum xsum.c
