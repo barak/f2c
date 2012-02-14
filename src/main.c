@@ -80,7 +80,7 @@ int addftnsrc = NO;		/* Include ftn source in output */
 int usedefsforcommon = NO;	/* Use #defines for common reference */
 int forcedouble = YES;		/* force real functions to double */
 int dneg = NO;			/* f77 treatment of unary minus */
-int Ansi = NO;
+int Ansi = YES;
 int def_equivs = YES;
 int tyioint = TYLONG;
 int szleng = SZLENG;
@@ -133,6 +133,7 @@ static arg_info table[] = {
     f2c_entry ("R", P_NO_ARGS, P_INT, &forcedouble, NO),
     f2c_entry ("!R", P_NO_ARGS, P_INT, &forcedouble, YES),
     f2c_entry ("A", P_NO_ARGS, P_INT, &Ansi, YES),
+    f2c_entry ("K", P_NO_ARGS, P_INT, &Ansi, NO),
     f2c_entry ("ext", P_NO_ARGS, P_INT, &noextflag, YES),
     f2c_entry ("z", P_NO_ARGS, P_INT, &zflag, NO),
     f2c_entry ("a", P_NO_ARGS, P_INT, &useauto, YES),

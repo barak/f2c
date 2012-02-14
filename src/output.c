@@ -1353,8 +1353,14 @@ out_call(FILE *outfile, int op, int ftype, expptr len, expptr name, expptr args)
 	    int use_paren = q -> tag == TEXPR &&
 		    op_precedence (q -> exprblock.opcode) <=
 		    op_precedence (OPCOMMA);
-	    if (q->headblock.vtype == TYREAL && forcereal) {
-		nice_printf(outfile, "(real)");
+	    if (q->headblock.vtype == TYREAL) {
+		if (forcereal) {
+			nice_printf(outfile, "(real)");
+			use_paren = 1;
+			}
+		}
+	    else if (!Ansi && ISINT(q->headblock.vtype)) {
+		nice_printf(outfile, "(ftnlen)");
 		use_paren = 1;
 		}
 	    if (use_paren) nice_printf (outfile, "(");

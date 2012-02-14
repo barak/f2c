@@ -1341,7 +1341,11 @@ int_trunc(int n0, char *s0)
 	}
 
  tagptr
+#ifdef KR_headers
+mkintqcon(n, s) int n; char *s;
+#else
 mkintqcon(int n, char *s)
+#endif
 {
 #ifdef NO_LONG_LONG
 	return mkintcon(convci(n, s));

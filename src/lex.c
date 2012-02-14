@@ -920,7 +920,7 @@ top:
 		{
 			i = 0;
 			while( (c=getc(infile)) != '\n' && c != EOF)
-				if (i < 23)
+				if (i < 23 && c != '\r')
 					buf72[i++] = c;
 			if (warn72 && i && !speclin) {
 				buf72[i] = 0;

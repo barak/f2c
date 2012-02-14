@@ -1,5 +1,3 @@
-Wed Aug 22 08:01:37 EDT 2001
-  Preserve the sign of 0.
-  Pix some glitches in folding constants to integer*8
-(when NO_LONG_LONG is not #defined).
-  Fold constant min(...) and max(...) expressions.
+Fri Sep  6 18:39:24 EDT 2002
+  libf2c.zip: rsne.c: fix bug with multiple repeat counts in reading
+namelists, e.g., &nl a(2) = 3*1.0, 2*2.0, 3*3.0 /

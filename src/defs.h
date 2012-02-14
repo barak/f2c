@@ -32,10 +32,10 @@ use or performance of this software.
 #define MAXLITERALS 200		/* Max number of constants in the literal
 				   pool */
 #define MAXCTL 20
-#define MAXHASH 401
+#define MAXHASH 802
 #define MAXSTNO 801
-#define MAXEXT 200
-#define MAXEQUIV 150
+#define MAXEXT 400
+#define MAXEQUIV 300
 #define MAXLABLIST 258		/* Max number of labels in an alternate
 				   return CALL or computed GOTO */
 #define MAXCONTIN 99		/* Max continuation lines */
@@ -1052,6 +1052,7 @@ void	vardcl Argdcl((Namep));
 void	warn Argdcl((char*));
 void	warn1 Argdcl((const char*, const char*));
 void	warni Argdcl((char*, int));
+void	westart Argdcl((int));
 void	wr_abbrevs Argdcl((FILEP, int, chainp));
 char*	wr_ardecls Argdcl((FILE*, struct Dimblock*, long));
 void	wr_array_init Argdcl((FILEP, int, chainp));
