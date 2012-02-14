@@ -1,0 +1,21 @@
+From: "Barak A. Pearlmutter" <barak+git@cs.nuim.ie>
+Date: Tue, 14 Feb 2012 14:52:48 +0000
+Subject: prototype rmdir
+
+---
+ src/sysdep.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/src/sysdep.c b/src/sysdep.c
+index 3d7478d..7d0ed55 100644
+--- a/src/sysdep.c
++++ b/src/sysdep.c
+@@ -23,6 +23,7 @@ use or performance of this software.
+ #include "defs.h"
+ #include "usignal.h"
+ #include <stdlib.h>
++#include <unistd.h>
+ 
+ char binread[] = "rb", textread[] = "r";
+ char binwrite[] = "wb", textwrite[] = "w";
+-- 

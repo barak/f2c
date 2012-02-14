@@ -1,1 +1,3 @@
 0001-src-makefile.u-tweaks.patch
+0002-prototype-rmdir.patch
+0003-struct-init-braces.patch
