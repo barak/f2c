@@ -1,19 +1,21 @@
 -----BEGIN PGP SIGNED MESSAGE-----
 
-# netlib-bl master Mon May 2 10:35:05 EDT 2005
+# netlib-bl master Sun Oct 29 04:44:48 EST 2006
 # http://cm.bell-labs.com/netlib/crc/netlib-bl.html
-ca9ldhXIOpqcoKAFtkrpfQ	00lastchange
+fyPtuwH6bFwKUcY263edzA	00lastchange
 fly3ZKomK206GNH46wxSFQ	README
-bQwtwmCYEwnHdw0KBdsOMw	changes
+qosC46L1pu5gyDYf6gkBeA	changes
 Yrjzy3qMAF2HkSn5epGX6g	disclaimer
 F345KmWVpdP3bJkyG1hYuw	f2c.1
 P9Inhk/7xaifTvBs3ayVUg	f2c.1t
 uCBnCwhHF1lHUnE0rGdjLg	f2c.h
+KoTW0vdEEteiiOchBw1iuA	f2c.pdf
 lZXtU687uJADS6DbdQlMDg	f2c.ps
-/YNZWAvBdp1LISATY8pk8w	fc
+2uNN5gPIDvaJMfrtQIpSxw	fc
+JOD2ZC/kDcVZbv4LHuvqdw	fixlog
 hfcSe0J/Ms21jOUSm0Dv7w	getopt.c
-S7uYe8gs6s7EiE4MEy9YVQ	index
-AR83FbksrS6e5xk+BKqskA	libf2c.zip
+2r9d/Go37PRM4KjvHkI02Q	index
+ue5ebgoqq9Lp899xjs377A	libf2c.zip
 O/TqQ82nJEUC/RmonEDSzw	libf77
 OOmkboAzOZoQAVNdaNobmQ	libi77
 JOAQtI7OATPEPHcgO29oOA	permission
@@ -21,9 +23,42 @@ JOAQtI7OATPEPHcgO29oOA	permission
 -----BEGIN PGP SIGNATURE-----
 Version: 2.6.2
 
-iQCVAwUBQnY6m75pvxO9gjtZAQGZpgP/aOOeQGvFzlr3IdxoRI8mkHdNcm4BLiND
-Ai7yY2dc/L/n++AvI8RcZdAL+Mh/9sZwZfiDi163VGilBn9EkNzXRwhR6XF6VkWK
-N7CHvwRaAm/7G/Bce83fw8zB4z4k4o/zxVgEKHVcWTgue5mWGVJGkUGuRnoKZH1W
-TJtP8NTtrkI=
-=zwKr
+iQCVAwUBRUR4Eb5pvxO9gjtZAQE7DAP/Yre8hEKzNxHB1xi/hUKUFXi00zhRPA0K
+P5xmu9EHYEaYCny/zvLIhzwCtn48fcIG+Uq1l6AzapT4QoutU2273JgUjnvVp3oQ
+cmMX4LgBaZu6vPaVPaTB8BAbzcvs0vDFCB9utF59S3gTdAPpofB0T9EwaetnAtzE
+F+DQWLxd6KM=
+=zuTo
+-----END PGP SIGNATURE-----
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-utk master Mon Apr 7 03:14:45 EDT 2008
+qOe1FtvaOqf7/YWcpmfseg	00lastchange
+fly3ZKomK206GNH46wxSFQ	README
+gx5lXW/mXyugC/ptGcC7Tw	changes
+DhuHpjwRF5I5i9q6q0RZ6Q	directory
+Yrjzy3qMAF2HkSn5epGX6g	disclaimer
+F345KmWVpdP3bJkyG1hYuw	f2c.1
+P9Inhk/7xaifTvBs3ayVUg	f2c.1t
+uCBnCwhHF1lHUnE0rGdjLg	f2c.h
+KoTW0vdEEteiiOchBw1iuA	f2c.pdf
+lZXtU687uJADS6DbdQlMDg	f2c.ps
+2uNN5gPIDvaJMfrtQIpSxw	fc
+JOD2ZC/kDcVZbv4LHuvqdw	fixlog
+hfcSe0J/Ms21jOUSm0Dv7w	getopt.c
+2r9d/Go37PRM4KjvHkI02Q	index
+70cpvIDKLRuhOV7AWA8MoA	index.html
+8Yy2jUGowDBvzetq5b3dIA	libf2c.zip
+O/TqQ82nJEUC/RmonEDSzw	libf77
+OOmkboAzOZoQAVNdaNobmQ	libi77
+JOAQtI7OATPEPHcgO29oOA	permission
+fly3ZKomK206GNH46wxSFQ	readme
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBR/nJ7uFlxDEfrjtlAQFlNAQAjOxuw9wXQ0CtFwp9AOKlpYl2c5qizu2+
+/jjuA17o0EW0ZHtEg80qkw+V5Onnj+vGnDYX/cVnlcGaimL0NpzIao19XB+2Bc2x
+4DjSd7iM+YxO6Vt+uxlypFDnogQRvBiDoC3zXDd/TgAmYxWiHuqYWom5bYKJMWtw
+/I018f8o8MA=
+=yPzA
 -----END PGP SIGNATURE-----
