@@ -1,11 +1,24 @@
 From: "Barak A. Pearlmutter" <barak+git@cs.nuim.ie>
 Date: Tue, 14 Feb 2012 13:43:17 +0000
-Subject: src/makefile.u tweaks
+Subject: make tweaks
 
+tweak src/makefile.u, and supply stub top-level Makefile
 ---
+ Makefile       |    4 ++++
  src/makefile.u |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ 2 files changed, 7 insertions(+), 3 deletions(-)
+ create mode 100644 Makefile
 
+diff --git a/Makefile b/Makefile
+new file mode 100644
+index 0000000..dd4f903
+--- /dev/null
++++ b/Makefile
+@@ -0,0 +1,4 @@
++all:
++
++%:
++	$(MAKE) -C src -f makefile.u $@
 diff --git a/src/makefile.u b/src/makefile.u
 index 0f12022..7550218 100644
 --- a/src/makefile.u
