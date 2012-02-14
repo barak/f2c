@@ -3049,3 +3049,156 @@ Mon Oct 25 17:30:54 EDT 1999
   io.c: fix glitch introduced in the previous change (19991005) that
 caused format(' %') to print "%%" rather than "%".
 
+Mon Nov 15 12:10:35 EST 1999
+  libf2c.zip: fix bug with the sequence backspace(n); endfile(n);
+rewind(n); read(n).  Supply missing (long) casts in a couple of places
+where they matter when size(ftnint) == sizeof(int) < sizeof(long).
+
+Tue Jan 18 19:22:24 EST 2000
+  Arrange for parameter statements involving min(...) and max(...)
+functions of three or more arguments to work.
+  Warn about text after "end" (rather than reporting a syntax error
+with a surprising line number).
+  Accept preprocessor line numbers of the form "# 1234" (possibly
+with trailing blanks).
+  Accept a comma after write(...) and before a list of things to write.
+
+Fri Jan 21 17:26:27 EST 2000
+  Minor updates to make compiling Win32 console binaries easier.  A
+side effect is that the MSDOS restriction of only one Fortran file
+per invocation is lifted (and "f2c *.f") works.
+
+Tue Feb  1 18:38:32 EST 2000
+  f2c/src/tokdefs.h added (to help people on non-Unix systems -- the
+makefile has always had a rule for generating tokdefs.h).
+
+Fri Mar 10 18:48:17 EST 2000
+  libf77, libf2c.zip: z_log.c: the real part of the double complex log
+of numbers near, e.g., (+-1,eps) with |eps| small is now more accurate.
+For example if z = (1,1d-7), then "write(*,*) z" now writes
+"(5.E-15,1.E-07" rather than the previous "(4.88498131E-15,1.E-07)".
+
+Thu Apr 20 13:02:54 EDT 2000
+  libf77, libi77, libf2c.zip: s_cat.c, rsne.c, xwsne.c: fix type
+errors that only matter if sizeof(ftnint) != sizeof(ftnlen).
+
+Tue May 30 23:36:18 EDT 2000
+  expr.c: adjust subcheck() to use a temporary variable of type TYLONG
+rather than TYSHORT under -C -I2.
+
+Wed May 31 08:48:03 EDT 2000
+  Simplify yesterday's adjustment; today's change should be invisible.
+
+Tue Jul  4 22:52:21 EDT 2000
+  misc.c, function "addressable": fix fault with "f2c -I2 foo.f" when
+foo.f consists of the 4 lines
+	subroutine foo(c)
+	character*(*) c
+	i = min(len(c),23)
+	end
+  Sundry files: tweaks for portability, e.g., for compilation by overly
+fastidious C++ compilers; "false" and "true" now treated as C keywords
+(so they get two underscores appended).
+  libf77, libi77, libf2c.zip: "invisible" adjustments to permit
+compilation by C++ compilers; version numbers not changed.
+
+Thu Jul  6 23:46:07 EDT 2000
+  Various files: tweaks to banish more compiler warnings.
+  lib?77, libf2c.zip/makefile.u: add "|| true" to ranlib invocations.
+  Thanks to Nelson H. F. Beebe for messages leading to these changes
+(and to many of the ones two days ago).
+  xsum.c: tweak include order.
+
+Fri Jul  7 18:01:25 EDT 2000
+  fc: accept -m xxx or -mxxx, pass them to the compiler as -mxxx
+(suggestion of Nelson Beebe).  Note that fc simply appends to CFLAGS,
+so system-specific stuff can be supplied in the environment variable
+CFLAGS.  With some shells, invocations of the form
+	CFLAGS='system-specific stuff' fc ...
+are one way to do this.
+
+Thu Aug 17 21:38:36 EDT 2000
+  Fix obscure glitch: in "Error on line nnn of ...: Bad # line:...",
+get nnn right.
+
+Sat Sep 30 00:28:30 EDT 2000
+  libf77, libf2c.zip: dtime_.c, etime_.c: use floating-point divide;
+dtime_.d, erf_.c, erfc_.c, etime.c: for use with "f2c -R", compile with
+-DREAL=float.
+
+Tue Dec  5 22:55:56 EST 2000
+  lread.c: under namelist input, when reading a logical array, treat
+Tstuff= and Fstuff= as new assignments rather than as logical constants.
+
+Fri Feb 23 00:43:56 EST 2001
+  libf2c: endfile.c: adjust to use truncate() unless compiled with
+-DNO_TRUNCATE (or with -DMSDOS).  Add libf2c/mkfile.plan9.
+
+Sat Feb 24 21:14:24 EST 2001
+  Prevent malloc(0) when a subroutine of no arguments has an entry
+with no arguments, as in
+	subroutine foo
+	entry goo
+	end
+  Fix a fault that was possible when MAIN (illegally) had entry points.
+  Fix a buffer overflow connected with the error message for names more
+than MAXNAMELEN (i.e., 50) bytes long.
+  Fix a bug in command-line argument passing that caused the invocation
+"f2c -!czork foo.f" to complain about two invalid flags ('-ork' and
+'-oo.f') instead of just one ('-ork').
+  fc: add -s option (strip executable); portability tweaks.
+  Adjustments to handing of integer*8 to permit processing 8-byte hex,
+binary, octal, and decimal constants.  The adjustments are only
+available when type long long (for >= 64 bit integers) is available to
+f2c; they are assumed available unless f2c is compiled with either
+-DNO_TYQUAD or -DNO_LONGLONG.  As has long been the case, compilation
+of f2c itself with -DNO_TYQUAD eliminates recognition of integer*8
+altogether.  Compilation with just -DNO_LONGLONG permits the previous
+handling of integer*8, which could only handle 32-bit constants
+associated with integer*8 variables.
+  New command-line argument -i8const (available only when f2c itself
+is compiled with neither -DNO_TYQUAD nor -DNO_LONGLONG) suppresses
+the new automatic promotion of integer constants too long to express
+as 32-bit values to type integer*8.  There are corresponding updates
+to f2c.1 and f2c.1t.
+
+Wed Feb 28 00:50:04 EST 2001
+  Adjust misc.c for (older) systems that recognize long long but do not
+have LLONG_MAX or LONGLONG_MAX in limits.h.
+  main.c: filter out bad files before dofork loop to avoid trouble
+in Win32 "f2c.exe" binaries.
+
+Thu Mar  1 16:25:19 EST 2001
+  Cosmetic change for consistency with some other netlib directories:
+change NO_LONGLONG to NO_LONG_LONG.  (This includes adjusting the above
+entry for Feb 23 2001.)  No change (other than timestamp) to version.c.
+  libf2c:  endfile.c:  switch to ftruncate (absent -DNO_TRUNCATE),
+thus permitting truncation of scratch files on true Unix systems,
+where scratch files have no name.  Add an fflush() (surprisingly)
+needed on some Linux systems.
+
+Tue Mar 20 22:03:23 EST 2001
+  expr.c:  complain ("impossible conversion") about attempts to assign
+character expressions ... to integer variables, rather than implicitly
+assigning ichar(...).
+
+Sat Jun 23 23:08:22 EDT 2001
+  New command-line option -trapuv adds calls on _uninit_f2c() to prologs
+to dynamically initialize local variables, except those appearing in
+SAVE or DATA statements, with values that may help find references to
+uninitialized variables.  For example, with IEEE arithmetic, floating-
+point variables are initialized to signaling NaNs.
+  expr.c: new warning for out-of-bounds constant substring expressions.
+Under -C, such expressions now inhibit C output.
+  libf2c/mkfile.plan9: fix glitch with rule for "check" (or xsum.out).
+  libf2c.zip: add uninit.c (for _uninit_f2c()) in support of -trapuv.
+  fc, f2c.1, f2c.1t: adjust for -trapuv.
+
+Thu Jul  5 22:00:51 EDT 2001
+  libf2c.zip: modify uninit.c for __mc68k__ under Linux.
+
+Wed Aug 22 08:01:37 EDT 2001
+  cds.c, expr.c: in constants, preserve the sign of 0.
+  expr.c: fix some glitches in folding constants to integer*8
+(when NO_LONG_LONG is not #defined).
+  intr.c: fold constant min(...) and max(...) expressions.

@@ -1,5 +1,5 @@
 /****************************************************************
-Copyright 1990 - 1994 by AT&T, Lucent Technologies and Bellcore.
+Copyright 1990 - 1994, 2000 by AT&T, Lucent Technologies and Bellcore.
 
 Permission to use, copy, modify, and distribute this software
 and its documentation for any purpose and without fee is hereby
@@ -39,6 +39,29 @@ char link_msg[]		= "-lf2c -lm"; /* was "-lF77 -lI77 -lm -lc"; */
 
 char *outbuf = "", *outbtail;
 
+#undef WANT_spawnvp
+#ifdef MSDOS
+#ifndef NO_spawnvp
+#define WANT_spawnvp
+#endif
+#endif
+
+#ifdef _WIN32
+#include <windows.h>	/* for GetVolumeInformation */
+#undef WANT_spawnvp
+#define WANT_spawnvp
+#undef  MSDOS
+#define MSDOS
+#endif
+
+#ifdef WANT_spawnvp
+#include <process.h>
+#ifndef _P_WAIT
+#define _P_WAIT P_WAIT	/* Symantec C/C++ */
+#endif
+static char **spargv, **pfname;
+#endif
+
 #ifndef TMPDIR
 #ifdef MSDOS
 #define TMPDIR ""
@@ -48,11 +71,19 @@ char *outbuf = "", *outbtail;
 #endif
 
 char *tmpdir = TMPDIR;
-#ifndef MSDOS
-#ifndef KR_headers
-extern int getpid(void);
+
+#ifdef __cplusplus
+#define Cextern extern "C"
+extern "C" {
+ static void flovflo(int), killed(int);
+ static int compare(const void *a, const void *b);
+}
+#else
+#define Cextern extern
 #endif
-#endif
+
+Cextern int unlink Argdcl((const char *));
+Cextern int fork Argdcl((void)), getpid Argdcl((void)), wait Argdcl((int*));
 
  void
 #ifdef KR_headers
@@ -62,9 +93,6 @@ Un_link_all(cdelete)
 Un_link_all(int cdelete)
 #endif
 {
-#ifndef KR_headers
-	extern int unlink(const char *);
-#endif
 	if (!debugflag) {
 		unlink(c_functions);
 		unlink(initfname);
@@ -93,6 +121,20 @@ set_tmp_names(Void)
 	{
 #ifdef MSDOS
 	char buf[64], *s, *t;
+#ifdef _WIN32
+	DWORD flags, maxlen, volser;
+	char volname[512], f2c[24], fsname[512], *name1;
+	int i;
+
+	i = sprintf(f2c, "%x", _getpid());
+	if (!GetVolumeInformation(NULL, volname, sizeof(volname), &volser, &maxlen,
+			&flags, fsname, sizeof(fsname))
+	 || maxlen < i+8) /* FAT16 */
+		strcpy(f2c, "f2c_");
+#else
+	static char f2c[] = "f2c_";
+#endif
+
 	if (!*tmpdir || *tmpdir == '.' && !tmpdir[1])
 		t = "";
 	else {
@@ -108,12 +150,12 @@ set_tmp_names(Void)
 		*t = 0;
 		t = buf;
 		}
-	sprintf(c_functions, "%sf2c_func", t);
-	sprintf(initfname, "%sf2c_rd", t);
-	sprintf(blkdfname, "%sf2c_blkd", t);
-	sprintf(p1_file, "%sf2c_p1f", t);
-	sprintf(p1_bakfile, "%sf2c_p1fb", t);
-	sprintf(sortfname, "%sf2c_sort", t);
+	sprintf(c_functions, "%s%sfunc", t, f2c);
+	sprintf(initfname, "%s%srd", t, f2c);
+	sprintf(blkdfname, "%s%sblkd", t, f2c);
+	sprintf(p1_file, "%s%sp1f", t, f2c);
+	sprintf(p1_bakfile, "%s%sp1fb", t, f2c);
+	sprintf(sortfname, "%s%ssort", t, f2c);
 #else
 	long pid = getpid();
 	sprintf(c_functions, "%s/f2c%ld_func", tmpdir, pid);
@@ -228,17 +270,77 @@ sigcatch(int sig)
 	signal(SIGFPE, flovflo);  /* catch overflows */
 	}
 
+/* argkludge permits wild-card expansion and caching of the original or expanded */
+/* argv to kludge around the lack of fork() and exec() when necessary. */
 
-dofork(Void)
-{
-#ifdef MSDOS
-	Fatal("Only one Fortran input file allowed under MS-DOS");
+ void
+#ifdef KR_headers
+argkludge(pargc, pargv) int *pargc; char ***pargv;
 #else
-#ifndef KR_headers
-	extern int fork(void), wait(int*);
+argkludge(int *pargc, char ***pargv)
 #endif
-	int pid, status, w;
+{
+#ifdef WANT_spawnvp
+	size_t L, L1;
+	int argc, i, nf;
+	char **a, **argv, *s, *t, *t0;
+
+	/* Assume wild-card expansion has been done by Microsoft's setargv.obj */
+
+	/* Count Fortran input files. */
+
+	L = argc = *pargc;
+	argv = *pargv;
+	for(i = nf = 0; i < argc; i++) {
+		L += L1 = strlen(s = argv[i]);
+		if (L1 > 2 && s[L1-2] == '.')
+			switch(s[L1-1]) {
+			  case 'f':
+			  case 'F':
+				nf++;
+			  }
+		}
+	if (nf <= 1)
+		return;
+
+	/* Cache inputs */
+
+	i = argc - nf + 2;
+	a = spargv = (char**)Alloc(i*sizeof(char*) + L);
+	t = (char*)(a + i);
+	for(i = 0; i < argc; i++) {
+		*a++ = t0 = t;
+		for(s = argv[i]; *t++ = *s; s++);
+		if (t-t0 > 3 && s[-2] == '.')
+			switch(s[-1]) {
+			  case 'f':
+			  case 'F':
+				--a;
+				t = t0;
+			  }
+		}
+	pfname = a++;
+	*a = 0;
+#endif
+	}
+
+ int
+#ifdef KR_headers
+dofork(fname) char *fname;
+#else
+dofork(char *fname)
+#endif
+{
 	extern int retcode;
+#ifdef MSDOS
+#ifdef WANT_spawnvp
+	*pfname = fname;
+	retcode |= _spawnvp(_P_WAIT, spargv[0], (char const*const*)spargv);
+#else /*_WIN32*/
+	Fatal("Only one Fortran input file allowed under MS-DOS");
+#endif /*_WIN32*/
+#else
+	int pid, status, w;
 
 	if (!(pid = fork()))
 		return 1;
@@ -376,7 +478,7 @@ fmt_init(Void)
 	for(s = "\b\t\n\f\r\v", i = 0; j = *(unsigned char *)s++;)
 		str_fmt[j] = chr_fmt[j] = str1fmt[i++];
 	/* '\v' = 11 for both EBCDIC and ASCII... */
-	chr_fmt[11] = Ansi ? "\\v" : "\\13";
+	chr_fmt[11] = (char*)(Ansi ? "\\v" : "\\13");
 	}
 
  void
@@ -432,6 +534,7 @@ dsort(char *from, char *to)
 #endif
 { return strcmp(*(char **)a, *(char **)b); }
 
+ int
 #ifdef KR_headers
 dsort(from, to)
 	char *from;

@@ -262,6 +262,15 @@ Preserve multidimensional subscripts.  Suppressed by option
 Put temporary files in directory
 .I dir.
 .TP
+.B -trapuv
+Dynamically initialize local variables, except those appearing in
+.SM SAVE
+or
+.SM DATA
+statements, with values that may help find references to
+uninitialized variables.  For example, with IEEE arithmetic,
+initialize local floating-point variables to signaling NaNs.
+.TP
 .B -w8
 Suppress warnings when
 .SM COMMON
@@ -295,7 +304,15 @@ statements.
 .TP
 .B -!i8
 Disallow
-.SM INTEGER*8.
+.SM INTEGER*8 ,
+or, if the option is
+.LR -!i8const ,
+permit
+.SM INTEGER*8
+but do not promote integer
+constants to
+.SM INTEGER*8
+when they involve more than 32 bits.
 .TP
 .B -!it
 Don't infer types of untyped
@@ -365,3 +382,10 @@ Untypable
 .SM EXTERNAL
 functions are declared
 .BR int .
+.br
+There is no notation for
+.SM INTEGER*8
+constants.
+.br
+Some intrinsic functions do not yet work with
+.SM INTEGER*8 .

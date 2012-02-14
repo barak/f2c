@@ -1,5 +1,5 @@
 /****************************************************************
-Copyright 1990, 1992 - 1996 by AT&T, Lucent Technologies and Bellcore.
+Copyright 1990, 1992 - 1996, 2000 by AT&T, Lucent Technologies and Bellcore.
 
 Permission to use, copy, modify, and distribute this software
 and its documentation for any purpose and without fee is hereby
@@ -90,7 +90,7 @@ c_type_decl(int type, int is_extern)
 #endif
 	case TYLOGICAL1:
 	case TYLOGICAL2:
-	case TYLOGICAL:	strcpy(buff, typename[type]);
+	case TYLOGICAL:	strcpy(buff, Typename[type]);
 			break;
 	case TYCHAR:	if (is_extern)
 			    strcpy (buff, "/* Character */ VOID");
@@ -812,8 +812,8 @@ char *c_keywords[] = {
 	"cosh", "csta", "cunit", "d", "dabs", "default", "defined",
 	"delete", "dims", "dmax", "dmin", "do", "double",
 	"doublecomplex", "doublereal", "else", "entry", "enum", "exp",
-	"extern", "far", "flag", "float", "for", "friend", "ftnint",
-	"ftnlen", "goto", "h", "huge", "i", "iciend", "icierr",
+	"extern", "false", "far", "flag", "float", "for", "friend",
+	"ftnint", "ftnlen", "goto", "h", "huge", "i", "iciend", "icierr",
 	"icifmt", "icilist", "icirlen", "icirnum", "iciunit", "if",
 	"inacc", "inacclen", "inblank", "inblanklen", "include",
 	"indir", "indirlen", "inerr", "inex", "infile", "infilen",
@@ -827,7 +827,7 @@ char *c_keywords[] = {
 	"protected", "public", "r", "real", "register", "return",
 	"short", "shortint", "shortlogical", "signed", "sin", "sinh",
 	"sizeof", "sqrt", "static", "struct", "switch", "tan", "tanh",
-	"template", "this", "try", "type", "typedef", "uinteger",
+	"template", "this", "true", "try", "type", "typedef", "uinteger",
 	"ulongint", "union", "unsigned", "vars", "virtual", "void",
 	"volatile", "while", "z"
 	}; /* c_keywords */

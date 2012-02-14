@@ -1,5 +1,5 @@
 /****************************************************************
-Copyright 1990 - 1996 by AT&T, Lucent Technologies and Bellcore.
+Copyright 1990-1996, 2000-2001 by AT&T, Lucent Technologies and Bellcore.
 
 Permission to use, copy, modify, and distribute this software
 and its documentation for any purpose and without fee is hereby
@@ -53,6 +53,9 @@ int intr_omit;
 static int no_cd, no_i90;
 #ifdef TYQUAD
 flag use_tyquad = YES;
+#ifndef NO_LONG_LONG
+flag allow_i8c = YES;
+#endif
 #endif
 int tyreal = TYREAL;
 int tycomplex = TYCOMPLEX;
@@ -99,6 +102,7 @@ char *halign, *ohalign;
 int krparens = NO;
 int hsize;	/* for padding under -h */
 int htype;	/* for wr_equiv_init under -h */
+int trapuv;
 chainp Iargs;
 
 #define f2c_entry(swit,count,type,store,size) \
@@ -160,7 +164,11 @@ static arg_info table[] = {
     f2c_entry ("d", P_ONE_ARG, P_STRING, &outbuf, 0),
     f2c_entry ("cd", P_NO_ARGS, P_INT, &no_cd, 1),
     f2c_entry ("i90", P_NO_ARGS, P_INT, &no_i90, 2),
+    f2c_entry ("trapuv", P_NO_ARGS, P_INT, &trapuv, 1),
 #ifdef TYQUAD
+#ifndef NO_LONG_LONG
+    f2c_entry ("!i8const", P_NO_ARGS, P_INT, &allow_i8c, NO),
+#endif
     f2c_entry ("!i8", P_NO_ARGS, P_INT, &use_tyquad, NO),
 #endif
 
@@ -290,6 +298,11 @@ set_externs(Void)
     else
 	dneg = 0;
 
+#ifndef NO_LONG_LONG
+    if (!use_tyquad)
+	allow_i8c = 0;
+#endif
+
     if (maxregvar > MAXREGVAR) {
 	warni("-O%d: too many register variables", maxregvar);
 	maxregvar = MAXREGVAR;
@@ -339,7 +352,7 @@ write_typedefs(FILE *outfile)
 	for(i = 0; i <= TYSUBR; i++)
 		if (s = usedcasts[i]) {
 			if (!p) {
-				p = Ansi == 1 ? "()" : "(...)";
+				p = (char*)(Ansi == 1 ? "()" : "(...)");
 				nice_printf(outfile,
 				"/* Types for casting procedure arguments: */\
 \n\n#ifndef F2C_proc_par_types\n");
@@ -357,7 +370,7 @@ write_typedefs(FILE *outfile)
 		if (used_rets[st[i]])
 			nice_printf(outfile,
 				"typedef %s %c_f; /* %s function */\n",
-				p = i ? "VOID" : "doublereal",
+				p = (char*)(i ? "VOID" : "doublereal"),
 				stl[i], ftn_types[st[i]]);
 	if (p)
 		nice_printf(outfile, "#endif\n\n");
@@ -455,6 +468,36 @@ I_args(int argc, char **a)
 	return a1 - a0;
 	}
 
+ static void
+omit_non_f(Void)
+{
+	/* complain about ftn_files that do not end in .f or .F */
+
+	char *s, *s1;
+	int i, k;
+
+	for(i = k = 0; s = ftn_files[k]; k++) {
+		s1 = s + strlen(s);
+		if (s1 - s >= 3) {
+			s1 -= 2;
+			if (*s1 == '.') switch(s1[1]) {
+			  case 'f':
+			  case 'F':
+				ftn_files[i++] = s;
+				continue;
+			  }
+			}
+		fprintf(diagfile, "\"%s\" does not end in .f or .F\n", s);
+		}
+	if (i != k) {
+		fflush(diagfile);
+		if (!i)
+			exit(1);
+		ftn_files[i] = 0;
+		}
+	}
+
+
  int retcode = 0;
 
  int
@@ -476,6 +519,7 @@ main(int argc, char **argv)
 	diagfile = stderr;
 	setbuf(stderr, stderrbuf);	/* arrange for fast error msgs */
 
+	argkludge(&argc, &argv);		/* for _WIN32 */
 	argc = I_args(argc, argv);	/* extract -I args */
 	Max_ftn_files = argc - 1;
 	ftn_files = (char **)ckalloc((argc+1)*sizeof(char *));
@@ -501,7 +545,7 @@ main(int argc, char **argv)
 		parens = "()";
 		}
 	else if (!Castargs)
-		parens = Ansi == 1 ? "()" : "(...)";
+		parens = (char*)(Ansi == 1 ? "()" : "(...)");
 	else
 		dfltproc = dflt1proc;
 
@@ -509,11 +553,12 @@ main(int argc, char **argv)
 	set_externs();
 	fileinit();
 	read_Pfiles(ftn_files);
+	omit_non_f();
 
-	for(k = 1; ftn_files[k]; k++)
-		if (dofork())
+	for(k = 0; ftn_files[k+1]; k++)
+		if (dofork(ftn_files[k]))
 			break;
-	filename0 = file_name = ftn_files[current_ftn_file = k - 1];
+	filename0 = file_name = ftn_files[current_ftn_file = k];
 
 	set_tmp_names();
 	sigcatch(0);
@@ -597,6 +642,9 @@ sed \"s/^\\/\\*>>>'\\(.*\\)'<<<\\*\\/\\$/cat >'\\1' <<'\\/*<<<\\1>>>*\\/'/\" | /
 		nice_printf(c_output,
 			"#ifdef __cplusplus\nextern \"C\" {\n#endif\n");
 	nice_printf (c_output, "%s#include \"f2c.h\"\n\n", def_i2);
+	if (trapuv)
+		nice_printf(c_output, "extern void _uninit_f2c(%s);\n%s\n\n",
+			Ansi ? "void*,int,long" : "", "extern double _0;");
 	if (gflag)
 		nice_printf (c_output, "#line 1 \"%s\"\n", file_name);
 	if (Castargs && typedefs)

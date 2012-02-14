@@ -35,6 +35,7 @@ F malloc.c
 F mem.c
 F memset.c
 F misc.c
+F mkfile.plan9
 F names.c
 F names.h
 F niceprintf.c
@@ -53,6 +54,7 @@ F putpcc.c
 F sysdep.c
 F sysdep.h
 F tokens
+F tokdefs.h
 F usignal.h
 F vax.c
 F version.c

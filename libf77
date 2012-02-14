@@ -1,5 +1,735 @@
 # to unbundle, sh this file (in an empty directory)
 mkdir libF77
+echo libF77/uninit.c 1>&2
+sed >libF77/uninit.c <<'//GO.SYSIN DD libF77/uninit.c' 's/^-//'
+-#include <stdio.h>
+-#include <string.h>
+-#include "arith.h"
+-
+-#define TYSHORT 2
+-#define TYLONG 3
+-#define TYREAL 4
+-#define TYDREAL 5
+-#define TYCOMPLEX 6
+-#define TYDCOMPLEX 7
+-#define TYINT1 11
+-#define TYQUAD 14
+-#ifndef Long
+-#define Long long
+-#endif
+-
+-#ifdef __mips
+-#define RNAN	0xffc00000
+-#define DNAN0	0xfff80000
+-#define DNAN1	0
+-#endif
+-
+-#ifdef _PA_RISC1_1
+-#define RNAN	0xffc00000
+-#define DNAN0	0xfff80000
+-#define DNAN1	0
+-#endif
+-
+-#ifndef RNAN
+-#define RNAN	0xff800001
+-#ifdef IEEE_MC68k
+-#define DNAN0	0xfff00000
+-#define DNAN1	1
+-#else
+-#define DNAN0	1
+-#define DNAN1	0xfff00000
+-#endif
+-#endif /*RNAN*/
+-
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+-static void ieee0(void);
+-
+-static unsigned Long rnan = RNAN,
+-	dnan0 = DNAN0,
+-	dnan1 = DNAN1;
+-
+-double _0 = 0.;
+-
+- void
+-_uninit_f2c(void *x, int type, long len)
+-{
+-	static int first = 1;
+-
+-	unsigned Long *lx, *lxe;
+-
+-	if (first) {
+-		first = 0;
+-		ieee0();
+-		}
+-	if (len == 1)
+-	 switch(type) {
+-	  case TYINT1:
+-		*(char*)x = 'Z';
+-		return;
+-	  case TYSHORT:
+-		*(short*)x = 0xfa7a;
+-		break;
+-	  case TYLONG:
+-		*(unsigned Long*)x = 0xfa7a7a7aUL;
+-		return;
+-	  case TYQUAD:
+-	  case TYCOMPLEX:
+-	  case TYDCOMPLEX:
+-		break;
+-	  case TYREAL:
+-		*(unsigned Long*)x = rnan;
+-		return;
+-	  case TYDREAL:
+-		lx = (unsigned Long*)x;
+-		lx[0] = dnan0;
+-		lx[1] = dnan1;
+-		return;
+-	  default:
+-		printf("Surprise type %d in _uninit_f2c\n", type);
+-	  }
+-	switch(type) {
+-	  case TYINT1:
+-		memset(x, 'Z', len);
+-		break;
+-	  case TYSHORT:
+-		*(short*)x = 0xfa7a;
+-		break;
+-	  case TYQUAD:
+-		len *= 2;
+-		/* no break */
+-	  case TYLONG:
+-		lx = (unsigned Long*)x;
+-		lxe = lx + len;
+-		while(lx < lxe)
+-			*lx++ = 0xfa7a7a7aUL;
+-		break;
+-	  case TYCOMPLEX:
+-		len *= 2;
+-		/* no break */
+-	  case TYREAL:
+-		lx = (unsigned Long*)x;
+-		lxe = lx + len;
+-		while(lx < lxe)
+-			*lx++ = rnan;
+-		break;
+-	  case TYDCOMPLEX:
+-		len *= 2;
+-		/* no break */
+-	  case TYDREAL:
+-		lx = (unsigned Long*)x;
+-		for(lxe = lx + 2*len; lx < lxe; lx += 2) {
+-			lx[0] = dnan0;
+-			lx[1] = dnan1;
+-			}
+-	  }
+-	}
+-#ifdef __cplusplus
+-}
+-#endif
+-
+-#ifndef MSpc
+-#ifdef MSDOS
+-#define MSpc
+-#else
+-#ifdef _WIN32
+-#define MSpc
+-#endif
+-#endif
+-#endif
+-
+-#ifdef MSpc
+-#define IEEE0_done
+-#include "float.h"
+-#include "signal.h"
+-
+- static void
+-ieee0(void)
+-{
+-#ifndef __alpha
+-	_control87(EM_DENORMAL | EM_UNDERFLOW | EM_INEXACT, MCW_EM);
+-#endif
+-	/* With MS VC++, compiling and linking with -Zi will permit */
+-	/* clicking to invoke the MS C++ debugger, which will show */
+-	/* the point of error -- provided SIGFPE is SIG_DFL. */
+-	signal(SIGFPE, SIG_DFL);
+-	}
+-#endif /* MSpc */
+-
+-#ifdef __mips	/* must link with -lfpe */
+-#define IEEE0_done
+-/* code from Eric Grosse */
+-#include <stdlib.h>
+-#include <stdio.h>
+-#include "/usr/include/sigfpe.h"	/* full pathname for lcc -N */
+-#include "/usr/include/sys/fpu.h"
+-
+-static void
+-ieeeuserhand(unsigned exception[5], int val[2])
+-{
+-	fflush(stdout);
+-	fprintf(stderr,"ieee0() aborting because of ");
+-	if(exception[0]==_OVERFL) fprintf(stderr,"overflow\n");
+-	else if(exception[0]==_UNDERFL) fprintf(stderr,"underflow\n");
+-	else if(exception[0]==_DIVZERO) fprintf(stderr,"divide by 0\n");
+-	else if(exception[0]==_INVALID) fprintf(stderr,"invalid operation\n");
+-	else fprintf(stderr,"\tunknown reason\n");
+-	fflush(stderr);
+-	abort();
+-}
+-
+-static void
+-ieeeuserhand2(unsigned int **j)
+-{
+-	fprintf(stderr,"ieee0() aborting because of confusion\n");
+-	abort();
+-}
+-
+-static int ieee_chk = 1;
+-
+- static void
+-ieee0(void)
+-{
+-	int i;
+-	char *s;
+-	if(getenv("NoIEEE")!=NULL)
+-		ieee_chk = 0;
+-	for(i=1; i<=4; i++){
+-		sigfpe_[i].count = 1000;
+-		sigfpe_[i].trace = 1;
+-		sigfpe_[i].repls = _USER_DETERMINED;
+-	}
+-	sigfpe_[1].repls = _ZERO;	/* underflow */
+-	if(ieee_chk){
+-		if(s=getenv("ROUND_MODE")){
+-			if( !isdigit(s[0]) || (i=s[0]-'0')<0 || i>3 )
+-				fprintf(stderr,"bad rounding mode %s\n",s);
+-			else
+-				swapRM(i);
+-		}
+-		handle_sigfpes( _ON,
+-			_EN_UNDERFL|_EN_OVERFL|_EN_DIVZERO|_EN_INVALID,
+-			ieeeuserhand,_ABORT_ON_ERROR,ieeeuserhand2);
+-	}
+-}
+-#endif /* mips */
+-
+-#ifdef __linux__
+-#define IEEE0_done
+-#include "fpu_control.h"
+-
+-#ifdef __alpha__
+-#ifndef USE_setfpucw
+-#define __setfpucw(x) __fpu_control = (x)
+-#endif
+-#endif
+-
+-#ifndef _FPU_SETCW
+-#undef  Can_use__setfpucw
+-#define Can_use__setfpucw
+-#endif
+-
+- static void
+-ieee0(void)
+-{
+-#if (defined(__mc68000__) || defined(__mc68020__) || defined(mc68020) || defined (__mc68k__))
+-/* Reported 20010705 by Alan Bain <alanb@chiark.greenend.org.uk> */
+-/* Note that IEEE 754 IOP (illegal operation) */
+-/* = Signaling NAN (SNAN) + operation error (OPERR). */
+-#ifdef Can_use__setfpucw /* Has __setfpucw gone missing from S.u.S.E. 6.3? */
+-	__setfpucw(_FPU_IEEE + _FPU_DOUBLE + _FPU_MASK_OPERR + _FPU_MASK_DZ + _FPU_MASK_SNAN+_FPU_MASK_OVFL);
+-#else
+-	__fpu_control = _FPU_IEEE + _FPU_DOUBLE + _FPU_MASK_OPERR + _FPU_MASK_DZ + _FPU_MASK_SNAN+_FPU_MASK_OVFL;
+-	_FPU_SETCW(__fpu_control);
+-#endif
+-#else /* !__mc68k__ */
+-#ifdef Can_use__setfpucw /* Has __setfpucw gone missing from S.u.S.E. 6.3? */
+-	__setfpucw(_FPU_IEEE - _FPU_EXTENDED + _FPU_DOUBLE - _FPU_MASK_IM - _FPU_MASK_ZM - _FPU_MASK_OM);
+-#else
+-	__fpu_control = _FPU_IEEE - _FPU_EXTENDED + _FPU_DOUBLE - _FPU_MASK_IM - _FPU_MASK_ZM - _FPU_MASK_OM;
+-	_FPU_SETCW(__fpu_control);
+-#endif
+-	}
+-#endif /* __mc68k__ */
+-#endif /* __linux__ */
+-
+-#ifdef __alpha
+-#ifndef IEEE0_done
+-#define IEEE0_done
+-#include <machine/fpu.h>
+- static void
+-ieee0(void)
+-{
+-	ieee_set_fp_control(IEEE_TRAP_ENABLE_INV);
+-	}
+-#endif /*IEEE0_done*/
+-#endif /*__alpha*/
+-
+-#ifdef __hpux
+-#define IEEE0_done
+-#define _INCLUDE_HPUX_SOURCE
+-#include <math.h>
+-
+- static void
+-ieee0(void)
+-{
+-	fpsetmask(FP_X_INV);
+-	}
+-#endif /*__hpux*/
+-
+-#ifdef _AIX
+-#define IEEE0_done
+-#include <fptrap.h>
+-
+- static void
+-ieee0(void)
+-{
+-	fp_enable(TRP_INVALID);
+-	fp_trap(FP_TRAP_SYNC);
+-	}
+-#endif /*_AIX*/
+-
+-#ifdef __sun
+-#define IEEE0_done
+-#include <ieeefp.h>
+-
+- static void
+-ieee0(void)
+-{
+-	fpsetmask(FP_X_INV);
+-	}
+-#endif /*__sparc*/
+-
+-#ifndef IEEE0_done
+- static void
+-ieee0(void) {}
+-#endif
+//GO.SYSIN DD libF77/uninit.c
+echo libF77/arithchk.c 1>&2
+sed >libF77/arithchk.c <<'//GO.SYSIN DD libF77/arithchk.c' 's/^-//'
+-/****************************************************************
+-Copyright (C) 1997, 1998, 2000 Lucent Technologies
+-All Rights Reserved
+-
+-Permission to use, copy, modify, and distribute this software and
+-its documentation for any purpose and without fee is hereby
+-granted, provided that the above copyright notice appear in all
+-copies and that both that the copyright notice and this
+-permission notice and warranty disclaimer appear in supporting
+-documentation, and that the name of Lucent or any of its entities
+-not be used in advertising or publicity pertaining to
+-distribution of the software without specific, written prior
+-permission.
+-
+-LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+-INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
+-IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
+-SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
+-IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+-ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+-THIS SOFTWARE.
+-****************************************************************/
+-
+-/* Try to deduce arith.h from arithmetic properties. */
+-
+-#include <stdio.h>
+-
+-#ifdef NO_FPINIT
+-#define fpinit_ASL()
+-#else
+-#ifndef KR_headers
+-extern
+-#ifdef __cplusplus
+-	"C"
+-#endif
+-	void fpinit_ASL(void);
+-#endif /*KR_headers*/
+-#endif /*NO_FPINIT*/
+-
+- static int dalign;
+- typedef struct
+-Akind {
+-	char *name;
+-	int   kind;
+-	} Akind;
+-
+- static Akind
+-IEEE_8087	= { "IEEE_8087", 1 },
+-IEEE_MC68k	= { "IEEE_MC68k", 2 },
+-IBM		= { "IBM", 3 },
+-VAX		= { "VAX", 4 },
+-CRAY		= { "CRAY", 5};
+-
+- static Akind *
+-Lcheck()
+-{
+-	union {
+-		double d;
+-		long L[2];
+-		} u;
+-	struct {
+-		double d;
+-		long L;
+-		} x[2];
+-
+-	if (sizeof(x) > 2*(sizeof(double) + sizeof(long)))
+-		dalign = 1;
+-	u.L[0] = u.L[1] = 0;
+-	u.d = 1e13;
+-	if (u.L[0] == 1117925532 && u.L[1] == -448790528)
+-		return &IEEE_MC68k;
+-	if (u.L[1] == 1117925532 && u.L[0] == -448790528)
+-		return &IEEE_8087;
+-	if (u.L[0] == -2065213935 && u.L[1] == 10752)
+-		return &VAX;
+-	if (u.L[0] == 1267827943 && u.L[1] == 704643072)
+-		return &IBM;
+-	return 0;
+-	}
+-
+- static Akind *
+-icheck()
+-{
+-	union {
+-		double d;
+-		int L[2];
+-		} u;
+-	struct {
+-		double d;
+-		int L;
+-		} x[2];
+-
+-	if (sizeof(x) > 2*(sizeof(double) + sizeof(int)))
+-		dalign = 1;
+-	u.L[0] = u.L[1] = 0;
+-	u.d = 1e13;
+-	if (u.L[0] == 1117925532 && u.L[1] == -448790528)
+-		return &IEEE_MC68k;
+-	if (u.L[1] == 1117925532 && u.L[0] == -448790528)
+-		return &IEEE_8087;
+-	if (u.L[0] == -2065213935 && u.L[1] == 10752)
+-		return &VAX;
+-	if (u.L[0] == 1267827943 && u.L[1] == 704643072)
+-		return &IBM;
+-	return 0;
+-	}
+-
+-char *emptyfmt = "";	/* avoid possible warning message with printf("") */
+-
+- static Akind *
+-ccheck()
+-{
+-	union {
+-		double d;
+-		long L;
+-		} u;
+-	long Cray1;
+-
+-	/* Cray1 = 4617762693716115456 -- without overflow on non-Crays */
+-	Cray1 = printf(emptyfmt) < 0 ? 0 : 4617762;
+-	if (printf(emptyfmt, Cray1) >= 0)
+-		Cray1 = 1000000*Cray1 + 693716;
+-	if (printf(emptyfmt, Cray1) >= 0)
+-		Cray1 = 1000000*Cray1 + 115456;
+-	u.d = 1e13;
+-	if (u.L == Cray1)
+-		return &CRAY;
+-	return 0;
+-	}
+-
+- static int
+-fzcheck()
+-{
+-	double a, b;
+-	int i;
+-
+-	a = 1.;
+-	b = .1;
+-	for(i = 155;; b *= b, i >>= 1) {
+-		if (i & 1) {
+-			a *= b;
+-			if (i == 1)
+-				break;
+-			}
+-		}
+-	b = a * a;
+-	return b == 0.;
+-	}
+-
+-main()
+-{
+-	Akind *a = 0;
+-	int Ldef = 0;
+-	FILE *f;
+-
+-	fpinit_ASL();
+-#ifdef WRITE_ARITH_H	/* for Symantec's buggy "make" */
+-	f = fopen("arith.h", "w");
+-	if (!f) {
+-		printf("Cannot open arith.h\n");
+-		return 1;
+-		}
+-#else
+-	f = stdout;
+-#endif
+-
+-	if (sizeof(double) == 2*sizeof(long))
+-		a = Lcheck();
+-	else if (sizeof(double) == 2*sizeof(int)) {
+-		Ldef = 1;
+-		a = icheck();
+-		}
+-	else if (sizeof(double) == sizeof(long))
+-		a = ccheck();
+-	if (a) {
+-		fprintf(f, "#define %s\n#define Arith_Kind_ASL %d\n",
+-			a->name, a->kind);
+-		if (Ldef)
+-			fprintf(f, "#define Long int\n#define Intcast (int)(long)\n");
+-		if (dalign)
+-			fprintf(f, "#define Double_Align\n");
+-		if (sizeof(char*) == 8)
+-			fprintf(f, "#define X64_bit_pointers\n");
+-#ifndef NO_LONG_LONG
+-		if (sizeof(long long) < 8)
+-#endif
+-			fprintf(f, "#define NO_LONG_LONG\n");
+-		if (a->kind <= 2 && fzcheck())
+-			fprintf(f, "#define Sudden_Underflow\n");
+-		return 0;
+-		}
+-	fprintf(f, "/* Unknown arithmetic */\n");
+-	return 1;
+-	}
+-
+-#ifdef __sun
+-#ifdef __i386
+-/* kludge for Intel Solaris */
+-void fpsetprec(int x) { }
+-#endif
+-#endif
+//GO.SYSIN DD libF77/arithchk.c
+echo libF77/f77vers.c 1>&2
+sed >libF77/f77vers.c <<'//GO.SYSIN DD libF77/f77vers.c' 's/^-//'
+- char 
+-_libf77_version_f2c[] = "\n@(#) LIBF77 VERSION (f2c) 20010705\n";
+-
+-/*
+-2.00	11 June 1980.  File version.c added to library.
+-2.01	31 May 1988.  s_paus() flushes stderr; names of hl_* fixed
+-	[ d]erf[c ] added
+-	 8 Aug. 1989: #ifdefs for f2c -i2 added to s_cat.c
+-	29 Nov. 1989: s_cmp returns long (for f2c)
+-	30 Nov. 1989: arg types from f2c.h
+-	12 Dec. 1989: s_rnge allows long names
+-	19 Dec. 1989: getenv_ allows unsorted environment
+-	28 Mar. 1990: add exit(0) to end of main()
+-	 2 Oct. 1990: test signal(...) == SIG_IGN rather than & 01 in main
+-	17 Oct. 1990: abort() calls changed to sig_die(...,1)
+-	22 Oct. 1990: separate sig_die from main
+-	25 Apr. 1991: minor, theoretically invisible tweaks to s_cat, sig_die
+-	31 May  1991: make system_ return status
+-	18 Dec. 1991: change long to ftnlen (for -i2) many places
+-	28 Feb. 1992: repair z_sqrt.c (scribbled on input, gave wrong answer)
+-	18 July 1992: for n < 0, repair handling of 0**n in pow_[dr]i.c
+-			and m**n in pow_hh.c and pow_ii.c;
+-			catch SIGTRAP in main() for error msg before abort
+-	23 July 1992: switch to ANSI prototypes unless KR_headers is #defined
+-	23 Oct. 1992: fix botch in signal_.c (erroneous deref of 2nd arg);
+-			change Cabs to f__cabs.
+-	12 March 1993: various tweaks for C++
+-	 2 June 1994: adjust so abnormal terminations invoke f_exit just once
+-	16 Sept. 1994: s_cmp: treat characters as unsigned in comparisons.
+-	19 Sept. 1994: s_paus: flush after end of PAUSE; add -DMSDOS
+-	12 Jan. 1995:	pow_[dhiqrz][hiq]: adjust x**i to work on machines
+-			that sign-extend right shifts when i is the most
+-			negative integer.
+-	26 Jan. 1995: adjust s_cat.c, s_copy.c to permit the left-hand side
+-			of character assignments to appear on the right-hand
+-			side (unless compiled with -DNO_OVERWRITE).
+-	27 Jan. 1995: minor tweak to s_copy.c: copy forward whenever
+-			possible (for better cache behavior).
+-	30 May 1995:  added subroutine exit(rc) integer rc. Version not changed.
+-	29 Aug. 1995: add F77_aloc.c; use it in s_cat.c and system_.c.
+-	6 Sept. 1995: fix return type of system_ under -DKR_headers.
+-	19 Dec. 1995: s_cat.c: fix bug when 2nd or later arg overlaps lhs.
+-	19 Mar. 1996: s_cat.c: supply missing break after overlap detection.
+-	13 May 1996:  add [lq]bitbits.c and [lq]bitshft.c (f90 bit intrinsics).
+-	19 June 1996: add casts to unsigned in [lq]bitshft.c.
+-	26 Feb. 1997: adjust functions with a complex output argument
+-			to permit aliasing it with input arguments.
+-			(For now, at least, this is just for possible
+-			benefit of g77.)
+-	4 April 1997: [cz]_div.c: tweaks invisible on most systems (that may
+-			affect systems using gratuitous extra precision).
+-	19 Sept. 1997: [de]time_.c (Unix systems only): change return
+-			type to double.
+-	2 May 1999:	getenv_.c: omit environ in favor of getenv().
+-			c_cos.c, c_exp.c, c_sin.c, d_cnjg.c, r_cnjg.c,
+-			z_cos.c, z_exp.c, z_log.c, z_sin.c: cope fully with
+-			overlapping arguments caused by equivalence.
+-	3 May 1999:	"invisible" tweaks to omit compiler warnings in
+-			abort_.c, ef1asc_.c, s_rnge.c, s_stop.c.
+-
+-	7 Sept. 1999: [cz]_div.c: arrange for compilation under
+-			-DIEEE_COMPLEX_DIVIDE to make these routines
+-			avoid calling sig_die when the denominator
+-			vanishes; instead, they return pairs of NaNs
+-			or Infinities, depending whether the numerator
+-			also vanishes or not.  VERSION not changed.
+-	15 Nov. 1999: s_rnge.c: add casts for the case of
+-			sizeof(ftnint) == sizeof(int) < sizeof(long).
+-	10 March 2000: z_log.c: improve accuracy of Real(log(z)) for, e.g.,
+-			z near (+-1,eps) with |eps| small.  For the old
+-			evaluation, compile with -DPre20000310 .
+-	20 April 2000: s_cat.c: tweak argument types to accord with
+-			calls by f2c when ftnint and ftnlen are of
+-			different sizes (different numbers of bits).
+-	4 July 2000: adjustments to permit compilation by C++ compilers;
+-			VERSION string remains unchanged.
+-	29 Sept. 2000: dtime_.c, etime_.c: use floating-point divide.
+-			dtime_.d, erf_.c, erfc_.c, etime.c: for use with
+-			"f2c -R", compile with -DREAL=float.
+-	23 June 2001: add uninit.c; [fi]77vers.c: make version strings
+-			visible as extern char _lib[fi]77_version_f2c[].
+-	5 July 2001: modify uninit.c for __mc68k__ under Linux.
+-*/
+//GO.SYSIN DD libF77/f77vers.c
+echo libF77/libF77.xsum 1>&2
+sed >libF77/libF77.xsum <<'//GO.SYSIN DD libF77/libF77.xsum' 's/^-//'
+-F77_aloc.c	f74c1f61	678
+-Notice	76f23b4	1212
+-README	fbd01e7d	7210
+-abort_.c	1ef378f2	298
+-arithchk.c	e704b78e	4359
+-c_abs.c	fec22c59	272
+-c_cos.c	18fc0ea3	354
+-c_div.c	f5424912	930
+-c_exp.c	1b85b1fc	349
+-c_log.c	28cdfed	384
+-c_sin.c	1ccaedc8	350
+-c_sqrt.c	f1ee88d5	605
+-cabs.c	f3d3b5f2	494
+-d_abs.c	e58094ef	218
+-d_acos.c	e5ecf93d	245
+-d_asin.c	e12ceeff	245
+-d_atan.c	53034db	245
+-d_atn2.c	ff8a1a78	271
+-d_cnjg.c	1c27c728	255
+-d_cos.c	c0eb625	241
+-d_cosh.c	11dc4adb	245
+-d_dim.c	e1ccb774	232
+-d_exp.c	1879c41c	241
+-d_imag.c	fe9c703e	201
+-d_int.c	f5de3566	269
+-d_lg10.c	1a1d7b77	291
+-d_log.c	1b368adf	241
+-d_mod.c	f540cf24	688
+-d_nint.c	ff913b40	281
+-d_prod.c	ad4856b	207
+-d_sign.c	9562fc5	266
+-d_sin.c	6e3f542	241
+-d_sinh.c	18b22950	245
+-d_sqrt.c	17e1db09	245
+-d_tan.c	ec93ebdb	241
+-d_tanh.c	1c55d15b	245
+-derf_.c	f85e74a3	239
+-derfc_.c	e96b7667	253
+-dtime_.c	c982be4	972
+-ef1asc_.c	e0576e63	521
+-ef1cmc_.c	ea5ad9e8	427
+-erf_.c	e82f7790	270
+-erfc_.c	ba65441	275
+-etime_.c	19d1fdad	839
+-exit_.c	ff4baa3a	543
+-f2ch.add	ef66bf17	6060
+-f77vers.c	fea3855b	4182
+-getarg_.c	f182a268	562
+-getenv_.c	ff3b797c	1217
+-h_abs.c	e4443109	218
+-h_dim.c	c6e48bc	230
+-h_dnnt.c	f6bb90e	294
+-h_indx.c	ef8461eb	442
+-h_len.c	e8c3633	205
+-h_mod.c	7355bd0	207
+-h_nint.c	f0da3396	281
+-h_sign.c	f1370ffd	266
+-hl_ge.c	ed792501	346
+-hl_gt.c	feeacbd9	345
+-hl_le.c	f6fb5d6e	346
+-hl_lt.c	18501419	345
+-i_abs.c	12ab51ab	214
+-i_dim.c	f2a56785	225
+-i_dnnt.c	11748482	291
+-i_indx.c	fb59026f	430
+-i_len.c	17d17252	203
+-i_mod.c	bef73ae	211
+-i_nint.c	e494b804	278
+-i_sign.c	fa015b08	260
+-iargc_.c	49abda3	196
+-l_ge.c	f4710e74	334
+-l_gt.c	e8db94a7	333
+-l_le.c	c9c0a99	334
+-l_lt.c	767e79f	333
+-lbitbits.c	33fe981	1097
+-lbitshft.c	e81981d2	258
+-main.c	dc8ce96	2219
+-makefile	10e8a350	4353
+-pow_ci.c	fa934cec	412
+-pow_dd.c	f004559b	276
+-pow_di.c	a4db539	448
+-pow_hh.c	d1a45a9	489
+-pow_ii.c	1fcf2742	488
+-pow_qq.c	e6a32de6	516
+-pow_ri.c	e7d9fc2a	436
+-pow_zi.c	1b894af7	851
+-pow_zz.c	f81a06b5	549
+-qbitbits.c	1b9be428	1150
+-qbitshft.c	873054d	258
+-r_abs.c	f471383c	206
+-r_acos.c	1a6aca63	233
+-r_asin.c	e8555587	233
+-r_atan.c	eac25444	233
+-r_atn2.c	f611bea	253
+-r_cnjg.c	a8d7805	235
+-r_cos.c	fdef1ece	229
+-r_cosh.c	f05d1ae	233
+-r_dim.c	ee23e1a8	214
+-r_exp.c	1da16cd7	229
+-r_imag.c	166ad0f3	189
+-r_int.c	fc80b9a8	257
+-r_lg10.c	e876cfab	279
+-r_log.c	2062254	229
+-r_mod.c	187363fc	678
+-r_nint.c	6edcbb2	269
+-r_sign.c	1ae32441	248
+-r_sin.c	c3d968	229
+-r_sinh.c	1090c850	233
+-r_sqrt.c	ffbb0625	233
+-r_tan.c	fe85179d	229
+-r_tanh.c	10ffcc5b	233
+-s_cat.c	3070507	1452
+-s_cmp.c	e69e8b60	722
+-s_copy.c	1e258852	1024
+-s_paus.c	245d604	1596
+-s_rnge.c	fd20c6b4	753
+-s_stop.c	ee7c9dfc	763
+-sig_die.c	fbcad8d6	701
+-signal1.h0	1d43ee57	842
+-signal_.c	f3ef9cfc	299
+-system_.c	eae6254c	646
+-uninit.c	1056c3ba	5814
+-z_abs.c	1fa0640d	268
+-z_cos.c	facccd9b	363
+-z_div.c	1abdf45a	907
+-z_exp.c	1a8506e8	357
+-z_log.c	e0e7631c	1158
+-z_sin.c	1aa35b59	359
+-z_sqrt.c	1864d867	581
+//GO.SYSIN DD libF77/libF77.xsum
 echo libF77/main.c 1>&2
 sed >libF77/main.c <<'//GO.SYSIN DD libF77/main.c' 's/^-//'
 -/* STARTUP PROCEDURE FOR UNIX FORTRAN PROGRAMS */
@@ -16,6 +746,9 @@ sed >libF77/main.c <<'//GO.SYSIN DD libF77/main.c' 's/^-//'
 -#ifndef KR_headers
 -#undef VOID
 -#include "stdlib.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -#endif
 -
 -#ifndef VOID
@@ -143,6 +876,9 @@ sed >libF77/main.c <<'//GO.SYSIN DD libF77/main.c' 's/^-//'
 -return 0;	/* For compilers that complain of missing return values; */
 -		/* others will complain that this is unreachable code. */
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/main.c
 echo libF77/makefile 1>&2
 sed >libF77/makefile <<'//GO.SYSIN DD libF77/makefile' 's/^-//'
@@ -170,9 +906,9 @@ sed >libF77/makefile <<'//GO.SYSIN DD libF77/makefile' 's/^-//'
 -## If your system does not have the ld command, comment out
 -## or remove both the ld and mv lines above.
 -
--MISC =	F77_aloc.o Version.o main.o s_rnge.o abort_.o getarg_.o iargc_.o \
+-MISC =	F77_aloc.o main.o s_rnge.o abort_.o f77vers.o getarg_.o iargc_.o \
 -	getenv_.o signal_.o s_stop.o s_paus.o system_.o cabs.o\
--	derf_.o derfc_.o erf_.o erfc_.o sig_die.o exit_.o
+-	derf_.o derfc_.o erf_.o erfc_.o sig_die.o exit_.o uninit.o
 -POW =	pow_ci.o pow_dd.o pow_di.o pow_hh.o pow_ii.o  pow_ri.o pow_zi.o pow_zz.o
 -CX =	c_abs.o c_cos.o c_div.o c_exp.o c_log.o c_sin.o c_sqrt.o
 -DCX =	z_abs.o z_cos.o z_div.o z_exp.o z_log.o z_sin.o z_sqrt.o
@@ -210,32 +946,42 @@ sed >libF77/makefile <<'//GO.SYSIN DD libF77/makefile' 's/^-//'
 -libF77.a : $(MISC) $(POW) $(CX) $(DCX) $(REAL) $(DBL) $(INT) \
 -	$(HALF) $(CMP) $(EFL) $(CHAR) $(F90BIT) $(TIME)
 -	ar r libF77.a $?
--	-ranlib libF77.a
+-	ranlib libF77.a || true
 -
 -### If your system lacks ranlib, you don't need it; see README.
 -
--Version.o: Version.c
--	$(CC) -c Version.c
+-# f77vers.c was "Version.c"; renamed on 20010623 to accord with libf2c.zip.
+-
+-f77vers.o: f77vers.c
+-	$(CC) -c f77vers.c
+-
+-uninit.o: arith.h
+-
+-arith.h: arithchk.c
+-	$(CC) $(CFLAGS) -DNO_FPINIT arithchk.c || $(CC) -DNO_LONG_LONG $(CFLAGS) -DNO_FPINIT arithchk.c
+-	./a.out >arith.h
+-	rm -f a.out arithchk.o
 -
 -# To compile with C++, first "make f2c.h"
 -f2c.h: f2ch.add
 -	cat /usr/include/f2c.h f2ch.add >f2c.h
 -
 -install:	libF77.a
--	mv libF77.a /usr/lib
--	ranlib /usr/lib/libF77.a
+-	mv libF77.a $(LIBDIR)/libF77.a
+-	ranlib $(LIBDIR)/libF77.a || true
 -
 -clean:
--	rm -f libF77.a *.o
+-	rm -f libF77.a *.o arith.h
 -
 -check:
--	xsum F77_aloc.c Notice README Version.c abort_.c c_abs.c c_cos.c \
--	c_div.c c_exp.c c_log.c c_sin.c c_sqrt.c cabs.c d_abs.c d_acos.c \
+-	xsum F77_aloc.c Notice README abort_.c arithchk.c c_abs.c \
+-	c_cos.c c_div.c c_exp.c c_log.c c_sin.c c_sqrt.c cabs.c \
+-	d_abs.c d_acos.c \
 -	d_asin.c d_atan.c d_atn2.c d_cnjg.c d_cos.c d_cosh.c d_dim.c \
 -	d_exp.c d_imag.c d_int.c d_lg10.c d_log.c d_mod.c d_nint.c \
 -	d_prod.c d_sign.c d_sin.c d_sinh.c d_sqrt.c d_tan.c d_tanh.c \
--	derf_.c derfc_.c dtime_.c \
--	ef1asc_.c ef1cmc_.c erf_.c erfc_.c etime_.c exit_.c f2ch.add \
+-	derf_.c derfc_.c dtime_.c ef1asc_.c ef1cmc_.c erf_.c erfc_.c \
+-	etime_.c exit_.c f2ch.add f77vers.c \
 -	getarg_.c getenv_.c h_abs.c h_dim.c h_dnnt.c h_indx.c h_len.c \
 -	h_mod.c h_nint.c h_sign.c hl_ge.c hl_gt.c hl_le.c hl_lt.c \
 -	i_abs.c i_dim.c i_dnnt.c i_indx.c i_len.c i_mod.c i_nint.c \
@@ -247,12 +993,15 @@ sed >libF77/makefile <<'//GO.SYSIN DD libF77/makefile' 's/^-//'
 -	r_log.c r_mod.c r_nint.c r_sign.c r_sin.c r_sinh.c r_sqrt.c \
 -	r_tan.c r_tanh.c s_cat.c s_cmp.c s_copy.c \
 -	s_paus.c s_rnge.c s_stop.c sig_die.c signal1.h0 signal_.c system_.c \
--	z_abs.c z_cos.c z_div.c z_exp.c z_log.c z_sin.c z_sqrt.c >zap
+-	uninit.c z_abs.c z_cos.c z_div.c z_exp.c z_log.c z_sin.c z_sqrt.c >zap
 -	cmp zap libF77.xsum && rm zap || diff libF77.xsum zap
 //GO.SYSIN DD libF77/makefile
 echo libF77/pow_ci.c 1>&2
 sed >libF77/pow_ci.c <<'//GO.SYSIN DD libF77/pow_ci.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -VOID pow_ci(p, a, b) 	/* p = a**b  */
@@ -272,6 +1021,9 @@ sed >libF77/pow_ci.c <<'//GO.SYSIN DD libF77/pow_ci.c' 's/^-//'
 -p->r = p1.r;
 -p->i = p1.i;
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/pow_ci.c
 echo libF77/pow_dd.c 1>&2
 sed >libF77/pow_dd.c <<'//GO.SYSIN DD libF77/pow_dd.c' 's/^-//'
@@ -283,15 +1035,24 @@ sed >libF77/pow_dd.c <<'//GO.SYSIN DD libF77/pow_dd.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double pow_dd(doublereal *ap, doublereal *bp)
 -#endif
 -{
 -return(pow(*ap, *bp) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/pow_dd.c
 echo libF77/pow_di.c 1>&2
 sed >libF77/pow_di.c <<'//GO.SYSIN DD libF77/pow_di.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -double pow_di(ap, bp) doublereal *ap; integer *bp;
@@ -326,10 +1087,16 @@ sed >libF77/pow_di.c <<'//GO.SYSIN DD libF77/pow_di.c' 's/^-//'
 -	}
 -return(pow);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/pow_di.c
 echo libF77/pow_hh.c 1>&2
 sed >libF77/pow_hh.c <<'//GO.SYSIN DD libF77/pow_hh.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -shortint pow_hh(ap, bp) shortint *ap, *bp;
@@ -362,10 +1129,16 @@ sed >libF77/pow_hh.c <<'//GO.SYSIN DD libF77/pow_hh.c' 's/^-//'
 -		}
 -	return(pow);
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/pow_hh.c
 echo libF77/pow_ii.c 1>&2
 sed >libF77/pow_ii.c <<'//GO.SYSIN DD libF77/pow_ii.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -integer pow_ii(ap, bp) integer *ap, *bp;
@@ -398,10 +1171,16 @@ sed >libF77/pow_ii.c <<'//GO.SYSIN DD libF77/pow_ii.c' 's/^-//'
 -		}
 -	return(pow);
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/pow_ii.c
 echo libF77/pow_qq.c 1>&2
 sed >libF77/pow_qq.c <<'//GO.SYSIN DD libF77/pow_qq.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -longint pow_qq(ap, bp) longint *ap, *bp;
@@ -434,10 +1213,16 @@ sed >libF77/pow_qq.c <<'//GO.SYSIN DD libF77/pow_qq.c' 's/^-//'
 -		}
 -	return(pow);
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/pow_qq.c
 echo libF77/pow_ri.c 1>&2
 sed >libF77/pow_ri.c <<'//GO.SYSIN DD libF77/pow_ri.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -double pow_ri(ap, bp) real *ap; integer *bp;
@@ -472,10 +1257,16 @@ sed >libF77/pow_ri.c <<'//GO.SYSIN DD libF77/pow_ri.c' 's/^-//'
 -	}
 -return(pow);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/pow_ri.c
 echo libF77/pow_zi.c 1>&2
 sed >libF77/pow_zi.c <<'//GO.SYSIN DD libF77/pow_zi.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -VOID pow_zi(p, a, b) 	/* p = a**b  */
@@ -529,6 +1320,9 @@ sed >libF77/pow_zi.c <<'//GO.SYSIN DD libF77/pow_zi.c' 's/^-//'
 -	p->i = q.i;
 -	p->r = q.r;
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/pow_zi.c
 echo libF77/pow_zz.c 1>&2
 sed >libF77/pow_zz.c <<'//GO.SYSIN DD libF77/pow_zz.c' 's/^-//'
@@ -540,6 +1334,9 @@ sed >libF77/pow_zz.c <<'//GO.SYSIN DD libF77/pow_zz.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -extern double f__cabs(double,double);
 -void pow_zz(doublecomplex *r, doublecomplex *a, doublecomplex *b)
 -#endif
@@ -555,10 +1352,16 @@ sed >libF77/pow_zz.c <<'//GO.SYSIN DD libF77/pow_zz.c' 's/^-//'
 -r->r = x * cos(y);
 -r->i = x * sin(y);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/pow_zz.c
 echo libF77/qbitbits.c 1>&2
 sed >libF77/qbitbits.c <<'//GO.SYSIN DD libF77/qbitbits.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifndef LONGBITS
 -#define LONGBITS 32
@@ -624,10 +1427,16 @@ sed >libF77/qbitbits.c <<'//GO.SYSIN DD libF77/qbitbits.c' 's/^-//'
 -	b %= len;
 -	return (longint)(y | z & (x >> b | x << len - b));
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/qbitbits.c
 echo libF77/qbitshft.c 1>&2
 sed >libF77/qbitshft.c <<'//GO.SYSIN DD libF77/qbitshft.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 - longint
 -#ifdef KR_headers
@@ -638,10 +1447,16 @@ sed >libF77/qbitshft.c <<'//GO.SYSIN DD libF77/qbitshft.c' 's/^-//'
 -{
 -	return b >= 0 ? a << b : (longint)((ulongint)a >> -b);
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/qbitshft.c
 echo libF77/r_abs.c 1>&2
 sed >libF77/r_abs.c <<'//GO.SYSIN DD libF77/r_abs.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -double r_abs(x) real *x;
@@ -653,6 +1468,9 @@ sed >libF77/r_abs.c <<'//GO.SYSIN DD libF77/r_abs.c' 's/^-//'
 -	return(*x);
 -return(- *x);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_abs.c
 echo libF77/r_acos.c 1>&2
 sed >libF77/r_acos.c <<'//GO.SYSIN DD libF77/r_acos.c' 's/^-//'
@@ -664,11 +1482,17 @@ sed >libF77/r_acos.c <<'//GO.SYSIN DD libF77/r_acos.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double r_acos(real *x)
 -#endif
 -{
 -return( acos(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_acos.c
 echo libF77/r_asin.c 1>&2
 sed >libF77/r_asin.c <<'//GO.SYSIN DD libF77/r_asin.c' 's/^-//'
@@ -680,11 +1504,17 @@ sed >libF77/r_asin.c <<'//GO.SYSIN DD libF77/r_asin.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double r_asin(real *x)
 -#endif
 -{
 -return( asin(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_asin.c
 echo libF77/r_atan.c 1>&2
 sed >libF77/r_atan.c <<'//GO.SYSIN DD libF77/r_atan.c' 's/^-//'
@@ -696,11 +1526,17 @@ sed >libF77/r_atan.c <<'//GO.SYSIN DD libF77/r_atan.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double r_atan(real *x)
 -#endif
 -{
 -return( atan(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_atan.c
 echo libF77/r_atn2.c 1>&2
 sed >libF77/r_atn2.c <<'//GO.SYSIN DD libF77/r_atn2.c' 's/^-//'
@@ -712,11 +1548,17 @@ sed >libF77/r_atn2.c <<'//GO.SYSIN DD libF77/r_atn2.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double r_atn2(real *x, real *y)
 -#endif
 -{
 -return( atan2(*x,*y) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_atn2.c
 echo libF77/z_sqrt.c 1>&2
 sed >libF77/z_sqrt.c <<'//GO.SYSIN DD libF77/z_sqrt.c' 's/^-//'
@@ -728,6 +1570,9 @@ sed >libF77/z_sqrt.c <<'//GO.SYSIN DD libF77/z_sqrt.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -extern double f__cabs(double, double);
 -void z_sqrt(doublecomplex *r, doublecomplex *z)
 -#endif
@@ -749,10 +1594,16 @@ sed >libF77/z_sqrt.c <<'//GO.SYSIN DD libF77/z_sqrt.c' 's/^-//'
 -		r->r = zi / r->i / 2;
 -		}
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/z_sqrt.c
 echo libF77/r_cnjg.c 1>&2
 sed >libF77/r_cnjg.c <<'//GO.SYSIN DD libF77/r_cnjg.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -VOID r_cnjg(r, z) complex *r, *z;
@@ -764,6 +1615,9 @@ sed >libF77/r_cnjg.c <<'//GO.SYSIN DD libF77/r_cnjg.c' 's/^-//'
 -	r->r = z->r;
 -	r->i = -zi;
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_cnjg.c
 echo libF77/r_cos.c 1>&2
 sed >libF77/r_cos.c <<'//GO.SYSIN DD libF77/r_cos.c' 's/^-//'
@@ -775,11 +1629,17 @@ sed >libF77/r_cos.c <<'//GO.SYSIN DD libF77/r_cos.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double r_cos(real *x)
 -#endif
 -{
 -return( cos(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_cos.c
 echo libF77/r_cosh.c 1>&2
 sed >libF77/r_cosh.c <<'//GO.SYSIN DD libF77/r_cosh.c' 's/^-//'
@@ -791,15 +1651,24 @@ sed >libF77/r_cosh.c <<'//GO.SYSIN DD libF77/r_cosh.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double r_cosh(real *x)
 -#endif
 -{
 -return( cosh(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_cosh.c
 echo libF77/r_dim.c 1>&2
 sed >libF77/r_dim.c <<'//GO.SYSIN DD libF77/r_dim.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -double r_dim(a,b) real *a, *b;
@@ -809,6 +1678,9 @@ sed >libF77/r_dim.c <<'//GO.SYSIN DD libF77/r_dim.c' 's/^-//'
 -{
 -return( *a > *b ? *a - *b : 0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_dim.c
 echo libF77/r_exp.c 1>&2
 sed >libF77/r_exp.c <<'//GO.SYSIN DD libF77/r_exp.c' 's/^-//'
@@ -820,15 +1692,24 @@ sed >libF77/r_exp.c <<'//GO.SYSIN DD libF77/r_exp.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double r_exp(real *x)
 -#endif
 -{
 -return( exp(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_exp.c
 echo libF77/r_imag.c 1>&2
 sed >libF77/r_imag.c <<'//GO.SYSIN DD libF77/r_imag.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -double r_imag(z) complex *z;
@@ -838,6 +1719,9 @@ sed >libF77/r_imag.c <<'//GO.SYSIN DD libF77/r_imag.c' 's/^-//'
 -{
 -return(z->i);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_imag.c
 echo libF77/r_int.c 1>&2
 sed >libF77/r_int.c <<'//GO.SYSIN DD libF77/r_int.c' 's/^-//'
@@ -849,11 +1733,17 @@ sed >libF77/r_int.c <<'//GO.SYSIN DD libF77/r_int.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double r_int(real *x)
 -#endif
 -{
 -return( (*x>0) ? floor(*x) : -floor(- *x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_int.c
 echo libF77/r_lg10.c 1>&2
 sed >libF77/r_lg10.c <<'//GO.SYSIN DD libF77/r_lg10.c' 's/^-//'
@@ -867,11 +1757,17 @@ sed >libF77/r_lg10.c <<'//GO.SYSIN DD libF77/r_lg10.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double r_lg10(real *x)
 -#endif
 -{
 -return( log10e * log(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_lg10.c
 echo libF77/r_log.c 1>&2
 sed >libF77/r_log.c <<'//GO.SYSIN DD libF77/r_log.c' 's/^-//'
@@ -883,11 +1779,17 @@ sed >libF77/r_log.c <<'//GO.SYSIN DD libF77/r_log.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double r_log(real *x)
 -#endif
 -{
 -return( log(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_log.c
 echo libF77/r_mod.c 1>&2
 sed >libF77/r_mod.c <<'//GO.SYSIN DD libF77/r_mod.c' 's/^-//'
@@ -906,6 +1808,9 @@ sed >libF77/r_mod.c <<'//GO.SYSIN DD libF77/r_mod.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -#endif
 -double r_mod(real *x, real *y)
 -#endif
@@ -931,6 +1836,9 @@ sed >libF77/r_mod.c <<'//GO.SYSIN DD libF77/r_mod.c' 's/^-//'
 -	return(*x - (*y) * quotient );
 -#endif
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_mod.c
 echo libF77/r_nint.c 1>&2
 sed >libF77/r_nint.c <<'//GO.SYSIN DD libF77/r_nint.c' 's/^-//'
@@ -942,16 +1850,25 @@ sed >libF77/r_nint.c <<'//GO.SYSIN DD libF77/r_nint.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double r_nint(real *x)
 -#endif
 -{
 -return( (*x)>=0 ?
 -	floor(*x + .5) : -floor(.5 - *x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_nint.c
 echo libF77/r_sign.c 1>&2
 sed >libF77/r_sign.c <<'//GO.SYSIN DD libF77/r_sign.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -double r_sign(a,b) real *a, *b;
@@ -963,6 +1880,9 @@ sed >libF77/r_sign.c <<'//GO.SYSIN DD libF77/r_sign.c' 's/^-//'
 -x = (*a >= 0 ? *a : - *a);
 -return( *b >= 0 ? x : -x);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_sign.c
 echo libF77/r_sin.c 1>&2
 sed >libF77/r_sin.c <<'//GO.SYSIN DD libF77/r_sin.c' 's/^-//'
@@ -974,11 +1894,17 @@ sed >libF77/r_sin.c <<'//GO.SYSIN DD libF77/r_sin.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double r_sin(real *x)
 -#endif
 -{
 -return( sin(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_sin.c
 echo libF77/r_sinh.c 1>&2
 sed >libF77/r_sinh.c <<'//GO.SYSIN DD libF77/r_sinh.c' 's/^-//'
@@ -990,11 +1916,17 @@ sed >libF77/r_sinh.c <<'//GO.SYSIN DD libF77/r_sinh.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double r_sinh(real *x)
 -#endif
 -{
 -return( sinh(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_sinh.c
 echo libF77/r_sqrt.c 1>&2
 sed >libF77/r_sqrt.c <<'//GO.SYSIN DD libF77/r_sqrt.c' 's/^-//'
@@ -1006,11 +1938,17 @@ sed >libF77/r_sqrt.c <<'//GO.SYSIN DD libF77/r_sqrt.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double r_sqrt(real *x)
 -#endif
 -{
 -return( sqrt(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_sqrt.c
 echo libF77/r_tan.c 1>&2
 sed >libF77/r_tan.c <<'//GO.SYSIN DD libF77/r_tan.c' 's/^-//'
@@ -1022,11 +1960,17 @@ sed >libF77/r_tan.c <<'//GO.SYSIN DD libF77/r_tan.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double r_tan(real *x)
 -#endif
 -{
 -return( tan(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_tan.c
 echo libF77/r_tanh.c 1>&2
 sed >libF77/r_tanh.c <<'//GO.SYSIN DD libF77/r_tanh.c' 's/^-//'
@@ -1038,15 +1982,24 @@ sed >libF77/r_tanh.c <<'//GO.SYSIN DD libF77/r_tanh.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double r_tanh(real *x)
 -#endif
 -{
 -return( tanh(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/r_tanh.c
 echo libF77/s_cmp.c 1>&2
 sed >libF77/s_cmp.c <<'//GO.SYSIN DD libF77/s_cmp.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -/* compare two strings */
 -
@@ -1090,6 +2043,9 @@ sed >libF77/s_cmp.c <<'//GO.SYSIN DD libF77/s_cmp.c' 's/^-//'
 -	}
 -return(0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/s_cmp.c
 echo libF77/s_copy.c 1>&2
 sed >libF77/s_copy.c <<'//GO.SYSIN DD libF77/s_copy.c' 's/^-//'
@@ -1100,6 +2056,9 @@ sed >libF77/s_copy.c <<'//GO.SYSIN DD libF77/s_copy.c' 's/^-//'
 - */
 -
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -/* assign strings:  a = b */
 -
@@ -1144,6 +2103,9 @@ sed >libF77/s_copy.c <<'//GO.SYSIN DD libF77/s_copy.c' 's/^-//'
 -			*a++ = ' ';
 -		}
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/s_copy.c
 echo libF77/s_paus.c 1>&2
 sed >libF77/s_paus.c <<'//GO.SYSIN DD libF77/s_paus.c' 's/^-//'
@@ -1162,6 +2124,9 @@ sed >libF77/s_paus.c <<'//GO.SYSIN DD libF77/s_paus.c' 's/^-//'
 -#undef min
 -#undef max
 -#include "stdlib.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -#ifdef __cplusplus
 -extern "C" {
 -#endif
@@ -1235,11 +2200,17 @@ sed >libF77/s_paus.c <<'//GO.SYSIN DD libF77/s_paus.c' 's/^-//'
 -	}
 -#endif
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/s_paus.c
 echo libF77/s_rnge.c 1>&2
 sed >libF77/s_rnge.c <<'//GO.SYSIN DD libF77/s_rnge.c' 's/^-//'
 -#include "stdio.h"
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -/* called when a subscript is out of range */
 -
@@ -1253,15 +2224,20 @@ sed >libF77/s_rnge.c <<'//GO.SYSIN DD libF77/s_rnge.c' 's/^-//'
 -{
 -register int i;
 -
--fprintf(stderr, "Subscript out of range on file line %ld, procedure ", line);
+-fprintf(stderr, "Subscript out of range on file line %ld, procedure ",
+-	(long)line);
 -while((i = *procn) && i != '_' && i != ' ')
 -	putc(*procn++, stderr);
--fprintf(stderr, ".\nAttempt to access the %ld-th element of variable ", offset+1);
+-fprintf(stderr, ".\nAttempt to access the %ld-th element of variable ",
+-	(long)offset+1);
 -while((i = *varn) && i != ' ')
 -	putc(*varn++, stderr);
 -sig_die(".", 1);
 -return 0;	/* not reached */
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/s_rnge.c
 echo libF77/s_stop.c 1>&2
 sed >libF77/s_stop.c <<'//GO.SYSIN DD libF77/s_stop.c' 's/^-//'
@@ -1276,6 +2252,9 @@ sed >libF77/s_stop.c <<'//GO.SYSIN DD libF77/s_stop.c' 's/^-//'
 -#undef min
 -#undef max
 -#include "stdlib.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -#ifdef __cplusplus
 -extern "C" {
 -#endif
@@ -1304,6 +2283,9 @@ sed >libF77/s_stop.c <<'//GO.SYSIN DD libF77/s_stop.c' 's/^-//'
 -
 -return 0; /* NOT REACHED */
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 -#ifdef __cplusplus
 -}
 -#endif
@@ -1350,6 +2332,9 @@ echo libF77/signal_.c 1>&2
 sed >libF77/signal_.c <<'//GO.SYSIN DD libF77/signal_.c' 's/^-//'
 -#include "f2c.h"
 -#include "signal1.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 - ftnint
 -#ifdef KR_headers
@@ -1363,6 +2348,9 @@ sed >libF77/signal_.c <<'//GO.SYSIN DD libF77/signal_.c' 's/^-//'
 -
 -	return (ftnint)signal(sig, proc);
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/signal_.c
 echo libF77/system_.c 1>&2
 sed >libF77/system_.c <<'//GO.SYSIN DD libF77/system_.c' 's/^-//'
@@ -1380,6 +2368,9 @@ sed >libF77/system_.c <<'//GO.SYSIN DD libF77/system_.c' 's/^-//'
 -#undef min
 -#undef max
 -#include "stdlib.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -extern char *F77_aloc(ftnlen, char*);
 -
 - integer
@@ -1402,10 +2393,16 @@ sed >libF77/system_.c <<'//GO.SYSIN DD libF77/system_.c' 's/^-//'
 -		free(buff);
 -	return rv;
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/system_.c
 echo libF77/z_abs.c 1>&2
 sed >libF77/z_abs.c <<'//GO.SYSIN DD libF77/z_abs.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -double f__cabs();
@@ -1417,6 +2414,9 @@ sed >libF77/z_abs.c <<'//GO.SYSIN DD libF77/z_abs.c' 's/^-//'
 -{
 -return( f__cabs( z->r, z->i ) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/z_abs.c
 echo libF77/z_cos.c 1>&2
 sed >libF77/z_cos.c <<'//GO.SYSIN DD libF77/z_cos.c' 's/^-//'
@@ -1428,6 +2428,9 @@ sed >libF77/z_cos.c <<'//GO.SYSIN DD libF77/z_cos.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -void z_cos(doublecomplex *r, doublecomplex *z)
 -#endif
 -{
@@ -1435,10 +2438,16 @@ sed >libF77/z_cos.c <<'//GO.SYSIN DD libF77/z_cos.c' 's/^-//'
 -	r->r =   cos(zr) * cosh(zi);
 -	r->i = - sin(zr) * sinh(zi);
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/z_cos.c
 echo libF77/z_div.c 1>&2
 sed >libF77/z_div.c <<'//GO.SYSIN DD libF77/z_div.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -extern VOID sig_die();
@@ -1482,6 +2491,9 @@ sed >libF77/z_div.c <<'//GO.SYSIN DD libF77/z_div.c' 's/^-//'
 -		}
 -	c->r = cr;
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/z_div.c
 echo libF77/z_exp.c 1>&2
 sed >libF77/z_exp.c <<'//GO.SYSIN DD libF77/z_exp.c' 's/^-//'
@@ -1493,6 +2505,9 @@ sed >libF77/z_exp.c <<'//GO.SYSIN DD libF77/z_exp.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -void z_exp(doublecomplex *r, doublecomplex *z)
 -#endif
 -{
@@ -1502,6 +2517,9 @@ sed >libF77/z_exp.c <<'//GO.SYSIN DD libF77/z_exp.c' 's/^-//'
 -	r->r = expx * cos(zi);
 -	r->i = expx * sin(zi);
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/z_exp.c
 echo libF77/z_log.c 1>&2
 sed >libF77/z_log.c <<'//GO.SYSIN DD libF77/z_log.c' 's/^-//'
@@ -1513,14 +2531,67 @@ sed >libF77/z_log.c <<'//GO.SYSIN DD libF77/z_log.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -extern double f__cabs(double, double);
 -void z_log(doublecomplex *r, doublecomplex *z)
 -#endif
 -{
+-	double s, s0, t, t2, u, v;
 -	double zi = z->i, zr = z->r;
+-
 -	r->i = atan2(zi, zr);
+-#ifdef Pre20000310
 -	r->r = log( f__cabs( zr, zi ) );
+-#else
+-	if (zi < 0)
+-		zi = -zi;
+-	if (zr < 0)
+-		zr = -zr;
+-	if (zr < zi) {
+-		t = zi;
+-		zi = zr;
+-		zr = t;
+-		}
+-	t = zi/zr;
+-	s = zr * sqrt(1 + t*t);
+-	/* now s = f__cabs(zi,zr), and zr = |zr| >= |zi| = zi */
+-	if ((t = s - 1) < 0)
+-		t = -t;
+-	if (t > .01)
+-		r->r = log(s);
+-	else {
+-
+-#ifdef Comment
+-
+-	log(1+x) = x - x^2/2 + x^3/3 - x^4/4 + - ...
+-
+-		 = x(1 - x/2 + x^2/3 -+...)
+-
+-	[sqrt(y^2 + z^2) - 1] * [sqrt(y^2 + z^2) + 1] = y^2 + z^2 - 1, so
+-
+-	sqrt(y^2 + z^2) - 1 = (y^2 + z^2 - 1) / [sqrt(y^2 + z^2) + 1]
+-
+-#endif /*Comment*/
+-
+-		t = ((zr*zr - 1.) + zi*zi) / (s + 1);
+-		t2 = t*t;
+-		s = 1. - 0.5*t;
+-		u = v = 1;
+-		do {
+-			s0 = s;
+-			u *= t2;
+-			v += 2;
+-			s += u/v - t*u/(v+1);
+-			} while(s > s0);
+-		r->r = s*t;
+-		}
+-#endif
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/z_log.c
 echo libF77/z_sin.c 1>&2
 sed >libF77/z_sin.c <<'//GO.SYSIN DD libF77/z_sin.c' 's/^-//'
@@ -1532,6 +2603,9 @@ sed >libF77/z_sin.c <<'//GO.SYSIN DD libF77/z_sin.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -void z_sin(doublecomplex *r, doublecomplex *z)
 -#endif
 -{
@@ -1539,10 +2613,16 @@ sed >libF77/z_sin.c <<'//GO.SYSIN DD libF77/z_sin.c' 's/^-//'
 -	r->r = sin(zr) * cosh(zi);
 -	r->i = cos(zr) * sinh(zi);
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/z_sin.c
 echo libF77/i_mod.c 1>&2
 sed >libF77/i_mod.c <<'//GO.SYSIN DD libF77/i_mod.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -integer i_mod(a,b) integer *a, *b;
@@ -1552,6 +2632,9 @@ sed >libF77/i_mod.c <<'//GO.SYSIN DD libF77/i_mod.c' 's/^-//'
 -{
 -return( *a % *b);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/i_mod.c
 echo libF77/i_nint.c 1>&2
 sed >libF77/i_nint.c <<'//GO.SYSIN DD libF77/i_nint.c' 's/^-//'
@@ -1563,15 +2646,24 @@ sed >libF77/i_nint.c <<'//GO.SYSIN DD libF77/i_nint.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -integer i_nint(real *x)
 -#endif
 -{
 -return (integer)(*x >= 0 ? floor(*x + .5) : -floor(.5 - *x));
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/i_nint.c
 echo libF77/i_sign.c 1>&2
 sed >libF77/i_sign.c <<'//GO.SYSIN DD libF77/i_sign.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -integer i_sign(a,b) integer *a, *b;
@@ -1583,10 +2675,16 @@ sed >libF77/i_sign.c <<'//GO.SYSIN DD libF77/i_sign.c' 's/^-//'
 -x = (*a >= 0 ? *a : - *a);
 -return( *b >= 0 ? x : -x);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/i_sign.c
 echo libF77/iargc_.c 1>&2
 sed >libF77/iargc_.c <<'//GO.SYSIN DD libF77/iargc_.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -ftnint iargc_()
@@ -1597,10 +2695,16 @@ sed >libF77/iargc_.c <<'//GO.SYSIN DD libF77/iargc_.c' 's/^-//'
 -extern int xargc;
 -return ( xargc - 1 );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/iargc_.c
 echo libF77/l_ge.c 1>&2
 sed >libF77/l_ge.c <<'//GO.SYSIN DD libF77/l_ge.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -extern integer s_cmp();
@@ -1612,10 +2716,16 @@ sed >libF77/l_ge.c <<'//GO.SYSIN DD libF77/l_ge.c' 's/^-//'
 -{
 -return(s_cmp(a,b,la,lb) >= 0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/l_ge.c
 echo libF77/l_gt.c 1>&2
 sed >libF77/l_gt.c <<'//GO.SYSIN DD libF77/l_gt.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -extern integer s_cmp();
@@ -1627,10 +2737,16 @@ sed >libF77/l_gt.c <<'//GO.SYSIN DD libF77/l_gt.c' 's/^-//'
 -{
 -return(s_cmp(a,b,la,lb) > 0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/l_gt.c
 echo libF77/l_le.c 1>&2
 sed >libF77/l_le.c <<'//GO.SYSIN DD libF77/l_le.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -extern integer s_cmp();
@@ -1642,10 +2758,16 @@ sed >libF77/l_le.c <<'//GO.SYSIN DD libF77/l_le.c' 's/^-//'
 -{
 -return(s_cmp(a,b,la,lb) <= 0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/l_le.c
 echo libF77/l_lt.c 1>&2
 sed >libF77/l_lt.c <<'//GO.SYSIN DD libF77/l_lt.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -extern integer s_cmp();
@@ -1657,10 +2779,16 @@ sed >libF77/l_lt.c <<'//GO.SYSIN DD libF77/l_lt.c' 's/^-//'
 -{
 -return(s_cmp(a,b,la,lb) < 0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/l_lt.c
 echo libF77/lbitbits.c 1>&2
 sed >libF77/lbitbits.c <<'//GO.SYSIN DD libF77/lbitbits.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifndef LONGBITS
 -#define LONGBITS 32
@@ -1722,10 +2850,16 @@ sed >libF77/lbitbits.c <<'//GO.SYSIN DD libF77/lbitbits.c' 's/^-//'
 -	b %= len;
 -	return (integer)(y | z & (x >> b | x << len - b));
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/lbitbits.c
 echo libF77/lbitshft.c 1>&2
 sed >libF77/lbitshft.c <<'//GO.SYSIN DD libF77/lbitshft.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 - integer
 -#ifdef KR_headers
@@ -1736,6 +2870,9 @@ sed >libF77/lbitshft.c <<'//GO.SYSIN DD libF77/lbitshft.c' 's/^-//'
 -{
 -	return b >= 0 ? a << b : (integer)((uinteger)a >> -b);
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/lbitshft.c
 echo libF77/sig_die.c 1>&2
 sed >libF77/sig_die.c <<'//GO.SYSIN DD libF77/sig_die.c' 's/^-//'
@@ -1752,6 +2889,9 @@ sed >libF77/sig_die.c <<'//GO.SYSIN DD libF77/sig_die.c' 's/^-//'
 -void sig_die(s, kill) register char *s; int kill;
 -#else
 -#include "stdlib.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -#ifdef __cplusplus
 -extern "C" {
 -#endif
@@ -1784,6 +2924,9 @@ sed >libF77/sig_die.c <<'//GO.SYSIN DD libF77/sig_die.c' 's/^-//'
 -#ifdef __cplusplus
 -}
 -#endif
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/sig_die.c
 echo libF77/d_sinh.c 1>&2
 sed >libF77/d_sinh.c <<'//GO.SYSIN DD libF77/d_sinh.c' 's/^-//'
@@ -1795,11 +2938,17 @@ sed >libF77/d_sinh.c <<'//GO.SYSIN DD libF77/d_sinh.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double d_sinh(doublereal *x)
 -#endif
 -{
 -return( sinh(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_sinh.c
 echo libF77/d_sqrt.c 1>&2
 sed >libF77/d_sqrt.c <<'//GO.SYSIN DD libF77/d_sqrt.c' 's/^-//'
@@ -1811,11 +2960,17 @@ sed >libF77/d_sqrt.c <<'//GO.SYSIN DD libF77/d_sqrt.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double d_sqrt(doublereal *x)
 -#endif
 -{
 -return( sqrt(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_sqrt.c
 echo libF77/d_tan.c 1>&2
 sed >libF77/d_tan.c <<'//GO.SYSIN DD libF77/d_tan.c' 's/^-//'
@@ -1827,11 +2982,17 @@ sed >libF77/d_tan.c <<'//GO.SYSIN DD libF77/d_tan.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double d_tan(doublereal *x)
 -#endif
 -{
 -return( tan(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_tan.c
 echo libF77/d_tanh.c 1>&2
 sed >libF77/d_tanh.c <<'//GO.SYSIN DD libF77/d_tanh.c' 's/^-//'
@@ -1843,15 +3004,24 @@ sed >libF77/d_tanh.c <<'//GO.SYSIN DD libF77/d_tanh.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double d_tanh(doublereal *x)
 -#endif
 -{
 -return( tanh(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_tanh.c
 echo libF77/derf_.c 1>&2
 sed >libF77/derf_.c <<'//GO.SYSIN DD libF77/derf_.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -double erf();
@@ -1863,10 +3033,16 @@ sed >libF77/derf_.c <<'//GO.SYSIN DD libF77/derf_.c' 's/^-//'
 -{
 -return( erf(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/derf_.c
 echo libF77/derfc_.c 1>&2
 sed >libF77/derfc_.c <<'//GO.SYSIN DD libF77/derfc_.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -extern double erfc();
@@ -1880,6 +3056,9 @@ sed >libF77/derfc_.c <<'//GO.SYSIN DD libF77/derfc_.c' 's/^-//'
 -{
 -return( erfc(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/derfc_.c
 echo libF77/dtime_.c 1>&2
 sed >libF77/dtime_.c <<'//GO.SYSIN DD libF77/dtime_.c' 's/^-//'
@@ -1890,11 +3069,18 @@ sed >libF77/dtime_.c <<'//GO.SYSIN DD libF77/dtime_.c' 's/^-//'
 -#define USE_CLOCK
 -#endif
 -
+-#ifndef REAL
+-#define REAL double
+-#endif
+-
 -#ifndef USE_CLOCK
 -#define _INCLUDE_POSIX_SOURCE	/* for HP-UX */
 -#define _INCLUDE_XOPEN_SOURCE	/* for HP-UX */
 -#include "sys/types.h"
 -#include "sys/times.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -#endif
 -
 -#undef Hz
@@ -1908,7 +3094,7 @@ sed >libF77/dtime_.c <<'//GO.SYSIN DD libF77/dtime_.c' 's/^-//'
 -#endif
 -#endif
 -
-- double
+- REAL
 -#ifdef KR_headers
 -dtime_(tarray) float *tarray;
 -#else
@@ -1930,18 +3116,24 @@ sed >libF77/dtime_.c <<'//GO.SYSIN DD libF77/dtime_.c' 's/^-//'
 -	static struct tms t0;
 -
 -	times(&t);
--	tarray[0] = (t.tms_utime - t0.tms_utime) / Hz;
--	tarray[1] = (t.tms_stime - t0.tms_stime) / Hz;
+-	tarray[0] = (double)(t.tms_utime - t0.tms_utime) / Hz;
+-	tarray[1] = (double)(t.tms_stime - t0.tms_stime) / Hz;
 -	t0 = t;
 -	return tarray[0] + tarray[1];
 -#endif
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/dtime_.c
 echo libF77/ef1asc_.c 1>&2
 sed >libF77/ef1asc_.c <<'//GO.SYSIN DD libF77/ef1asc_.c' 's/^-//'
 -/* EFL support routine to copy string b to string a */
 -
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -
 -#define M	( (long) (sizeof(long) - 1) )
@@ -1958,12 +3150,18 @@ sed >libF77/ef1asc_.c <<'//GO.SYSIN DD libF77/ef1asc_.c' 's/^-//'
 -s_copy( (char *)a, (char *)b, EVEN(*la), *lb );
 -return 0;	/* ignored return value */
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/ef1asc_.c
 echo libF77/ef1cmc_.c 1>&2
 sed >libF77/ef1cmc_.c <<'//GO.SYSIN DD libF77/ef1cmc_.c' 's/^-//'
 -/* EFL support routine to compare two character strings */
 -
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -extern integer s_cmp();
@@ -1975,36 +3173,59 @@ sed >libF77/ef1cmc_.c <<'//GO.SYSIN DD libF77/ef1cmc_.c' 's/^-//'
 -{
 -return( s_cmp( (char *)a, (char *)b, *la, *lb) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/ef1cmc_.c
 echo libF77/erf_.c 1>&2
 sed >libF77/erf_.c <<'//GO.SYSIN DD libF77/erf_.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+-#ifndef REAL
+-#define REAL double
+-#endif
 -
 -#ifdef KR_headers
 -double erf();
--double erf_(x) real *x;
+-REAL erf_(x) real *x;
 -#else
 -extern double erf(double);
--double erf_(real *x)
+-REAL erf_(real *x)
 -#endif
 -{
--return( erf(*x) );
+-return( erf((double)*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/erf_.c
 echo libF77/erfc_.c 1>&2
 sed >libF77/erfc_.c <<'//GO.SYSIN DD libF77/erfc_.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+-#ifndef REAL
+-#define REAL double
+-#endif
 -
 -#ifdef KR_headers
 -double erfc();
--double erfc_(x) real *x;
+-REAL erfc_(x) real *x;
 -#else
 -extern double erfc(double);
--double erfc_(real *x)
+-REAL erfc_(real *x)
 -#endif
 -{
--return( erfc(*x) );
+-return( erfc((double)*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/erfc_.c
 echo libF77/etime_.c 1>&2
 sed >libF77/etime_.c <<'//GO.SYSIN DD libF77/etime_.c' 's/^-//'
@@ -2015,11 +3236,18 @@ sed >libF77/etime_.c <<'//GO.SYSIN DD libF77/etime_.c' 's/^-//'
 -#define USE_CLOCK
 -#endif
 -
+-#ifndef REAL
+-#define REAL double
+-#endif
+-
 -#ifndef USE_CLOCK
 -#define _INCLUDE_POSIX_SOURCE	/* for HP-UX */
 -#define _INCLUDE_XOPEN_SOURCE	/* for HP-UX */
 -#include "sys/types.h"
 -#include "sys/times.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -#endif
 -
 -#undef Hz
@@ -2033,7 +3261,7 @@ sed >libF77/etime_.c <<'//GO.SYSIN DD libF77/etime_.c' 's/^-//'
 -#endif
 -#endif
 -
-- double
+- REAL
 -#ifdef KR_headers
 -etime_(tarray) float *tarray;
 -#else
@@ -2051,9 +3279,13 @@ sed >libF77/etime_.c <<'//GO.SYSIN DD libF77/etime_.c' 's/^-//'
 -	struct tms t;
 -
 -	times(&t);
--	return (tarray[0] = t.tms_utime/Hz) + (tarray[1] = t.tms_stime/Hz);
+-	return	  (tarray[0] = (double)t.tms_utime/Hz)
+-		+ (tarray[1] = (double)t.tms_stime/Hz);
 -#endif
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/etime_.c
 echo libF77/exit_.c 1>&2
 sed >libF77/exit_.c <<'//GO.SYSIN DD libF77/exit_.c' 's/^-//'
@@ -2076,6 +3308,9 @@ sed >libF77/exit_.c <<'//GO.SYSIN DD libF77/exit_.c' 's/^-//'
 -#ifdef __cplusplus
 -extern "C" {
 -#endif
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -extern void f_exit(void);
 -#endif
 -
@@ -2094,10 +3329,16 @@ sed >libF77/exit_.c <<'//GO.SYSIN DD libF77/exit_.c' 's/^-//'
 -#ifdef __cplusplus
 -}
 -#endif
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/exit_.c
 echo libF77/getarg_.c 1>&2
 sed >libF77/getarg_.c <<'//GO.SYSIN DD libF77/getarg_.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -/*
 - * subroutine getarg(k, c)
@@ -2125,6 +3366,9 @@ sed >libF77/getarg_.c <<'//GO.SYSIN DD libF77/getarg_.c' 's/^-//'
 -for( ; i<ls ; ++i)
 -	*s++ = ' ';
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/getarg_.c
 echo libF77/getenv_.c 1>&2
 sed >libF77/getenv_.c <<'//GO.SYSIN DD libF77/getenv_.c' 's/^-//'
@@ -2135,6 +3379,9 @@ sed >libF77/getenv_.c <<'//GO.SYSIN DD libF77/getenv_.c' 's/^-//'
 -#else
 -#include <stdlib.h>
 -#include <string.h>
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -extern char *F77_aloc(ftnlen, char*);
 -#endif
 -
@@ -2184,10 +3431,16 @@ sed >libF77/getenv_.c <<'//GO.SYSIN DD libF77/getenv_.c' 's/^-//'
 -	while(vlen-- > 0)
 -		*value++ = ' ';
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/getenv_.c
 echo libF77/h_abs.c 1>&2
 sed >libF77/h_abs.c <<'//GO.SYSIN DD libF77/h_abs.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -shortint h_abs(x) shortint *x;
@@ -2199,10 +3452,16 @@ sed >libF77/h_abs.c <<'//GO.SYSIN DD libF77/h_abs.c' 's/^-//'
 -	return(*x);
 -return(- *x);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/h_abs.c
 echo libF77/h_dim.c 1>&2
 sed >libF77/h_dim.c <<'//GO.SYSIN DD libF77/h_dim.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -shortint h_dim(a,b) shortint *a, *b;
@@ -2212,6 +3471,9 @@ sed >libF77/h_dim.c <<'//GO.SYSIN DD libF77/h_dim.c' 's/^-//'
 -{
 -return( *a > *b ? *a - *b : 0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/h_dim.c
 echo libF77/h_dnnt.c 1>&2
 sed >libF77/h_dnnt.c <<'//GO.SYSIN DD libF77/h_dnnt.c' 's/^-//'
@@ -2223,15 +3485,24 @@ sed >libF77/h_dnnt.c <<'//GO.SYSIN DD libF77/h_dnnt.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -shortint h_dnnt(doublereal *x)
 -#endif
 -{
 -return (shortint)(*x >= 0. ? floor(*x + .5) : -floor(.5 - *x));
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/h_dnnt.c
 echo libF77/h_indx.c 1>&2
 sed >libF77/h_indx.c <<'//GO.SYSIN DD libF77/h_indx.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -shortint h_indx(a, b, la, lb) char *a, *b; ftnlen la, lb;
@@ -2257,10 +3528,16 @@ sed >libF77/h_indx.c <<'//GO.SYSIN DD libF77/h_indx.c' 's/^-//'
 -	}
 -return(0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/h_indx.c
 echo libF77/h_len.c 1>&2
 sed >libF77/h_len.c <<'//GO.SYSIN DD libF77/h_len.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -shortint h_len(s, n) char *s; ftnlen n;
@@ -2270,10 +3547,16 @@ sed >libF77/h_len.c <<'//GO.SYSIN DD libF77/h_len.c' 's/^-//'
 -{
 -return(n);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/h_len.c
 echo libF77/h_mod.c 1>&2
 sed >libF77/h_mod.c <<'//GO.SYSIN DD libF77/h_mod.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -shortint h_mod(a,b) short *a, *b;
@@ -2283,6 +3566,9 @@ sed >libF77/h_mod.c <<'//GO.SYSIN DD libF77/h_mod.c' 's/^-//'
 -{
 -return( *a % *b);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/h_mod.c
 echo libF77/h_nint.c 1>&2
 sed >libF77/h_nint.c <<'//GO.SYSIN DD libF77/h_nint.c' 's/^-//'
@@ -2294,15 +3580,24 @@ sed >libF77/h_nint.c <<'//GO.SYSIN DD libF77/h_nint.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -shortint h_nint(real *x)
 -#endif
 -{
 -return (shortint)(*x >= 0 ? floor(*x + .5) : -floor(.5 - *x));
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/h_nint.c
 echo libF77/h_sign.c 1>&2
 sed >libF77/h_sign.c <<'//GO.SYSIN DD libF77/h_sign.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -shortint h_sign(a,b) shortint *a, *b;
@@ -2314,10 +3609,16 @@ sed >libF77/h_sign.c <<'//GO.SYSIN DD libF77/h_sign.c' 's/^-//'
 -x = (*a >= 0 ? *a : - *a);
 -return( *b >= 0 ? x : -x);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/h_sign.c
 echo libF77/hl_ge.c 1>&2
 sed >libF77/hl_ge.c <<'//GO.SYSIN DD libF77/hl_ge.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -extern integer s_cmp();
@@ -2329,10 +3630,16 @@ sed >libF77/hl_ge.c <<'//GO.SYSIN DD libF77/hl_ge.c' 's/^-//'
 -{
 -return(s_cmp(a,b,la,lb) >= 0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/hl_ge.c
 echo libF77/hl_gt.c 1>&2
 sed >libF77/hl_gt.c <<'//GO.SYSIN DD libF77/hl_gt.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -extern integer s_cmp();
@@ -2344,10 +3651,16 @@ sed >libF77/hl_gt.c <<'//GO.SYSIN DD libF77/hl_gt.c' 's/^-//'
 -{
 -return(s_cmp(a,b,la,lb) > 0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/hl_gt.c
 echo libF77/hl_le.c 1>&2
 sed >libF77/hl_le.c <<'//GO.SYSIN DD libF77/hl_le.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -extern integer s_cmp();
@@ -2359,10 +3672,16 @@ sed >libF77/hl_le.c <<'//GO.SYSIN DD libF77/hl_le.c' 's/^-//'
 -{
 -return(s_cmp(a,b,la,lb) <= 0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/hl_le.c
 echo libF77/hl_lt.c 1>&2
 sed >libF77/hl_lt.c <<'//GO.SYSIN DD libF77/hl_lt.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -extern integer s_cmp();
@@ -2374,10 +3693,16 @@ sed >libF77/hl_lt.c <<'//GO.SYSIN DD libF77/hl_lt.c' 's/^-//'
 -{
 -return(s_cmp(a,b,la,lb) < 0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/hl_lt.c
 echo libF77/i_abs.c 1>&2
 sed >libF77/i_abs.c <<'//GO.SYSIN DD libF77/i_abs.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -integer i_abs(x) integer *x;
@@ -2389,10 +3714,16 @@ sed >libF77/i_abs.c <<'//GO.SYSIN DD libF77/i_abs.c' 's/^-//'
 -	return(*x);
 -return(- *x);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/i_abs.c
 echo libF77/i_dim.c 1>&2
 sed >libF77/i_dim.c <<'//GO.SYSIN DD libF77/i_dim.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -integer i_dim(a,b) integer *a, *b;
@@ -2402,6 +3733,9 @@ sed >libF77/i_dim.c <<'//GO.SYSIN DD libF77/i_dim.c' 's/^-//'
 -{
 -return( *a > *b ? *a - *b : 0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/i_dim.c
 echo libF77/i_dnnt.c 1>&2
 sed >libF77/i_dnnt.c <<'//GO.SYSIN DD libF77/i_dnnt.c' 's/^-//'
@@ -2413,15 +3747,24 @@ sed >libF77/i_dnnt.c <<'//GO.SYSIN DD libF77/i_dnnt.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -integer i_dnnt(doublereal *x)
 -#endif
 -{
 -return (integer)(*x >= 0. ? floor(*x + .5) : -floor(.5 - *x));
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/i_dnnt.c
 echo libF77/i_indx.c 1>&2
 sed >libF77/i_indx.c <<'//GO.SYSIN DD libF77/i_indx.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -integer i_indx(a, b, la, lb) char *a, *b; ftnlen la, lb;
@@ -2447,10 +3790,16 @@ sed >libF77/i_indx.c <<'//GO.SYSIN DD libF77/i_indx.c' 's/^-//'
 -	}
 -return(0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/i_indx.c
 echo libF77/i_len.c 1>&2
 sed >libF77/i_len.c <<'//GO.SYSIN DD libF77/i_len.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -integer i_len(s, n) char *s; ftnlen n;
@@ -2460,6 +3809,9 @@ sed >libF77/i_len.c <<'//GO.SYSIN DD libF77/i_len.c' 's/^-//'
 -{
 -return(n);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/i_len.c
 echo libF77/F77_aloc.c 1>&2
 sed >libF77/F77_aloc.c <<'//GO.SYSIN DD libF77/F77_aloc.c' 's/^-//'
@@ -2482,6 +3834,9 @@ sed >libF77/F77_aloc.c <<'//GO.SYSIN DD libF77/F77_aloc.c' 's/^-//'
 -#ifdef __cplusplus
 -extern "C" {
 -#endif
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -extern void exit_(integer*);
 -#ifdef __cplusplus
 -	}
@@ -2501,6 +3856,9 @@ sed >libF77/F77_aloc.c <<'//GO.SYSIN DD libF77/F77_aloc.c' 's/^-//'
 -		}
 -	return rv;
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/F77_aloc.c
 echo libF77/README 1>&2
 sed >libF77/README <<'//GO.SYSIN DD libF77/README' 's/^-//'
@@ -2551,6 +3909,11 @@ sed >libF77/README <<'//GO.SYSIN DD libF77/README' 's/^-//'
 -functions and subroutines that appear to your program as ordinary
 -external Fortran routines.
 -
+-If you use the REAL valued functions listed below (ERF, ERFC,
+-DTIME, and ETIME) with "f2c -R", then you need to compile the
+-corresponding source files with -DREAL=float.  To do this, it is
+-perhaps simplest to add "-DREAL=float" to CFLAGS in the makefile.
+-
 -1.	CALL ABORT prints a message and causes a core dump.
 -
 -2.	ERF(r) and DERF(d) and the REAL and DOUBLE PRECISION
@@ -2585,6 +3948,21 @@ sed >libF77/README <<'//GO.SYSIN DD libF77/README' 's/^-//'
 -	signal n occurs (on systems where this makes sense).
 -
 -8.	CALL SYSTEM(cmd), where cmd is of type CHARACTER, passes
+-	cmd to the system's command processor (on systems where
+-	this can be done).
+-	
+-If your compiler complains about the signal calls in main.c, s_paus.c,
+-and signal_.c, you may need to adjust signal1.h suitably.  See the
+-comments in signal1.h.
+-
+-8.	ETIME(ARR) and DTIME(ARR) are REAL functions that return
+-	execution times.  ARR is declared REAL ARR(2).  The elapsed
+-	user and system CPU times are stored in ARR(1) and ARR(2),
+-	respectively.  ETIME returns the total elapsed CPU time,
+-	i.e., ARR(1) + ARR(2).  DTIME returns total elapsed CPU
+-	time since the previous call on DTIME.
+-
+-9.	CALL SYSTEM(cmd), where cmd is of type CHARACTER, passes
 -	cmd to the system's command processor (on systems where
 -	this can be done).
 -
@@ -2624,80 +4002,33 @@ sed >libF77/README <<'//GO.SYSIN DD libF77/README' 's/^-//'
 -z_div.c with -DIEEE_COMPLEX_DIVIDE causes them instead to set both
 -the real and imaginary parts of the result to +INFINITY if the
 -numerator is nonzero, or to NaN if it vanishes.
+-
+-The initializations for "f2c -trapuv" are done by _uninit_f2c(),
+-whose source is uninit.c, introduced June 2001.  On IEEE-arithmetic
+-systems, _uninit_f2c should initialize floating-point variables to
+-signaling NaNs and, at its first invocation, should enable the
+-invalid operation exception.  Alas, the rules for distinguishing
+-signaling from quiet NaNs were not specified in the IEEE P754 standard,
+-nor were the precise means of enabling and disabling IEEE-arithmetic
+-exceptions, and these details are thus system dependent.  There are
+-#ifdef's in uninit.c that specify them for some popular systems.  If
+-yours is not one of these systems, it may take some detective work to
+-discover the appropriate details for your system.  Sometimes it helps
+-to look in the standard include directories for header files with
+-relevant-sounding names, such as ieeefp.h, nan.h, or trap.h, and
+-it may be simplest to run experiments to see what distinguishes a
+-signaling from a quiet NaN.  (If x is initialized to a signaling
+-NaN and the invalid operation exception is masked off, as it should
+-be by default on IEEE-arithmetic systems, then computing, say,
+-y = x + 1 will yield a quiet NaN.)
 //GO.SYSIN DD libF77/README
-echo libF77/Version.c 1>&2
-sed >libF77/Version.c <<'//GO.SYSIN DD libF77/Version.c' 's/^-//'
--static char junk[] = "\n@(#)LIBF77 VERSION 19990503\n";
--
--/*
--2.00	11 June 1980.  File version.c added to library.
--2.01	31 May 1988.  s_paus() flushes stderr; names of hl_* fixed
--	[ d]erf[c ] added
--	 8 Aug. 1989: #ifdefs for f2c -i2 added to s_cat.c
--	29 Nov. 1989: s_cmp returns long (for f2c)
--	30 Nov. 1989: arg types from f2c.h
--	12 Dec. 1989: s_rnge allows long names
--	19 Dec. 1989: getenv_ allows unsorted environment
--	28 Mar. 1990: add exit(0) to end of main()
--	 2 Oct. 1990: test signal(...) == SIG_IGN rather than & 01 in main
--	17 Oct. 1990: abort() calls changed to sig_die(...,1)
--	22 Oct. 1990: separate sig_die from main
--	25 Apr. 1991: minor, theoretically invisible tweaks to s_cat, sig_die
--	31 May  1991: make system_ return status
--	18 Dec. 1991: change long to ftnlen (for -i2) many places
--	28 Feb. 1992: repair z_sqrt.c (scribbled on input, gave wrong answer)
--	18 July 1992: for n < 0, repair handling of 0**n in pow_[dr]i.c
--			and m**n in pow_hh.c and pow_ii.c;
--			catch SIGTRAP in main() for error msg before abort
--	23 July 1992: switch to ANSI prototypes unless KR_headers is #defined
--	23 Oct. 1992: fix botch in signal_.c (erroneous deref of 2nd arg);
--			change Cabs to f__cabs.
--	12 March 1993: various tweaks for C++
--	 2 June 1994: adjust so abnormal terminations invoke f_exit just once
--	16 Sept. 1994: s_cmp: treat characters as unsigned in comparisons.
--	19 Sept. 1994: s_paus: flush after end of PAUSE; add -DMSDOS
--	12 Jan. 1995:	pow_[dhiqrz][hiq]: adjust x**i to work on machines
--			that sign-extend right shifts when i is the most
--			negative integer.
--	26 Jan. 1995: adjust s_cat.c, s_copy.c to permit the left-hand side
--			of character assignments to appear on the right-hand
--			side (unless compiled with -DNO_OVERWRITE).
--	27 Jan. 1995: minor tweak to s_copy.c: copy forward whenever
--			possible (for better cache behavior).
--	30 May 1995:  added subroutine exit(rc) integer rc. Version not changed.
--	29 Aug. 1995: add F77_aloc.c; use it in s_cat.c and system_.c.
--	6 Sept. 1995: fix return type of system_ under -DKR_headers.
--	19 Dec. 1995: s_cat.c: fix bug when 2nd or later arg overlaps lhs.
--	19 Mar. 1996: s_cat.c: supply missing break after overlap detection.
--	13 May 1996:  add [lq]bitbits.c and [lq]bitshft.c (f90 bit intrinsics).
--	19 June 1996: add casts to unsigned in [lq]bitshft.c.
--	26 Feb. 1997: adjust functions with a complex output argument
--			to permit aliasing it with input arguments.
--			(For now, at least, this is just for possible
--			benefit of g77.)
--	4 April 1997: [cz]_div.c: tweaks invisible on most systems (that may
--			affect systems using gratuitous extra precision).
--	19 Sept. 1997: [de]time_.c (Unix systems only): change return
--			type to double.
--	2 May 1999:	getenv_.c: omit environ in favor of getenv().
--			c_cos.c, c_exp.c, c_sin.c, d_cnjg.c, r_cnjg.c,
--			z_cos.c, z_exp.c, z_log.c, z_sin.c: cope fully with
--			overlapping arguments caused by equivalence.
--	3 May 1999:	"invisible" tweaks to omit compiler warnings in
--			abort_.c, ef1asc_.c, s_rnge.c, s_stop.c.
--
--	7 Sept. 1999: [cz]_div.c: arrange for compilation under
--			-DIEEE_COMPLEX_DIVIDE to make these routines
--			avoid calling sig_die when the denominator
--			vanishes; instead, they return pairs of NaNs
--			or Infinities, depending whether the numerator
--			also vanishes or not.  VERSION not changed.
--*/
-//GO.SYSIN DD libF77/Version.c
 echo libF77/abort_.c 1>&2
 sed >libF77/abort_.c <<'//GO.SYSIN DD libF77/abort_.c' 's/^-//'
 -#include "stdio.h"
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -extern VOID sig_die();
@@ -2712,10 +4043,16 @@ sed >libF77/abort_.c <<'//GO.SYSIN DD libF77/abort_.c' 's/^-//'
 -sig_die("Fortran abort routine called", 1);
 -return 0;	/* not reached */
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/abort_.c
 echo libF77/c_abs.c 1>&2
 sed >libF77/c_abs.c <<'//GO.SYSIN DD libF77/c_abs.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -extern double f__cabs();
@@ -2729,6 +4066,9 @@ sed >libF77/c_abs.c <<'//GO.SYSIN DD libF77/c_abs.c' 's/^-//'
 -{
 -return( f__cabs( z->r, z->i ) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/c_abs.c
 echo libF77/c_cos.c 1>&2
 sed >libF77/c_cos.c <<'//GO.SYSIN DD libF77/c_cos.c' 's/^-//'
@@ -2741,6 +4081,9 @@ sed >libF77/c_cos.c <<'//GO.SYSIN DD libF77/c_cos.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -void c_cos(complex *r, complex *z)
 -#endif
@@ -2749,10 +4092,16 @@ sed >libF77/c_cos.c <<'//GO.SYSIN DD libF77/c_cos.c' 's/^-//'
 -	r->r =   cos(zr) * cosh(zi);
 -	r->i = - sin(zr) * sinh(zi);
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/c_cos.c
 echo libF77/c_div.c 1>&2
 sed >libF77/c_div.c <<'//GO.SYSIN DD libF77/c_div.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -extern VOID sig_die();
@@ -2799,6 +4148,9 @@ sed >libF77/c_div.c <<'//GO.SYSIN DD libF77/c_div.c' 's/^-//'
 -		}
 -	c->r = cr;
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/c_div.c
 echo libF77/c_exp.c 1>&2
 sed >libF77/c_exp.c <<'//GO.SYSIN DD libF77/c_exp.c' 's/^-//'
@@ -2811,6 +4163,9 @@ sed >libF77/c_exp.c <<'//GO.SYSIN DD libF77/c_exp.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -void c_exp(complex *r, complex *z)
 -#endif
@@ -2821,6 +4176,9 @@ sed >libF77/c_exp.c <<'//GO.SYSIN DD libF77/c_exp.c' 's/^-//'
 -	r->r = expx * cos(zi);
 -	r->i = expx * sin(zi);
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/c_exp.c
 echo libF77/c_log.c 1>&2
 sed >libF77/c_log.c <<'//GO.SYSIN DD libF77/c_log.c' 's/^-//'
@@ -2832,6 +4190,9 @@ sed >libF77/c_log.c <<'//GO.SYSIN DD libF77/c_log.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -extern double f__cabs(double, double);
 -
 -void c_log(complex *r, complex *z)
@@ -2841,6 +4202,9 @@ sed >libF77/c_log.c <<'//GO.SYSIN DD libF77/c_log.c' 's/^-//'
 -	r->i = atan2(zi = z->i, zr = z->r);
 -	r->r = log( f__cabs(zr, zi) );
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/c_log.c
 echo libF77/c_sin.c 1>&2
 sed >libF77/c_sin.c <<'//GO.SYSIN DD libF77/c_sin.c' 's/^-//'
@@ -2853,6 +4217,9 @@ sed >libF77/c_sin.c <<'//GO.SYSIN DD libF77/c_sin.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -void c_sin(complex *r, complex *z)
 -#endif
@@ -2861,6 +4228,9 @@ sed >libF77/c_sin.c <<'//GO.SYSIN DD libF77/c_sin.c' 's/^-//'
 -	r->r = sin(zr) * cosh(zi);
 -	r->i = cos(zr) * sinh(zi);
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/c_sin.c
 echo libF77/c_sqrt.c 1>&2
 sed >libF77/c_sqrt.c <<'//GO.SYSIN DD libF77/c_sqrt.c' 's/^-//'
@@ -2873,6 +4243,9 @@ sed >libF77/c_sqrt.c <<'//GO.SYSIN DD libF77/c_sqrt.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -extern double f__cabs(double, double);
 -
 -void c_sqrt(complex *r, complex *z)
@@ -2899,6 +4272,9 @@ sed >libF77/c_sqrt.c <<'//GO.SYSIN DD libF77/c_sqrt.c' 's/^-//'
 -		r->r = 0.5 * t;
 -		}
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/c_sqrt.c
 echo libF77/cabs.c 1>&2
 sed >libF77/cabs.c <<'//GO.SYSIN DD libF77/cabs.c' 's/^-//'
@@ -2908,6 +4284,9 @@ sed >libF77/cabs.c <<'//GO.SYSIN DD libF77/cabs.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double f__cabs(double real, double imag)
 -#endif
 -{
@@ -2929,10 +4308,16 @@ sed >libF77/cabs.c <<'//GO.SYSIN DD libF77/cabs.c' 's/^-//'
 -temp = real*sqrt(1.0 + temp*temp);  /*overflow!!*/
 -return(temp);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/cabs.c
 echo libF77/d_abs.c 1>&2
 sed >libF77/d_abs.c <<'//GO.SYSIN DD libF77/d_abs.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -double d_abs(x) doublereal *x;
@@ -2944,6 +4329,9 @@ sed >libF77/d_abs.c <<'//GO.SYSIN DD libF77/d_abs.c' 's/^-//'
 -	return(*x);
 -return(- *x);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_abs.c
 echo libF77/d_acos.c 1>&2
 sed >libF77/d_acos.c <<'//GO.SYSIN DD libF77/d_acos.c' 's/^-//'
@@ -2955,11 +4343,17 @@ sed >libF77/d_acos.c <<'//GO.SYSIN DD libF77/d_acos.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double d_acos(doublereal *x)
 -#endif
 -{
 -return( acos(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_acos.c
 echo libF77/d_asin.c 1>&2
 sed >libF77/d_asin.c <<'//GO.SYSIN DD libF77/d_asin.c' 's/^-//'
@@ -2971,11 +4365,17 @@ sed >libF77/d_asin.c <<'//GO.SYSIN DD libF77/d_asin.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double d_asin(doublereal *x)
 -#endif
 -{
 -return( asin(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_asin.c
 echo libF77/d_atan.c 1>&2
 sed >libF77/d_atan.c <<'//GO.SYSIN DD libF77/d_atan.c' 's/^-//'
@@ -2987,11 +4387,17 @@ sed >libF77/d_atan.c <<'//GO.SYSIN DD libF77/d_atan.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double d_atan(doublereal *x)
 -#endif
 -{
 -return( atan(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_atan.c
 echo libF77/d_atn2.c 1>&2
 sed >libF77/d_atn2.c <<'//GO.SYSIN DD libF77/d_atn2.c' 's/^-//'
@@ -3003,15 +4409,24 @@ sed >libF77/d_atn2.c <<'//GO.SYSIN DD libF77/d_atn2.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double d_atn2(doublereal *x, doublereal *y)
 -#endif
 -{
 -return( atan2(*x,*y) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_atn2.c
 echo libF77/d_cnjg.c 1>&2
 sed >libF77/d_cnjg.c <<'//GO.SYSIN DD libF77/d_cnjg.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 - VOID
 -#ifdef KR_headers
@@ -3024,6 +4439,9 @@ sed >libF77/d_cnjg.c <<'//GO.SYSIN DD libF77/d_cnjg.c' 's/^-//'
 -	r->r = z->r;
 -	r->i = -zi;
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_cnjg.c
 echo libF77/d_cos.c 1>&2
 sed >libF77/d_cos.c <<'//GO.SYSIN DD libF77/d_cos.c' 's/^-//'
@@ -3035,11 +4453,17 @@ sed >libF77/d_cos.c <<'//GO.SYSIN DD libF77/d_cos.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double d_cos(doublereal *x)
 -#endif
 -{
 -return( cos(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_cos.c
 echo libF77/d_cosh.c 1>&2
 sed >libF77/d_cosh.c <<'//GO.SYSIN DD libF77/d_cosh.c' 's/^-//'
@@ -3051,15 +4475,24 @@ sed >libF77/d_cosh.c <<'//GO.SYSIN DD libF77/d_cosh.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double d_cosh(doublereal *x)
 -#endif
 -{
 -return( cosh(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_cosh.c
 echo libF77/d_dim.c 1>&2
 sed >libF77/d_dim.c <<'//GO.SYSIN DD libF77/d_dim.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -double d_dim(a,b) doublereal *a, *b;
@@ -3069,6 +4502,9 @@ sed >libF77/d_dim.c <<'//GO.SYSIN DD libF77/d_dim.c' 's/^-//'
 -{
 -return( *a > *b ? *a - *b : 0);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_dim.c
 echo libF77/d_exp.c 1>&2
 sed >libF77/d_exp.c <<'//GO.SYSIN DD libF77/d_exp.c' 's/^-//'
@@ -3080,15 +4516,24 @@ sed >libF77/d_exp.c <<'//GO.SYSIN DD libF77/d_exp.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double d_exp(doublereal *x)
 -#endif
 -{
 -return( exp(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_exp.c
 echo libF77/d_imag.c 1>&2
 sed >libF77/d_imag.c <<'//GO.SYSIN DD libF77/d_imag.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -double d_imag(z) doublecomplex *z;
@@ -3098,6 +4543,9 @@ sed >libF77/d_imag.c <<'//GO.SYSIN DD libF77/d_imag.c' 's/^-//'
 -{
 -return(z->i);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_imag.c
 echo libF77/d_int.c 1>&2
 sed >libF77/d_int.c <<'//GO.SYSIN DD libF77/d_int.c' 's/^-//'
@@ -3109,11 +4557,17 @@ sed >libF77/d_int.c <<'//GO.SYSIN DD libF77/d_int.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double d_int(doublereal *x)
 -#endif
 -{
 -return( (*x>0) ? floor(*x) : -floor(- *x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_int.c
 echo libF77/d_lg10.c 1>&2
 sed >libF77/d_lg10.c <<'//GO.SYSIN DD libF77/d_lg10.c' 's/^-//'
@@ -3127,11 +4581,17 @@ sed >libF77/d_lg10.c <<'//GO.SYSIN DD libF77/d_lg10.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double d_lg10(doublereal *x)
 -#endif
 -{
 -return( log10e * log(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_lg10.c
 echo libF77/d_log.c 1>&2
 sed >libF77/d_log.c <<'//GO.SYSIN DD libF77/d_log.c' 's/^-//'
@@ -3143,11 +4603,17 @@ sed >libF77/d_log.c <<'//GO.SYSIN DD libF77/d_log.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double d_log(doublereal *x)
 -#endif
 -{
 -return( log(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_log.c
 echo libF77/d_mod.c 1>&2
 sed >libF77/d_mod.c <<'//GO.SYSIN DD libF77/d_mod.c' 's/^-//'
@@ -3166,6 +4632,9 @@ sed >libF77/d_mod.c <<'//GO.SYSIN DD libF77/d_mod.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -#endif
 -double d_mod(doublereal *x, doublereal *y)
 -#endif
@@ -3191,6 +4660,9 @@ sed >libF77/d_mod.c <<'//GO.SYSIN DD libF77/d_mod.c' 's/^-//'
 -	return(*x - (*y) * quotient );
 -#endif
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_mod.c
 echo libF77/d_nint.c 1>&2
 sed >libF77/d_nint.c <<'//GO.SYSIN DD libF77/d_nint.c' 's/^-//'
@@ -3202,16 +4674,25 @@ sed >libF77/d_nint.c <<'//GO.SYSIN DD libF77/d_nint.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double d_nint(doublereal *x)
 -#endif
 -{
 -return( (*x)>=0 ?
 -	floor(*x + .5) : -floor(.5 - *x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_nint.c
 echo libF77/d_prod.c 1>&2
 sed >libF77/d_prod.c <<'//GO.SYSIN DD libF77/d_prod.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -double d_prod(x,y) real *x, *y;
@@ -3221,10 +4702,16 @@ sed >libF77/d_prod.c <<'//GO.SYSIN DD libF77/d_prod.c' 's/^-//'
 -{
 -return( (*x) * (*y) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_prod.c
 echo libF77/d_sign.c 1>&2
 sed >libF77/d_sign.c <<'//GO.SYSIN DD libF77/d_sign.c' 's/^-//'
 -#include "f2c.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -
 -#ifdef KR_headers
 -double d_sign(a,b) doublereal *a, *b;
@@ -3236,6 +4723,9 @@ sed >libF77/d_sign.c <<'//GO.SYSIN DD libF77/d_sign.c' 's/^-//'
 -x = (*a >= 0 ? *a : - *a);
 -return( *b >= 0 ? x : -x);
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_sign.c
 echo libF77/d_sin.c 1>&2
 sed >libF77/d_sin.c <<'//GO.SYSIN DD libF77/d_sin.c' 's/^-//'
@@ -3247,11 +4737,17 @@ sed >libF77/d_sin.c <<'//GO.SYSIN DD libF77/d_sin.c' 's/^-//'
 -#else
 -#undef abs
 -#include "math.h"
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
 -double d_sin(doublereal *x)
 -#endif
 -{
 -return( sin(*x) );
 -}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/d_sin.c
 echo libF77/s_cat.c 1>&2
 sed >libF77/s_cat.c <<'//GO.SYSIN DD libF77/s_cat.c' 's/^-//'
@@ -3272,16 +4768,24 @@ sed >libF77/s_cat.c <<'//GO.SYSIN DD libF77/s_cat.c' 's/^-//'
 -#undef min
 -#undef max
 -#include "stdlib.h"
-- extern char *F77_aloc(ftnlen, char*);
+-extern
+-#ifdef __cplusplus
+-	"C"
+-#endif
+-	char *F77_aloc(ftnlen, char*);
 -#endif
 -#include "string.h"
 -#endif /* NO_OVERWRITE */
 -
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
 - VOID
 -#ifdef KR_headers
--s_cat(lp, rpp, rnp, np, ll) char *lp, *rpp[]; ftnlen rnp[], *np, ll;
+-s_cat(lp, rpp, rnp, np, ll) char *lp, *rpp[]; ftnint rnp[], *np; ftnlen ll;
 -#else
--s_cat(char *lp, char *rpp[], ftnlen rnp[], ftnlen *np, ftnlen ll)
+-s_cat(char *lp, char *rpp[], ftnint rnp[], ftnint *np, ftnlen ll)
 -#endif
 -{
 -	ftnlen i, nc;
@@ -3330,6 +4834,9 @@ sed >libF77/s_cat.c <<'//GO.SYSIN DD libF77/s_cat.c' 's/^-//'
 -		}
 -#endif
 -	}
+-#ifdef __cplusplus
+-}
+-#endif
 //GO.SYSIN DD libF77/s_cat.c
 echo libF77/Notice 1>&2
 sed >libF77/Notice <<'//GO.SYSIN DD libF77/Notice' 's/^-//'
@@ -3522,133 +5029,3 @@ sed >libF77/f2ch.add <<'//GO.SYSIN DD libF77/f2ch.add' 's/^-//'
 -	}
 -#endif
 //GO.SYSIN DD libF77/f2ch.add
-echo libF77/libF77.xsum 1>&2
-sed >libF77/libF77.xsum <<'//GO.SYSIN DD libF77/libF77.xsum' 's/^-//'
--F77_aloc.c	f9eea219	611
--Notice	76f23b4	1212
--README	1c49d27a	5141
--Version.c	e3d089d2	3315
--abort_.c	e12f28b6	231
--c_abs.c	ecce7a47	205
--c_cos.c	f12046ff	287
--c_div.c	1666e8eb	863
--c_exp.c	ec4410d4	282
--c_log.c	13c44244	317
--c_sin.c	ce1f38d	283
--c_sqrt.c	1d8421cd	538
--cabs.c	abac46c	427
--d_abs.c	ed70186c	151
--d_acos.c	e5d8cdee	178
--d_asin.c	f1c92f52	178
--d_atan.c	fe8cfd3f	178
--d_atn2.c	fa5f66a9	204
--d_cnjg.c	97c1d57	188
--d_cos.c	f37be16	174
--d_cosh.c	a2f7dcf	178
--d_dim.c	1dfe4b39	165
--d_exp.c	fb0efb6d	174
--d_imag.c	ff9da248	134
--d_int.c	e10c5fc2	202
--d_lg10.c	1381342c	224
--d_log.c	ec2a8447	174
--d_mod.c	e30684f1	621
--d_nint.c	ffa7895c	214
--d_prod.c	e3b5d46a	140
--d_sign.c	1782063b	199
--d_sin.c	ef24638e	174
--d_sinh.c	e0ec938a	178
--d_sqrt.c	1ff988eb	178
--d_tan.c	ffc9a88e	174
--d_tanh.c	e5e0cbbd	178
--derf_.c	fdf1917c	172
--derfc_.c	4cb5ea3	186
--dtime_.c	12f0a0d3	850
--ef1asc_.c	e452d3bf	454
--ef1cmc_.c	1e0b86e3	360
--erf_.c	7a407d	158
--erfc_.c	fb488e22	163
--etime_.c	e5e10977	713
--exit_.c	eaf1e4de	476
--f2ch.add	ef66bf17	6060
--getarg_.c	edcf61f8	495
--getenv_.c	eb99fb0d	1150
--h_abs.c	8383aa6	151
--h_dim.c	9f9a693	163
--h_dnnt.c	f7841dba	227
--h_indx.c	145ff2e8	375
--h_len.c	e85aa13f	138
--h_mod.c	feacad2a	140
--h_nint.c	a833e39	214
--h_sign.c	e7d69d03	199
--hl_ge.c	26bca46	279
--hl_gt.c	f5426c57	278
--hl_le.c	ff67a970	279
--hl_lt.c	f8842102	278
--i_abs.c	f6c3045e	147
--i_dim.c	ae23de2	158
--i_dnnt.c	6ce6142	224
--i_indx.c	19177d0c	363
--i_len.c	e32e1f92	136
--i_mod.c	8bb577c	144
--i_nint.c	16ed7c38	211
--i_sign.c	1f26e421	193
--iargc_.c	324b252	129
--l_ge.c	5b7cb55	267
--l_gt.c	ad1b388	266
--l_le.c	f5407149	267
--l_lt.c	f81a93f8	266
--lbitbits.c	f6c018ec	1030
--lbitshft.c	ec57bf21	191
--main.c	6eed57a	2152
--makefile	e48bc2b8	4031
--pow_ci.c	f593b0b9	345
--pow_dd.c	e451857d	209
--pow_di.c	11a1842e	381
--pow_hh.c	e0cb1b69	422
--pow_ii.c	17c60a01	421
--pow_qq.c	ffbbdec9	449
--pow_ri.c	eacf8350	369
--pow_zi.c	f8fb3f23	784
--pow_zz.c	f0e5f141	482
--qbitbits.c	f15e55f2	1083
--qbitshft.c	fb7eacff	191
--r_abs.c	1a4e3da	139
--r_acos.c	ca67f96	166
--r_asin.c	188a2306	166
--r_atan.c	fadda9d5	166
--r_atn2.c	e97a5392	186
--r_cnjg.c	f9d0487f	168
--r_cos.c	f19d771e	162
--r_cosh.c	e20187a0	166
--r_dim.c	ef5e869	147
--r_exp.c	18979beb	162
--r_imag.c	e45086cf	122
--r_int.c	f2c2f39c	190
--r_lg10.c	1279226d	212
--r_log.c	2682a0d	162
--r_mod.c	f28ec59a	611
--r_nint.c	69d11bb	202
--r_sign.c	eddb76f9	181
--r_sin.c	10007227	162
--r_sinh.c	f21a38b8	166
--r_sqrt.c	f24b8aa4	166
--r_tan.c	e60b7778	162
--r_tanh.c	f22ec5c	166
--s_cat.c	cadae9f	1346
--s_cmp.c	ff4f2982	655
--s_copy.c	e10dd76f	957
--s_paus.c	1a9e166a	1529
--s_rnge.c	f6adac83	672
--s_stop.c	eaa762ad	696
--sig_die.c	e934624a	634
--signal1.h0	1d43ee57	842
--signal_.c	1e31cd2b	232
--system_.c	e4ed54ab	579
--z_abs.c	f71a28c1	201
--z_cos.c	ecf2983a	296
--z_div.c	e703afc1	840
--z_exp.c	1f89bf82	290
--z_log.c	a1b65db	329
--z_sin.c	e2482d4	292
--z_sqrt.c	14993db8	514
-//GO.SYSIN DD libF77/libF77.xsum

@@ -1,5 +1,5 @@
 /****************************************************************
-Copyright 1990, 1993 - 1996 by AT&T, Lucent Technologies and Bellcore.
+Copyright 1990, 1993 - 1996, 2000 by AT&T, Lucent Technologies and Bellcore.
 
 Permission to use, copy, modify, and distribute this software
 and its documentation for any purpose and without fee is hereby
@@ -437,7 +437,7 @@ exstop(int stop, register expptr p)
     {
 	expptr subr_call;
 
-	subr_call = call1(TYSUBR, (stop ? "s_stop" : "s_paus"), p);
+	subr_call = call1(TYSUBR, (char*)(stop ? "s_stop" : "s_paus"), p);
 	putexpr( subr_call );
     }
 }
@@ -866,7 +866,7 @@ exarif(expr, neglab, zerlab, poslab)
 exarif(expptr expr, struct Labelblock *neglab, struct Labelblock *zerlab, struct Labelblock *poslab)
 #endif
 {
-    register int lm, lz, lp;
+    ftnint lm, lz, lp;
 
     lm = neglab->stateno;
     lz = zerlab->stateno;

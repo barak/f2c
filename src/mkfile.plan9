@@ -1,76 +1,74 @@
-#	Makefile for f2c, a Fortran 77 to C converter
+#	Plan 9 mkfile for f2c, a Fortran 77 to C converter
 
-.SUFFIXES: .c .o
-CC = cc
-CFLAGS = -O
-SHELL = /bin/sh
-YACC = yacc
-YFLAGS =
+</$objtype/mkfile
+NPROC = 1
+CC = pcc
+CFLAGS = -DANSI_Libraries -DNO_LONG_LONG
 
-.c.o:
-	$(CC) -c $(CFLAGS) $*.c
+%.$O: %.c
+	$CC -c $CFLAGS $stem.c
 
-OBJECTSd = main.o init.o gram.o lex.o proc.o equiv.o data.o format.o \
-	  expr.o exec.o intr.o io.o misc.o error.o mem.o names.o \
-	  output.o p1output.o pread.o put.o putpcc.o vax.o formatdata.o \
-	  parse_args.o niceprintf.o cds.o sysdep.o version.o
+OBJECTSd = main.$O init.$O gram.$O lex.$O proc.$O equiv.$O data.$O format.$O \
+	  expr.$O exec.$O intr.$O io.$O misc.$O error.$O mem.$O names.$O \
+	  output.$O p1output.$O pread.$O put.$O putpcc.$O vax.$O formatdata.$O \
+	  parse_args.$O niceprintf.$O cds.$O sysdep.$O version.$O
 
-MALLOC =
-# To use the malloc whose source accompanies the f2c source, add malloc.o
+MALLOC = malloc.$O
+# To use the malloc whose source accompanies the f2c source, add malloc.$O
 # to the right-hand side of the "MALLOC =" line above, so it becomes
-#	MALLOC = malloc.o
+#	MALLOC = malloc.$O
 # This gives faster execution on some systems, but some other systems do
 # not tolerate replacement of the system's malloc.
 
-OBJECTS = $(OBJECTSd) $(MALLOC)
+OBJECTS = $OBJECTSd $MALLOC
 
-all: xsum.out f2c
+all:N: xsum.out f2c
 
-f2c: $(OBJECTS)
-	$(CC) $(LDFLAGS) $(OBJECTS) -o f2c
+f2c: $OBJECTS
+	$CC $LDFLAGS $OBJECTS -o f2c
 
 # The following used to be a rule for gram.c rather than gram1.c, but
 # there are too many broken variants of yacc around, so now we
-# distribute a correctly functioning gram.c (derived with a Unix variant
+# distribute a correctly function gram.c (derived with a Unix variant
 # of the yacc from plan9).
 
 gram1.c: gram.head gram.dcl gram.expr gram.exec gram.io defs.h tokdefs.h
 	( sed <tokdefs.h "s/#define/%token/" ;\
 		cat gram.head gram.dcl gram.expr gram.exec gram.io ) >gram.in
-	$(YACC) $(YFLAGS) gram.in
+	$YACC $YFLAGS gram.in
 	@echo "(There should be 4 shift/reduce conflicts.)"
 	sed 's/^# line.*/\/* & *\//' y.tab.c >gram.c
 	rm -f gram.in y.tab.c
 
-$(OBJECTSd): defs.h ftypes.h defines.h machdefs.h sysdep.h
+$OBJECTSd: defs.h ftypes.h defines.h machdefs.h sysdep.h
 
 tokdefs.h: tokens
-	grep -n . <tokens | sed "s/\([^:]*\):\(.*\)/#define \2 \1/" >tokdefs.h
+	grep -n . <tokens | sed 's/([^:]*):(.*)/#define \2 \1/' >tokdefs.h
 
-cds.o: sysdep.h
-exec.o: p1defs.h names.h
-expr.o: output.h niceprintf.h names.h
-format.o: p1defs.h format.h output.h niceprintf.h names.h iob.h
-formatdata.o: format.h output.h niceprintf.h names.h
-gram.o: p1defs.h
-init.o: output.h niceprintf.h iob.h
-intr.o: names.h
-io.o: names.h iob.h
-lex.o : tokdefs.h p1defs.h
-main.o: parse.h usignal.h
-mem.o: iob.h
-names.o: iob.h names.h output.h niceprintf.h
-niceprintf.o: defs.h names.h output.h niceprintf.h
-output.o: output.h niceprintf.h names.h
-p1output.o: p1defs.h output.h niceprintf.h names.h
-parse_args.o: parse.h
-proc.o: tokdefs.h names.h niceprintf.h output.h p1defs.h
-put.o: names.h pccdefs.h p1defs.h
-putpcc.o: names.h
-vax.o: defs.h output.h pccdefs.h
+cds.$O: sysdep.h
+exec.$O: p1defs.h names.h
+expr.$O: output.h niceprintf.h names.h
+format.$O: p1defs.h format.h output.h niceprintf.h names.h iob.h
+formatdata.$O: format.h output.h niceprintf.h names.h
+gram.$O: p1defs.h
+init.$O: output.h niceprintf.h iob.h
+intr.$O: names.h
+io.$O: names.h iob.h
+lex.$O : tokdefs.h p1defs.h
+main.$O: parse.h usignal.h
+mem.$O: iob.h
+names.$O: iob.h names.h output.h niceprintf.h
+niceprintf.$O: defs.h names.h output.h niceprintf.h
+output.$O: output.h niceprintf.h names.h
+p1output.$O: p1defs.h output.h niceprintf.h names.h
+parse_args.$O: parse.h
+proc.$O: tokdefs.h names.h niceprintf.h output.h p1defs.h
+put.$O: names.h pccdefs.h p1defs.h
+putpcc.$O: names.h
+vax.$O: defs.h output.h pccdefs.h
 output.h: niceprintf.h
 
-put.o putpcc.o: pccdefs.h
+put.$O putpcc.$O: pccdefs.h
 
 f2c.t: f2c.1t
 	troff -man f2c.1t >f2c.t
@@ -79,7 +77,7 @@ f2c.t: f2c.1t
 #	nroff -man f2c.1t | col -b | uniq >f2c.1
 
 clean:
-	rm -f *.o f2c tokdefs.h f2c.t
+	rm -f *.$O f2c tokdefs.h f2c.t
 
 veryclean: clean
 	rm -f xsum
@@ -94,7 +92,7 @@ b = Notice README cds.c data.c defines.h defs.h equiv.c error.c \
 	sysdep.c sysdep.h tokens usignal.h vax.c version.c xsum.c
 
 xsum: xsum.c
-	$(CC) $(CFLAGS) -o xsum xsum.c
+	$CC $CFLAGS -o xsum xsum.c
 
 #Check validity of transmitted source...
 xsum.out: xsum $b
