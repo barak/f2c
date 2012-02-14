@@ -2,16 +2,18 @@ Source: f2c
 Section: devel
 Priority: optional
 Maintainer: Alan Bain <afrb2@debian.org>
-Standards-Version: 3.8.2
-Build-Depends: debhelper(>=5.0)
+Uploaders: Barak A. Pearlmutter <bap@debian.org>
+Standards-Version: 3.9.2
+Build-Depends: debhelper (>= 8)
+Homepage: http://www.netlib.org/f2c/
 
 Package: f2c
 Architecture: any
-Depends: ${shlibs:Depends},libf2c2-dev
+Depends: ${shlibs:Depends}, ${misc:Depends}, libf2c2-dev
 Recommends: gcc
 Suggests: fort77
-Description: A FORTRAN 77 to C/C++ translator
- f2c translates FORTRAN 77 (with some extensions) into C, so that it can
+Description: FORTRAN 77 to C/C++ translator
+ Translates FORTRAN 77 (with some extensions) into C, so that it can
  then be compiled and run on a system with no Fortran compiler.  The C
  files must then be linked against the appropriate libraries.
  .

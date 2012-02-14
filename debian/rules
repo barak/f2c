@@ -1,124 +1,35 @@
 #!/usr/bin/make -f
-#   -*- mode: makefile; -*-
 
-# debian.rules file - for f2c, header file, etc.
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
 
-
-package=f2c
-
-INSTALL = /usr/bin/install
-INSTALL_PROGRAM = $(INSTALL) -o root -g root -m 0755
-
-CDEBUGFLAGS = -g
-ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-   CDEBUGFLAGS += -O0
-else
-   CDEBUGFLAGS += -O2
-endif
-
-ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
-    INSTALL_PROGRAM += -s
-endif
-
-
-
-arch=$(shell dpkg --print-architecture)
-dir=$(package)-$(version)
-file=$(package)_$(version)-$(debian)
-
+%:
+	dh $@ --parallel
 
 # Optimization options.
-GCCOP2=-ansi $(CDEBUGFLAGS) -fomit-frame-pointer -mieee-fp -D_GNU_SOURCE -DDEBIAN
-GCCOP1=-ansi $(CDEBUGFLAGS) -fomit-frame-pointer -D_GNU_SOURCE -DDEBIAN
+# GCCOP2=-ansi $(CDEBUGFLAGS) -fomit-frame-pointer -mieee-fp -D_GNU_SOURCE -DDEBIAN
+# GCCOP1=-ansi $(CDEBUGFLAGS) -fomit-frame-pointer -D_GNU_SOURCE -DDEBIAN
 
 ## Chose which options to use depending upon
 ## whether or not target is i386
 
-ifeq ($(arch),i386) 
-   GCCOPT=$(GCCOP2)
-else 
-   GCCOPT=$(GCCOP1)
-endif
+# ifeq ($(arch),i386) 
+#    GCCOPT=$(GCCOP2)
+# else 
+#    GCCOPT=$(GCCOP1)
+# endif
 
-build:
-	$(checkdir)
+override_dh_auto_build:
+	$(MAKE) -C src -f makefile.u
 
-## Avoid using -mieee-fp on anything other than the i386 platform
-## as it is a gcc i386 specific option
+override_dh_auto_clean:
+	$(MAKE) -C src -f makefile.u clean
 
-        
-	if [ $(arch) = "i386" ] ;\
-           then echo "Building for i386" ;\
-        fi
-
-
-	$(MAKE) -C "./src" -f makefile.u  CFLAGS="$(GCCOPT)" ;\
-	touch build
-
-clean:
-	$(checkdir)
-	$(MAKE) -C ./src -f makefile.u  clean
-	cd src && rm -f xsum xsum1.out xsum.out
-	rm -f build build_f2c build_f2c_i2
-	rm -rf debian/tmp *~
-	rm -rf debian/*~ debian/files* debian/substvars
-
-binary-indep:	checkroot build
-	${checkdir}
-
-
-binary-arch: checkroot 
-	rm -rf debian/tmp
-	install -d debian/tmp debian/tmp/DEBIAN
-	install -d debian/tmp/usr/share/doc/${package}
-	install -d -m 0755             debian/tmp/usr/bin
-	$(INSTALL_PROGRAM)  src/f2c     debian/tmp/usr/bin/f2c
+override_dh_strip:
+	dh_strip
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
-	strip --remove-section=.comment --remove-section=.note debian/tmp/usr/bin/f2c
+	strip --verbose --remove-section=.comment --remove-section=.note debian/f2c/usr/bin/f2c
 endif
-	
-	install -c -m 0755 fc          debian/tmp/usr/bin/fc
-	install -d -m 0755             debian/tmp/usr/share/man/man1
-	install -c -m 0644 fc.1        debian/tmp/usr/share/man/man1/fc.1
-	install -c -m 0644 f2c.1t  debian/tmp/usr/share/man/man1/f2c.1
-	gzip -9v debian/tmp/usr/share/man/man1/f2c.1
-	gzip -9v debian/tmp/usr/share/man/man1/fc.1
 
-	install -d -m 0755             debian/tmp/usr/share/doc/$(package)
-	install -c -m 0644 f2c.ps      debian/tmp/usr/share/doc/$(package)
-	install -c -m 0644 changes     debian/tmp/usr/share/doc/$(package)/changelog
-	install -c -m 0644 README      debian/tmp/usr/share/doc/$(package)
-	install -c -m 0644 debian/changelog \
-                                    debian/tmp/usr/share/doc/f2c/changelog.Debian
-	install -c -m 0644 debian/README.debian  \
-				    debian/tmp/usr/share/doc/f2c/README.debian
-	(cd debian/tmp/usr/share/doc/$(package); gzip -9v *)
-	install -c -m 0644 debian/copyright \
-			            debian/tmp/usr/share/doc/f2c/copyright
-
-	dpkg-shlibdeps ./src/f2c
-	dpkg-gencontrol -isp
-	dh_md5sums --tmpdir=debian/tmp
-	chown -R root.root debian/tmp
-	chmod -R go-ws debian/tmp
-	dpkg --build debian/tmp  ..
-
-## Below Here is Generic
-
-define checkdir
-	test -f ./src/$(package).1t
-endef
-
-binary:	binary-indep binary-arch
-
-source diff:
-	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
-
-dist:  binary source diff changes     
-
-checkroot:
-	$(checkdir)
-	test root = "`whoami`"
-
-.PHONY: binary source diff clean checkroot changes dist
-
+override_dh_installchangelog:
+	dh_installchangelog changes
