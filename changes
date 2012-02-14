@@ -3464,5 +3464,19 @@ Fri Jan  2 23:13:25 MST 2009
 Sat Apr 11 18:06:00 MDT 2009
   src/sysdep.c src/sysdeptest.c: tweak for MacOSX (include <unistd.h>).
 
+Wed Jul  7 10:51:12 MDT 2010
+  src/data.c, src/format.c, src/p1output.c:  "invisible" tweaks to
+silence warnings seen in compilation under Ubuntu; version.c not changed.
+
+Fri Aug 27 09:14:17 MDT 2010
+  format.c: make sizeof(buf) depend on MAXNAMELEN to fix a bug with long
+names.  Update mswin/f2c.exe.gz accordingly.
+
+Fri Sep  3 16:03:24 MDT 2010
+  fc:  have "-m ..." modify CC rather than CFLAGS (to affect linking).
+
+Mon Aug  1 13:46:40 MDT 2011
+  README, README in libf2c.zip: update some netlib pointers.
+
 NOTE:  the old libf77 and libi77 bundles are no longer being updated.
 Use libf2c.zip instead.
