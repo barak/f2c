@@ -1,3 +1,17 @@
+From: Alan Bain <afrb2@debian.org>
+Date: Tue, 10 Apr 2012 18:10:19 +0100
+Subject: 0000-prequilt-tweaks
+
+---
+ f2c.1t         |  126 ++++++++++++++++++++++++++++------------------------
+ fc             |   18 ++++----
+ fc.1           |  134 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ src/f2c.1t     |  126 ++++++++++++++++++++++++++++------------------------
+ src/makefile.u |    2 +-
+ src/sysdep.c   |    6 +++
+ 6 files changed, 285 insertions(+), 127 deletions(-)
+ create mode 100644 fc.1
+
 diff --git a/f2c.1t b/f2c.1t
 index d73d334..4723784 100644
 --- a/f2c.1t
