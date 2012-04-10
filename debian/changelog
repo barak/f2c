@@ -1,13 +1,18 @@
 f2c (20100827-1) unstable; urgency=low
 
-  * update packaging
   * new upstream version
-  * remove debian-specific fc, upstream caught up
-  * use compiler options for optimisation and warning
+  * update packaging
+    - dh9
+    - bump policy version
+    - snag hardening flags etc in debian/rules
+    - dpkg source format 3.0 (quilt)
+    - move upstream mods into big quilt patch for later dissection
+  * remove debian-specific fc; upstream caught up
   * quilt patch for C warnings
   * quilt patch for man page hyphens
+  * quilt patches for build system to simplify debian/rules
 
- -- Barak A. Pearlmutter <bap@debian.org>  Tue, 14 Feb 2012 15:53:51 +0000
+ -- Barak A. Pearlmutter <bap@debian.org>  Tue, 10 Apr 2012 18:08:28 +0100
 
 f2c (20090411-1) unstable; urgency=low
   * new upstream source
