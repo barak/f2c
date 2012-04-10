@@ -4,7 +4,7 @@ Subject: man dash hyphen slash
 
 ---
  fc.1 |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/fc.1 b/fc.1
 index 1bb23db..52a0971 100644
@@ -28,4 +28,3 @@ index 1bb23db..52a0971 100644
  Emit .P files.
  .SH BUGS
  .B fc
--- 

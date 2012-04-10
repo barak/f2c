@@ -4,7 +4,7 @@ Subject: prototype rmdir
 
 ---
  src/sysdep.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ 1 file changed, 1 insertion(+)
 
 diff --git a/src/sysdep.c b/src/sysdep.c
 index 3d7478d..7d0ed55 100644
@@ -18,4 +18,3 @@ index 3d7478d..7d0ed55 100644
  
  char binread[] = "rb", textread[] = "r";
  char binwrite[] = "wb", textwrite[] = "w";
--- 
