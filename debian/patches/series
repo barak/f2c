@@ -2,3 +2,4 @@
 0002-prototype-rmdir.patch
 0003-struct-init-braces.patch
 0004-man-dash-hyphen-slash.patch
+0005-distclean-is-very-clean.patch
