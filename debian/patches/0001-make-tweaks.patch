@@ -2,12 +2,18 @@ From: "Barak A. Pearlmutter" <barak+git@cs.nuim.ie>
 Date: Tue, 14 Feb 2012 13:43:17 +0000
 Subject: make tweaks
 
-tweak src/makefile.u, and supply stub top-level Makefile
+Tweak src/makefile.u: use default rules for .o object files and for
+f2c executable.
+Create stub f2c.c to allow f2c executable to depend on f2c.o which
+allows a default rule for f2c executable.
+Supply stub top-level Makefile.
 ---
  Makefile       |    4 ++++
- src/makefile.u |    6 +++---
- 2 files changed, 7 insertions(+), 3 deletions(-)
+ src/f2c.c      |    1 +
+ src/makefile.u |    7 ++++---
+ 3 files changed, 9 insertions(+), 3 deletions(-)
  create mode 100644 Makefile
+ create mode 100644 src/f2c.c
 
 diff --git a/Makefile b/Makefile
 new file mode 100644
@@ -19,8 +25,15 @@ index 0000000..dd4f903
 +
 +%:
 +	$(MAKE) -C src -f makefile.u $@
+diff --git a/src/f2c.c b/src/f2c.c
+new file mode 100644
+index 0000000..17ca069
+--- /dev/null
++++ b/src/f2c.c
+@@ -0,0 +1 @@
++/* stub to make default make rule for f2c happy */
 diff --git a/src/makefile.u b/src/makefile.u
-index 0f12022..7550218 100644
+index 0f12022..a9ef4ed 100644
 --- a/src/makefile.u
 +++ b/src/makefile.u
 @@ -7,8 +7,8 @@ SHELL = /bin/sh
@@ -34,12 +47,14 @@ index 0f12022..7550218 100644
  
  OBJECTSd = main.o init.o gram.o lex.o proc.o equiv.o data.o format.o \
  	  expr.o exec.o intr.o io.o misc.o error.o mem.o names.o \
-@@ -27,7 +27,7 @@ OBJECTS = $(OBJECTSd) $(MALLOC)
+@@ -26,8 +26,9 @@ OBJECTS = $(OBJECTSd) $(MALLOC)
+ 
  all: f2c
  
++f2c: f2c.o
  f2c: $(OBJECTS)
 -	$(CC) $(LDFLAGS) $(OBJECTS) -o f2c
-+	$(CC) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@
++#	$(CC) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@
  
  # The following used to be a rule for gram.c rather than gram1.c, but
  # there are too many broken variants of yacc around, so now we
