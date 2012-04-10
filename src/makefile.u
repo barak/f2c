@@ -24,7 +24,7 @@ MALLOC =
 
 OBJECTS = $(OBJECTSd) $(MALLOC)
 
-all: f2c
+all: xsum.out f2c
 
 f2c: $(OBJECTS)
 	$(CC) $(LDFLAGS) $(OBJECTS) -o f2c

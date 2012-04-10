@@ -11,7 +11,7 @@
 #	may be useful as way to pass system-specific stuff to the C compiler.
 #	The script below simply appends to the initial CFLAGS value.
 
-PATH=/bin:/usr/bin
+PATH=/usr/local/bin:/bin:/usr/bin
 
 # f77-style shell script to compile and load fortran, C, and assembly codes
 
@@ -80,13 +80,12 @@ PATH=/bin:/usr/bin
 
 #		-U def		passed to C compiler (for .c files)
 #				or to cpp (for .F files) to remove def
+
 #		-v		show current f2c version
 #		--version	same as -v
 
-s=`tempfile --prefix=stderr` || { echo "$0: Cannot create temporary file" ; exit 1; }
-t=`tempfile --suffix=.o --prefix=f77` || { echo "$0: Cannot create temporary file" ; exit 1; }
-trap "rm -f $s $t; exit \$rc" 0
-
+s=/tmp/stderr_$$
+t=/tmp/f77_$$.o
 ### On some systems (e.g., IRIX), -common prevents complaints
 ### about multiple definitions of COMMON blocks.
 #CC=${CC_f2c:-'cc -common'}
@@ -95,7 +94,7 @@ EFL=${EFL:-efl}
 EFLFLAGS=${EFLFLAGS:-'system=portable deltastno=10'}
 RATFOR=${RATFOR:-ratfor}
 RFLAGS=${RFLAGS:-'-6&'}
-F2C=${F2C:-/usr/bin/f2c}
+F2C=${F2C:-/usr/local/bin/f2c}
 show_fc_help=0
 case $1 in
 	--help)		show_fc_help=1;;
@@ -117,11 +116,14 @@ case $show_fc_help in
 F2CFLAGS=${F2CFLAGS:='-ARw8 -Nn802 -Nq300 -Nx400'}
 CPP=${CPP:-/lib/cpp}
 rc=0
+trap "rm -f $s $t; exit \$rc" 0
 OUTF=a.out
 OUTO=
 cOPT=1
 set -- `getopt acCD:gI:L:m:N:O:U:o:r:sSt:uw6 "$@"`
 case $? in 0);; *) rc=$?; exit;; esac
+CPPFLAGS=${CPPFLAGS:-'-I/usr/local/include'}
+CFLAGSF2C=${CFLAGSF2C:-'-I/usr/local/include'}
 OFILES=
 trapuv=
 strip=
@@ -356,8 +358,8 @@ done
 
 case $cOPT in 2)
 #	case $trapuv in 1) OFILES="$OFILES -lfpe";; esac
-#	$CC -Wl,-dont_warn_unused -o $OUTF -u MAIN__ $OFILES $LIBS
-	$CC -o $OUTF -u MAIN__  $OFILES $LIBS
+#	$CC -Wl,-dont_warn_unused -o $OUTF -u MAIN__ -L/usr/local/lib $OFILES $LIBS
+	$CC -o $OUTF -u MAIN__ -L/usr/local/lib $OFILES $LIBS
 	case $strip in 1) strip $OUTF;; esac
 	;; esac
 rc=$?

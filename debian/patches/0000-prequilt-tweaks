@@ -1,0 +1,964 @@
+diff --git a/f2c.1t b/f2c.1t
+index d73d334..4723784 100644
+--- a/f2c.1t
++++ b/f2c.1t
+@@ -19,7 +19,6 @@
+ .hy 14
+ ..
+ .TH F2C 1
+-.CT 1 prog_other
+ .SH NAME
+ f2c \- Convert Fortran 77 to C or C++
+ . \" f\^2c changed to f2c in the previous line for the benefit of
+@@ -58,24 +57,24 @@ or
+ .L .P
+ are taken to be prototype
+ files, as produced by option
+-.LR -P ,
++.LR \-P ,
+ and are read first.
+ .PP
+ The following options have the same meaning as in
+ .IR f\^77 (1).
+ .TP
+-.B -C
++.B \-C
+ Compile code to check that subscripts are within declared array bounds.
+ .TP
+-.B -I2
++.B \-I2
+ Render INTEGER and LOGICAL as short,
+ INTEGER\(**4 as long int.  Assume the default \fIlibF77\fR
+ and \fIlibI77\fR:  allow only INTEGER\(**4 (and no LOGICAL)
+ variables in INQUIREs.  Option
+-.L -I4
++.L \-I4
+ confirms the default rendering of INTEGER as long int.
+ .TP
+-.BI -I dir
++.BI \-I dir
+ Look for a non-absolute include file first in the directory of the
+ current input file, then in directories specified by \f(CW-I\fP
+ options (one directory per option).  Options
+@@ -83,34 +82,34 @@ options (one directory per option).  Options
+ have precedence, so, e.g., a directory named \f(CW2\fP
+ should be specified by \f(CW-I./2\fP .
+ .TP
+-.B -onetrip
++.B \-onetrip
+ Compile DO loops that are performed at least once if reached.
+ (Fortran 77 DO loops are not performed at all if the upper limit is smaller than the lower limit.)
+ .TP
+-.B -U
++.B \-U
+ Honor the case of variable and external names.  Fortran keywords must be in
+ .I
+ lower
+ case.
+ .TP
+-.B -u
++.B \-u
+ Make the default type of a variable `undefined' rather than using the default Fortran rules.
+ .TP
+-.B -w
++.B \-w
+ Suppress all warning messages, or, if the option is
+-.LR -w66 ,
++.LR \-w66 ,
+ just Fortran 66 compatibility warnings.
+ .PP
+ The following options are peculiar to
+ .IR f\^2c .
+ .TP
+-.B -A
++.B \-A
+ Produce
+ .SM ANSI
+ C (default, starting 20020621).
+ For old-style C, use option \f(CW-K\fP.
+ .TP
+-.B -a
++.B \-a
+ Make local variables automatic rather than static
+ unless they appear in a
+ .SM "DATA, EQUIVALENCE, NAMELIST,"
+@@ -118,26 +117,26 @@ or
+ .SM SAVE
+ statement.
+ .TP
+-.B -C++
++.B \-C++
+ Output C++ code.
+ .TP
+-.B -c
++.B \-c
+ Include original Fortran source as comments.
+ .TP
+-.B -cd
++.B \-cd
+ Do not recognize cdabs, cdcos, cdexp, cdlog, cdsin, and cdsqrt
+ as synonyms for the double complex intrinsics
+ zabs, zcos, zexp, zlog, zsin, and zsqrt, respectively,
+ nor dreal as a synonym for dble.
+ .TP
+-.BI -d dir
++.BI \-d dir
+ Write
+ .L .c
+ files in directory
+ .I dir
+ instead of the current directory.
+ .TP
+-.B -E
++.B \-E
+ Declare uninitialized
+ .SM COMMON
+ to be
+@@ -147,7 +146,7 @@ to be
+ as
+ .B extern).
+ .TP
+-.B -ec
++.B \-ec
+ Place uninitialized
+ .SM COMMON
+ blocks in separate files:
+@@ -161,36 +160,36 @@ into the output file, with comments that give an unbundling
+ .IR sed (1)
+ script.
+ .TP
+-.B -ext
++.B \-ext
+ Complain about
+ .IR f\^77 (1)
+ extensions.
+ .TP
+-.B -f
++.B \-f
+ Assume free-format input: accept text after column 72 and do not
+ pad fixed-format lines shorter than 72 characters with blanks.
+ .TP
+-.B -72
++.B \-72
+ Treat text appearing after column 72 as an error.
+ .TP
+-.B -g
++.B \-g
+ Include original Fortran line numbers in \f(CW#line\fR lines.
+ .TP
+-.B -h
++.B \-h
+ Emulate Fortran 66's treatment of Hollerith: try to align character strings on
+ word (or, if the option is
+-.LR -hd ,
++.LR \-hd ,
+ on double-word) boundaries.
+ .TP
+-.B -i2
++.B \-i2
+ Similar to
+-.BR -I2 ,
++.BR \-I2 ,
+ but assume a modified
+ .I libF77
+ and
+ .I libI77
+ (compiled with
+-.BR -Df\^2c_i2 ),
++.BR \-Df\^2c_i2 ),
+ so
+ .SM INTEGER
+ and
+@@ -199,18 +198,18 @@ variables may be assigned by
+ .SM INQUIRE
+ and array lengths are stored in short ints.
+ .TP
+-.B -i90
++.B \-i90
+ Do not recognize the Fortran 90 bit-manipulation intrinsics
+ btest, iand, ibclr, ibits, ibset, ieor, ior, ishft, and ishftc.
+ .TP
+-.B -kr
++.B \-kr
+ Use temporary values to enforce Fortran expression evaluation
+ where K&R (first edition) parenthesization rules allow rearrangement.
+ If the option is
+-.LR -krd ,
++.LR \-krd ,
+ use double precision temporaries even for single-precision operands.
+ .TP
+-.B -P
++.B \-P
+ Write a
+ .IB file .P
+ of ANSI (or C++) prototypes
+@@ -220,24 +219,24 @@ or
+ .IB file .F .
+ When reading Fortran from standard input, write prototypes
+ at the beginning of standard output.  Option
+-.B -Ps
++.B \-Ps
+ implies
+-.B -P
++.B \-P
+ and gives exit status 4 if rerunning
+ .I f\^2c
+ may change prototypes or declarations.
+ .TP
+-.B -p
++.B \-p
+ Supply preprocessor definitions to make common-block members
+ look like local variables.
+ .TP
+-.B -R
++.B \-R
+ Do not promote
+ .SM REAL
+ functions and operations to
+ .SM DOUBLE PRECISION.
+ Option
+-.L -!R
++.L \-!R
+ confirms the default, which imitates
+ .IR f\^77 .
+ .TP
+@@ -245,7 +244,7 @@ confirms the default, which imitates
+ Cast REAL arguments of intrinsic functions and values of REAL
+ functions (including intrinsics) to REAL.
+ .TP
+-.B -r8
++.B \-r8
+ Promote
+ .SM REAL
+ to
+@@ -253,16 +252,16 @@ to
+ to
+ .SM DOUBLE COMPLEX.
+ .TP
+-.B -s
++.B \-s
+ Preserve multidimensional subscripts.  Suppressed by option
+-.L -C
++.L \-C
+ \&.
+ .TP
+-.BI -T dir
++.BI \-T dir
+ Put temporary files in directory
+ .I dir.
+ .TP
+-.B -trapuv
++.B \-trapuv
+ Dynamically initialize local variables, except those appearing in
+ .SM SAVE
+ or
+@@ -271,42 +270,42 @@ statements, with values that may help find references to
+ uninitialized variables.  For example, with IEEE arithmetic,
+ initialize local floating-point variables to signaling NaNs.
+ .TP
+-.B -w8
++.B \-w8
+ Suppress warnings when
+ .SM COMMON
+ or
+ .SM EQUIVALENCE
+ forces odd-word alignment of doubles.
+ .TP
+-.BI -W n
++.BI \-W n
+ Assume
+ .I n
+ characters/word (default 4)
+ when initializing numeric variables with character data.
+ .TP
+-.B -z
++.B \-z
+ Do not implicitly recognize
+ .SM DOUBLE COMPLEX.
+ .TP
+-.B -!bs
++.B \-!bs
+ Do not recognize \fIb\fRack\fIs\fRlash escapes
+ (\e", \e', \e0, \e\e, \eb, \ef, \en, \er, \et, \ev) in character strings.
+ .TP
+-.B -!c
++.B \-!c
+ Inhibit C output, but produce
+ .B -P
+ output.
+ .TP
+-.B -!I
++.B i\-!I
+ Reject
+ .B include
+ statements.
+ .TP
+-.B -!i8
++.B \-!i8
+ Disallow
+ .SM INTEGER*8 ,
+ or, if the option is
+-.LR -!i8const ,
++.LR \-!i8const ,
+ permit
+ .SM INTEGER*8
+ but do not promote integer
+@@ -314,17 +313,20 @@ constants to
+ .SM INTEGER*8
+ when they involve more than 32 bits.
+ .TP
+-.B -!it
++.B \-!it
+ Don't infer types of untyped
+ .SM EXTERNAL
+ procedures from use as parameters to previously defined or prototyped
+ procedures.
+ .TP
+-.B -!P
++.B \-!P
+ Do not attempt to infer
+ .SM ANSI
+ or C++
+ prototypes from usage.
++.TP 
++.B \-v, \-\-version
++Print the version number of f2c
+ .PP
+ The resulting C invokes the support routines of
+ .IR f\^77 ;
+@@ -353,14 +355,22 @@ output file
+ .F /usr/include/f2c.h
+ header file
+ .TP
+-.F /usr/lib/libF77.a
+-intrinsic function library
++.F /usr/lib/libf2c.a
++static link intrinsic and I/O library
++.TP
++.F /usr/lib/libf2c_i2.a
++static link intrinsic and I/O library for use with 
++files translated using the
++\-i2 f\^2c option
++.TP
++.F /usr/lib/libf2c.so
++shared object intrinsic and I/O library
+ .TP
+-.F /usr/lib/libI77.a
+-Fortran I/O library
++.F /usr/lib/libf2c_i2.so
++shared object intrinsic and I/O library for use with
++files translated using the 
++\-i2 f\^2c option
+ .TP
+-.F /lib/libc.a
+-C library, see section 3
+ .SH "SEE ALSO"
+ S. I. Feldman and
+ P. J. Weinberger,
+diff --git a/fc b/fc
+index 1f71e59..46d13c7 100644
+--- a/fc
++++ b/fc
+@@ -11,7 +11,7 @@
+ #	may be useful as way to pass system-specific stuff to the C compiler.
+ #	The script below simply appends to the initial CFLAGS value.
+ 
+-PATH=/usr/local/bin:/bin:/usr/bin
++PATH=/bin:/usr/bin
+ 
+ # f77-style shell script to compile and load fortran, C, and assembly codes
+ 
+@@ -80,12 +80,13 @@ PATH=/usr/local/bin:/bin:/usr/bin
+ 
+ #		-U def		passed to C compiler (for .c files)
+ #				or to cpp (for .F files) to remove def
+-
+ #		-v		show current f2c version
+ #		--version	same as -v
+ 
+-s=/tmp/stderr_$$
+-t=/tmp/f77_$$.o
++s=`tempfile --prefix=stderr` || { echo "$0: Cannot create temporary file" ; exit 1; }
++t=`tempfile --suffix=.o --prefix=f77` || { echo "$0: Cannot create temporary file" ; exit 1; }
++trap "rm -f $s $t; exit \$rc" 0
++
+ ### On some systems (e.g., IRIX), -common prevents complaints
+ ### about multiple definitions of COMMON blocks.
+ #CC=${CC_f2c:-'cc -common'}
+@@ -94,7 +95,7 @@ EFL=${EFL:-efl}
+ EFLFLAGS=${EFLFLAGS:-'system=portable deltastno=10'}
+ RATFOR=${RATFOR:-ratfor}
+ RFLAGS=${RFLAGS:-'-6&'}
+-F2C=${F2C:-/usr/local/bin/f2c}
++F2C=${F2C:-/usr/bin/f2c}
+ show_fc_help=0
+ case $1 in
+ 	--help)		show_fc_help=1;;
+@@ -116,14 +117,11 @@ case $show_fc_help in
+ F2CFLAGS=${F2CFLAGS:='-ARw8 -Nn802 -Nq300 -Nx400'}
+ CPP=${CPP:-/lib/cpp}
+ rc=0
+-trap "rm -f $s $t; exit \$rc" 0
+ OUTF=a.out
+ OUTO=
+ cOPT=1
+ set -- `getopt acCD:gI:L:m:N:O:U:o:r:sSt:uw6 "$@"`
+ case $? in 0);; *) rc=$?; exit;; esac
+-CPPFLAGS=${CPPFLAGS:-'-I/usr/local/include'}
+-CFLAGSF2C=${CFLAGSF2C:-'-I/usr/local/include'}
+ OFILES=
+ trapuv=
+ strip=
+@@ -358,8 +356,8 @@ done
+ 
+ case $cOPT in 2)
+ #	case $trapuv in 1) OFILES="$OFILES -lfpe";; esac
+-#	$CC -Wl,-dont_warn_unused -o $OUTF -u MAIN__ -L/usr/local/lib $OFILES $LIBS
+-	$CC -o $OUTF -u MAIN__ -L/usr/local/lib $OFILES $LIBS
++#	$CC -Wl,-dont_warn_unused -o $OUTF -u MAIN__ $OFILES $LIBS
++	$CC -o $OUTF -u MAIN__  $OFILES $LIBS
+ 	case $strip in 1) strip $OUTF;; esac
+ 	;; esac
+ rc=$?
+diff --git a/fc.1 b/fc.1
+new file mode 100644
+index 0000000..1bb23db
+--- /dev/null
++++ b/fc.1
+@@ -0,0 +1,134 @@
++'\" t
++.\" Redistribution and use in source and binary forms of parts of or the
++.\" whole original or derived work are permitted provided that the
++.\" original work is properly attributed to the author. The name of the
++.\" author may not be used to endorse or promote products derived from
++.\" this software without specific prior written permission. This work
++.\" is provided "as is" and without any express or implied warranties.
++.\"
++.\" Original version of this manpage: 
++.\" Peter Maydell (pmaydell@chiark.greenend.org.uk), 03/1998
++.\" Updated by Alan Bain (afrb2@cam.ac.uk), 15/05/1999
++.\" added reference to -o in command specification
++.\" and to -U in options
++.\" Updated by Alan Bain (afrb2@debian.org), 28/4/2008
++.\" mention -v and --version options, change hyphens to minus signs
++.\"
++.TH FC 1 "May 1999"
++.SH NAME
++fc \- frontend script to the f2c fortran compiler
++.SH SYNOPSIS
++.B /usr/bin/fc 
++.RB [ \-o
++.IR objfile ]
++.RB [ \-c ]
++.RB [ \-S ]
++.RB [ \-C ]
++.RB [ \-u ]
++.RB [ \-w ]
++.RB [ \-w66 ]
++.RB [ \-D
++.IR switch ]
++.RB [ \-I
++.IR includepath ]
++.RB [ \-Ntnnn ]
++.RB [ \-P ]
++.I files
++.RB [ \-l
++.IR library ]
++.SH DESCRIPTION
++.LP
++.B fc 
++is a script intended to be used as a front end to the 
++.B f2c
++FORTRAN-to-C translator. It is supposed to make the whole 
++.B f2c 
++and C compiler setup look like a real Fortran compiler.
++
++File arguments with a 
++.B .f 
++suffix are compiled as Fortran source.
++Files with a 
++.B .F 
++suffix are passed through the C preprocessor
++.B cpp(1)
++first. Files with 
++.B .c 
++(C source) or 
++.B .s 
++(assembly source)
++suffixes are passed to the C compiler directly.
++Files with a 
++.B .e 
++suffix are treated as efl source files, and
++files with a
++.B .r
++suffix are treated as RATFOR source files.
++
++.SH OPTIONS
++.TP 8
++.I \-o objfile
++Produce an output executable named
++.I objfile
++rather than using the default name a.out.
++.TP 8
++.I \-c
++Do not call the linker; instead, leave relocatable object files
++as *.o.
++.TP 8
++.I \-S
++Produce assembly output as file.s
++.TP 8
++.I \-C
++Compile in extra code to check that array subscripts are in bounds.
++.TP 8
++.I \-l library
++Libraries specified with this option are passed to the linker.
++.TP 8
++.I \-U def
++Definitions specified with this option are passed to C compiler (for .c files)
++or to cpp (for .F files) to remove definition.
++.TP 8
++.I \-u
++Complain about undeclared variables.
++.TP 8
++.I \-v, \-\-version
++Print version of f2c in use
++.TP 8
++.I \-w
++Omit all warning messages.
++.TP 8
++.I \-w66
++Omit Fortran 66 (Fortran IV) compatibility warning messages.
++.TP 8
++.I \-D switch
++The given switch is passed to the C compiler (for .c files), to cpp 
++(for .F files) and to f2c.
++.TP 8
++.I -I includepath
++Passed to the C compiler (for .c files), to cpp (for .F files)
++and to f2c.
++.TP 8
++.I -Ntnnn
++Allow nnn entries in table t.
++.TP 8
++.I -P
++Emit .P files.
++.SH BUGS
++.B fc
++isn't really very good -- try fort77 (1), which does a better job.
++.br
++This manual page isn't really very good either...
++.SH AUTHOR
++S. Feldman, D. Gay, M. Maimone, N, Schryer are all mentioned
++in the paper on the conversion of Fortran to C.
++.br
++Peter Maydell (pmaydell@chiark.greenend.org.uk) wrote this manual page,
++and Alan Bain (alanb@chiark.greenend.org.uk) made some minor
++modifications.
++.SH SEE ALSO
++.BR f2c (1),
++.BR fort77 (1),
++.BR cc (1),
++.BR cpp (1),
++.BR ratfor (1)
+diff --git a/src/f2c.1t b/src/f2c.1t
+index d73d334..4723784 100644
+--- a/src/f2c.1t
++++ b/src/f2c.1t
+@@ -19,7 +19,6 @@
+ .hy 14
+ ..
+ .TH F2C 1
+-.CT 1 prog_other
+ .SH NAME
+ f2c \- Convert Fortran 77 to C or C++
+ . \" f\^2c changed to f2c in the previous line for the benefit of
+@@ -58,24 +57,24 @@ or
+ .L .P
+ are taken to be prototype
+ files, as produced by option
+-.LR -P ,
++.LR \-P ,
+ and are read first.
+ .PP
+ The following options have the same meaning as in
+ .IR f\^77 (1).
+ .TP
+-.B -C
++.B \-C
+ Compile code to check that subscripts are within declared array bounds.
+ .TP
+-.B -I2
++.B \-I2
+ Render INTEGER and LOGICAL as short,
+ INTEGER\(**4 as long int.  Assume the default \fIlibF77\fR
+ and \fIlibI77\fR:  allow only INTEGER\(**4 (and no LOGICAL)
+ variables in INQUIREs.  Option
+-.L -I4
++.L \-I4
+ confirms the default rendering of INTEGER as long int.
+ .TP
+-.BI -I dir
++.BI \-I dir
+ Look for a non-absolute include file first in the directory of the
+ current input file, then in directories specified by \f(CW-I\fP
+ options (one directory per option).  Options
+@@ -83,34 +82,34 @@ options (one directory per option).  Options
+ have precedence, so, e.g., a directory named \f(CW2\fP
+ should be specified by \f(CW-I./2\fP .
+ .TP
+-.B -onetrip
++.B \-onetrip
+ Compile DO loops that are performed at least once if reached.
+ (Fortran 77 DO loops are not performed at all if the upper limit is smaller than the lower limit.)
+ .TP
+-.B -U
++.B \-U
+ Honor the case of variable and external names.  Fortran keywords must be in
+ .I
+ lower
+ case.
+ .TP
+-.B -u
++.B \-u
+ Make the default type of a variable `undefined' rather than using the default Fortran rules.
+ .TP
+-.B -w
++.B \-w
+ Suppress all warning messages, or, if the option is
+-.LR -w66 ,
++.LR \-w66 ,
+ just Fortran 66 compatibility warnings.
+ .PP
+ The following options are peculiar to
+ .IR f\^2c .
+ .TP
+-.B -A
++.B \-A
+ Produce
+ .SM ANSI
+ C (default, starting 20020621).
+ For old-style C, use option \f(CW-K\fP.
+ .TP
+-.B -a
++.B \-a
+ Make local variables automatic rather than static
+ unless they appear in a
+ .SM "DATA, EQUIVALENCE, NAMELIST,"
+@@ -118,26 +117,26 @@ or
+ .SM SAVE
+ statement.
+ .TP
+-.B -C++
++.B \-C++
+ Output C++ code.
+ .TP
+-.B -c
++.B \-c
+ Include original Fortran source as comments.
+ .TP
+-.B -cd
++.B \-cd
+ Do not recognize cdabs, cdcos, cdexp, cdlog, cdsin, and cdsqrt
+ as synonyms for the double complex intrinsics
+ zabs, zcos, zexp, zlog, zsin, and zsqrt, respectively,
+ nor dreal as a synonym for dble.
+ .TP
+-.BI -d dir
++.BI \-d dir
+ Write
+ .L .c
+ files in directory
+ .I dir
+ instead of the current directory.
+ .TP
+-.B -E
++.B \-E
+ Declare uninitialized
+ .SM COMMON
+ to be
+@@ -147,7 +146,7 @@ to be
+ as
+ .B extern).
+ .TP
+-.B -ec
++.B \-ec
+ Place uninitialized
+ .SM COMMON
+ blocks in separate files:
+@@ -161,36 +160,36 @@ into the output file, with comments that give an unbundling
+ .IR sed (1)
+ script.
+ .TP
+-.B -ext
++.B \-ext
+ Complain about
+ .IR f\^77 (1)
+ extensions.
+ .TP
+-.B -f
++.B \-f
+ Assume free-format input: accept text after column 72 and do not
+ pad fixed-format lines shorter than 72 characters with blanks.
+ .TP
+-.B -72
++.B \-72
+ Treat text appearing after column 72 as an error.
+ .TP
+-.B -g
++.B \-g
+ Include original Fortran line numbers in \f(CW#line\fR lines.
+ .TP
+-.B -h
++.B \-h
+ Emulate Fortran 66's treatment of Hollerith: try to align character strings on
+ word (or, if the option is
+-.LR -hd ,
++.LR \-hd ,
+ on double-word) boundaries.
+ .TP
+-.B -i2
++.B \-i2
+ Similar to
+-.BR -I2 ,
++.BR \-I2 ,
+ but assume a modified
+ .I libF77
+ and
+ .I libI77
+ (compiled with
+-.BR -Df\^2c_i2 ),
++.BR \-Df\^2c_i2 ),
+ so
+ .SM INTEGER
+ and
+@@ -199,18 +198,18 @@ variables may be assigned by
+ .SM INQUIRE
+ and array lengths are stored in short ints.
+ .TP
+-.B -i90
++.B \-i90
+ Do not recognize the Fortran 90 bit-manipulation intrinsics
+ btest, iand, ibclr, ibits, ibset, ieor, ior, ishft, and ishftc.
+ .TP
+-.B -kr
++.B \-kr
+ Use temporary values to enforce Fortran expression evaluation
+ where K&R (first edition) parenthesization rules allow rearrangement.
+ If the option is
+-.LR -krd ,
++.LR \-krd ,
+ use double precision temporaries even for single-precision operands.
+ .TP
+-.B -P
++.B \-P
+ Write a
+ .IB file .P
+ of ANSI (or C++) prototypes
+@@ -220,24 +219,24 @@ or
+ .IB file .F .
+ When reading Fortran from standard input, write prototypes
+ at the beginning of standard output.  Option
+-.B -Ps
++.B \-Ps
+ implies
+-.B -P
++.B \-P
+ and gives exit status 4 if rerunning
+ .I f\^2c
+ may change prototypes or declarations.
+ .TP
+-.B -p
++.B \-p
+ Supply preprocessor definitions to make common-block members
+ look like local variables.
+ .TP
+-.B -R
++.B \-R
+ Do not promote
+ .SM REAL
+ functions and operations to
+ .SM DOUBLE PRECISION.
+ Option
+-.L -!R
++.L \-!R
+ confirms the default, which imitates
+ .IR f\^77 .
+ .TP
+@@ -245,7 +244,7 @@ confirms the default, which imitates
+ Cast REAL arguments of intrinsic functions and values of REAL
+ functions (including intrinsics) to REAL.
+ .TP
+-.B -r8
++.B \-r8
+ Promote
+ .SM REAL
+ to
+@@ -253,16 +252,16 @@ to
+ to
+ .SM DOUBLE COMPLEX.
+ .TP
+-.B -s
++.B \-s
+ Preserve multidimensional subscripts.  Suppressed by option
+-.L -C
++.L \-C
+ \&.
+ .TP
+-.BI -T dir
++.BI \-T dir
+ Put temporary files in directory
+ .I dir.
+ .TP
+-.B -trapuv
++.B \-trapuv
+ Dynamically initialize local variables, except those appearing in
+ .SM SAVE
+ or
+@@ -271,42 +270,42 @@ statements, with values that may help find references to
+ uninitialized variables.  For example, with IEEE arithmetic,
+ initialize local floating-point variables to signaling NaNs.
+ .TP
+-.B -w8
++.B \-w8
+ Suppress warnings when
+ .SM COMMON
+ or
+ .SM EQUIVALENCE
+ forces odd-word alignment of doubles.
+ .TP
+-.BI -W n
++.BI \-W n
+ Assume
+ .I n
+ characters/word (default 4)
+ when initializing numeric variables with character data.
+ .TP
+-.B -z
++.B \-z
+ Do not implicitly recognize
+ .SM DOUBLE COMPLEX.
+ .TP
+-.B -!bs
++.B \-!bs
+ Do not recognize \fIb\fRack\fIs\fRlash escapes
+ (\e", \e', \e0, \e\e, \eb, \ef, \en, \er, \et, \ev) in character strings.
+ .TP
+-.B -!c
++.B \-!c
+ Inhibit C output, but produce
+ .B -P
+ output.
+ .TP
+-.B -!I
++.B i\-!I
+ Reject
+ .B include
+ statements.
+ .TP
+-.B -!i8
++.B \-!i8
+ Disallow
+ .SM INTEGER*8 ,
+ or, if the option is
+-.LR -!i8const ,
++.LR \-!i8const ,
+ permit
+ .SM INTEGER*8
+ but do not promote integer
+@@ -314,17 +313,20 @@ constants to
+ .SM INTEGER*8
+ when they involve more than 32 bits.
+ .TP
+-.B -!it
++.B \-!it
+ Don't infer types of untyped
+ .SM EXTERNAL
+ procedures from use as parameters to previously defined or prototyped
+ procedures.
+ .TP
+-.B -!P
++.B \-!P
+ Do not attempt to infer
+ .SM ANSI
+ or C++
+ prototypes from usage.
++.TP 
++.B \-v, \-\-version
++Print the version number of f2c
+ .PP
+ The resulting C invokes the support routines of
+ .IR f\^77 ;
+@@ -353,14 +355,22 @@ output file
+ .F /usr/include/f2c.h
+ header file
+ .TP
+-.F /usr/lib/libF77.a
+-intrinsic function library
++.F /usr/lib/libf2c.a
++static link intrinsic and I/O library
++.TP
++.F /usr/lib/libf2c_i2.a
++static link intrinsic and I/O library for use with 
++files translated using the
++\-i2 f\^2c option
++.TP
++.F /usr/lib/libf2c.so
++shared object intrinsic and I/O library
+ .TP
+-.F /usr/lib/libI77.a
+-Fortran I/O library
++.F /usr/lib/libf2c_i2.so
++shared object intrinsic and I/O library for use with
++files translated using the 
++\-i2 f\^2c option
+ .TP
+-.F /lib/libc.a
+-C library, see section 3
+ .SH "SEE ALSO"
+ S. I. Feldman and
+ P. J. Weinberger,
+diff --git a/src/makefile.u b/src/makefile.u
+index e9f9c5e..0f12022 100644
+--- a/src/makefile.u
++++ b/src/makefile.u
+@@ -24,7 +24,7 @@ MALLOC =
+ 
+ OBJECTS = $(OBJECTSd) $(MALLOC)
+ 
+-all: xsum.out f2c
++all: f2c
+ 
+ f2c: $(OBJECTS)
+ 	$(CC) $(LDFLAGS) $(OBJECTS) -o f2c
+diff --git a/src/sysdep.c b/src/sysdep.c
+index ab5b04e..3d7478d 100644
+--- a/src/sysdep.c
++++ b/src/sysdep.c
+@@ -22,6 +22,7 @@ use or performance of this software.
+ ****************************************************************/
+ #include "defs.h"
+ #include "usignal.h"
++#include <stdlib.h>
+ 
+ char binread[] = "rb", textread[] = "r";
+ char binwrite[] = "wb", textwrite[] = "w";
+@@ -94,7 +95,9 @@ Un_link_all(int cdelete)
+ 	if (!debugflag) {
+ 		unlink(c_functions);
+ 		unlink(initfname);
++                unlink(initbname);
+ 		unlink(p1_file);
++                unlink(p1_bakfile);
+ 		unlink(sortfname);
+ 		unlink(blkdfname);
+ 		if (cdelete && coutput)
+@@ -233,6 +236,9 @@ set_tmp_names(Void)
+ #endif /*NO_TEMPDIR*/
+ 		}
+ 	alloc_names();
++        /* What follows is safe if tmpdir is really
++        a private diectory created by us -- otherwise
++        the file could be a sym link somewhere else....*/
+ 	sprintf(c_functions, "%s/f2c%ld_func", tmpdir, pid);
+ 	sprintf(initfname, "%s/f2c%ld_rd", tmpdir, pid);
+ 	sprintf(blkdfname, "%s/f2c%ld_blkd", tmpdir, pid);
