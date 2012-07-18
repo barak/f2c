@@ -1,6 +1,7 @@
-0000-prequilt-tweaks.patch
 0001-make-tweaks.patch
 0002-prototype-rmdir.patch
 0003-struct-init-braces.patch
-0004-man-dash-hyphen-slash.patch
-0005-distclean-is-very-clean.patch
+0004-fc-script-path-and-tmpfile.patch
+0005-sysdep-tmpfiles.patch
+0006-man-dash-hyphen-slash.patch
+0007-fc-man-page.patch

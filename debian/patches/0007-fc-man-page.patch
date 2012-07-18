@@ -1,0 +1,149 @@
+From: "Barak A. Pearlmutter" <barak+git@cs.nuim.ie>
+Date: Wed, 18 Jul 2012 11:24:17 +0200
+Subject: fc man page
+
+---
+ fc.1 |  134 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 134 insertions(+)
+ create mode 100644 fc.1
+
+diff --git a/fc.1 b/fc.1
+new file mode 100644
+index 0000000..52a0971
+--- /dev/null
++++ b/fc.1
+@@ -0,0 +1,134 @@
++'\" t
++.\" Redistribution and use in source and binary forms of parts of or the
++.\" whole original or derived work are permitted provided that the
++.\" original work is properly attributed to the author. The name of the
++.\" author may not be used to endorse or promote products derived from
++.\" this software without specific prior written permission. This work
++.\" is provided "as is" and without any express or implied warranties.
++.\"
++.\" Original version of this manpage: 
++.\" Peter Maydell (pmaydell@chiark.greenend.org.uk), 03/1998
++.\" Updated by Alan Bain (afrb2@cam.ac.uk), 15/05/1999
++.\" added reference to -o in command specification
++.\" and to -U in options
++.\" Updated by Alan Bain (afrb2@debian.org), 28/4/2008
++.\" mention -v and --version options, change hyphens to minus signs
++.\"
++.TH FC 1 "May 1999"
++.SH NAME
++fc \- frontend script to the f2c fortran compiler
++.SH SYNOPSIS
++.B /usr/bin/fc 
++.RB [ \-o
++.IR objfile ]
++.RB [ \-c ]
++.RB [ \-S ]
++.RB [ \-C ]
++.RB [ \-u ]
++.RB [ \-w ]
++.RB [ \-w66 ]
++.RB [ \-D
++.IR switch ]
++.RB [ \-I
++.IR includepath ]
++.RB [ \-Ntnnn ]
++.RB [ \-P ]
++.I files
++.RB [ \-l
++.IR library ]
++.SH DESCRIPTION
++.LP
++.B fc 
++is a script intended to be used as a front end to the 
++.B f2c
++FORTRAN-to-C translator. It is supposed to make the whole 
++.B f2c 
++and C compiler setup look like a real Fortran compiler.
++
++File arguments with a 
++.B .f 
++suffix are compiled as Fortran source.
++Files with a 
++.B .F 
++suffix are passed through the C preprocessor
++.B cpp(1)
++first. Files with 
++.B .c 
++(C source) or 
++.B .s 
++(assembly source)
++suffixes are passed to the C compiler directly.
++Files with a 
++.B .e 
++suffix are treated as efl source files, and
++files with a
++.B .r
++suffix are treated as RATFOR source files.
++
++.SH OPTIONS
++.TP 8
++.I \-o objfile
++Produce an output executable named
++.I objfile
++rather than using the default name a.out.
++.TP 8
++.I \-c
++Do not call the linker; instead, leave relocatable object files
++as *.o.
++.TP 8
++.I \-S
++Produce assembly output as file.s
++.TP 8
++.I \-C
++Compile in extra code to check that array subscripts are in bounds.
++.TP 8
++.I \-l library
++Libraries specified with this option are passed to the linker.
++.TP 8
++.I \-U def
++Definitions specified with this option are passed to C compiler (for .c files)
++or to cpp (for .F files) to remove definition.
++.TP 8
++.I \-u
++Complain about undeclared variables.
++.TP 8
++.I \-v, \-\-version
++Print version of f2c in use
++.TP 8
++.I \-w
++Omit all warning messages.
++.TP 8
++.I \-w66
++Omit Fortran 66 (Fortran IV) compatibility warning messages.
++.TP 8
++.I \-D switch
++The given switch is passed to the C compiler (for .c files), to cpp 
++(for .F files) and to f2c.
++.TP 8
++.I \-I includepath
++Passed to the C compiler (for .c files), to cpp (for .F files)
++and to f2c.
++.TP 8
++.I \-Ntnnn
++Allow nnn entries in table t.
++.TP 8
++.I \-P
++Emit .P files.
++.SH BUGS
++.B fc
++isn't really very good -- try fort77 (1), which does a better job.
++.br
++This manual page isn't really very good either...
++.SH AUTHOR
++S. Feldman, D. Gay, M. Maimone, N, Schryer are all mentioned
++in the paper on the conversion of Fortran to C.
++.br
++Peter Maydell (pmaydell@chiark.greenend.org.uk) wrote this manual page,
++and Alan Bain (alanb@chiark.greenend.org.uk) made some minor
++modifications.
++.SH SEE ALSO
++.BR f2c (1),
++.BR fort77 (1),
++.BR cc (1),
++.BR cpp (1),
++.BR ratfor (1)
