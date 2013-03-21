@@ -6,4 +6,11 @@
 # which can be directly accessed as
 # http://www.netlib.org/f2c/src/version.c
 
+## This runs the check for the current version.
+# eval $(tail -4 debian/watch | sed 's/^#//' | sed 's/\\$//')
 
+## This checks for the current version.
+# wget --quiet -O- http://www.netlib.org/f2c/src/version.c \
+#  | egrep F2C_version \
+#  | sed 's/^[^"]*"//' \
+#  | sed 's/".*$//'
