@@ -1,9 +1,8 @@
 Source: f2c
 Section: devel
 Priority: optional
-Maintainer: Alan Bain <afrb2@debian.org>
-Uploaders: Barak A. Pearlmutter <bap@debian.org>
-Standards-Version: 3.9.3
+Maintainer: Barak A. Pearlmutter <bap@debian.org>
+Standards-Version: 3.9.6
 Build-Depends: debhelper (>= 9)
 Homepage: http://www.netlib.org/f2c/
 Vcs-Git: git://git.debian.org/git/collab-maint/f2c.git
