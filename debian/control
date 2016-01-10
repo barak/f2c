@@ -5,8 +5,8 @@ Maintainer: Barak A. Pearlmutter <bap@debian.org>
 Standards-Version: 3.9.6
 Build-Depends: debhelper (>= 9)
 Homepage: http://www.netlib.org/f2c/
-Vcs-Git: git://git.debian.org/git/collab-maint/f2c.git
-Vcs-Browser: http://git.debian.org/?p=collab-maint/f2c.git
+Vcs-Git: git://anonscm.debian.org/collab-maint/f2c.git
+Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/f2c.git
 
 Package: f2c
 Architecture: any
