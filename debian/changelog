@@ -1,3 +1,12 @@
+f2c (20100827-2) unstable; urgency=medium
+
+  * take over maintenance (closes: #810233)
+  * modernize debian/copyright format
+  * bump policy version
+  * canonicalize packaging repo url
+
+ -- Barak A. Pearlmutter <bap@debian.org>  Sun, 10 Jan 2016 16:35:37 +0000
+
 f2c (20100827-1) unstable; urgency=low
 
   * new upstream version
