@@ -1,11 +1,11 @@
-f2c (20100827-4) UNRELEASED; urgency=medium
+f2c (20100827-4) unstable; urgency=medium
 
   * Team upload.
   * Moved to salsa.debian.org
   * cme fix dpkg-control
   * debhelper 11
 
- -- Andreas Tille <tille@debian.org>  Thu, 22 Feb 2018 13:00:33 +0100
+ -- Andreas Tille <tille@debian.org>  Thu, 22 Feb 2018 13:09:24 +0100
 
 f2c (20100827-3) unstable; urgency=medium
 
