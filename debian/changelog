@@ -61,13 +61,13 @@ f2c (20061008-3) unstable; urgency=low
 
 f2c (20061008-2) unstable; urgency=low
   * fixes for IA64 architecture, segmentation violation on invocation
-  
+
  -- Alan Bain <afrb2@debian.org>  Sat, 10 May 2008 10:55:03 +0100
 
 f2c (20061008-1) unstable; urgency=low
   * new upstream source (closes: bug#401094)
   * correction to handling of integer*8 subscripts
-  
+
  -- Alan Bain <afrb2@debian.org>  Sun, 27 Apr 2008 19:40:03 +0100
 
 f2c (20050501-3) unstable; urgency=low
@@ -100,7 +100,7 @@ f2c (20020621-4) unstable; urgency=low
   * NMU fixed bugs (closes: bug#292792, bug# 305971)
 
  -- Alan Bain <afrb2@debian.org>  Thu, 18 Aug 2005 19:27:10 +0100
- 
+
 f2c (20020621-3.4) unstable; urgency=high
 
   * Re-NMU for same issue, yay
@@ -169,7 +169,7 @@ f2c (20010618-2) unstable; urgency=low
   * corrected upload to fix problem with original
  -- Alan Bain <afrb2@debian.org>  Tue, 3 July 2001 15:00:00 +0100
 f2c (20010618-1) unstable; urgency=low
-  * New upstream release from netlib (www.netlib.org) 
+  * New upstream release from netlib (www.netlib.org)
   * min,max of three or more arguments now work in parameter statements
   * Accept write , format (as per Fortran IV)
   * more accurate algorithm used for double precision complex log function
@@ -204,13 +204,13 @@ f2c (19990503-1) unstable; urgency=low
   * postinst now calls ldconfig
  -- Alan Bain <afrb2@cam.ac.uk>  Sat, 15 May 1999 10:00:00 +0100
 f2c (19990210-1) unstable; urgency=low
-  * Updated to new netlib source 
+  * Updated to new netlib source
   * previous fixes to gram.c generation from yacc grammar
     have now been incorporated in upstream source
   * missing TAB in debian/rules added
  -- Alan Bain <afrb2@cam.ac.uk>  Tue, 24 Feb 1999 23:30:00 +0000
 f2c (19971204-5) frozen; urgency=low
-  * Removed unwanted file debian/files which got left in 
+  * Removed unwanted file debian/files which got left in
     by mistake in the previous build.
   * ammended clean target to remove these unwanted files.
  -- Alan Bain <afrb2@cam.ac.uk>  Sat, 16 May 1998 23:30:00 +0100
@@ -220,10 +220,10 @@ f2c (19971204-4) frozen; urgency=low
     (really closing bug #19790)
  -- Alan Bain <afrb2@cam.ac.uk>  Mon, 11 May 1998 21:30:00 +0100
 f2c (19971204-3) unstable; urgency=low
-  
+
   * Fixed fc script so as not to use /tmp in insecure fashion
     closing bug #19790 -- use of /tmp/*$$
-  * Added man page for fc (thanks to Peter Maydell) 
+  * Added man page for fc (thanks to Peter Maydell)
     closing bug reported by lintian
   * Changed debian/rules order for gencontrol and shlibdeps
     closing bug #17429
@@ -232,7 +232,7 @@ f2c (19971204-3) unstable; urgency=low
  -- Alan Bain <afrb2@cam.ac.uk>  Thu, 7 May 1998 22:00:00 +0100
 f2c (19971204-2) unstable; urgency=low
 
-  * Fixed shlibs problems by adding shlibs file and removing 
+  * Fixed shlibs problems by adding shlibs file and removing
     references to ldconfig in scripts.
   * Updated to latest standards
 
@@ -240,7 +240,7 @@ f2c (19971204-2) unstable; urgency=low
 f2c (19971204-1) unstable; urgency=low
 
   * Latest netlib sources
-  
+
  -- Alan Bain <afrb2@cam.ac.uk>  Fri, 16 Jan 1998 18:00:00 +0000
 
 f2c (970219) unstable; urgency=low
@@ -262,10 +262,10 @@ f2c (961209) unstable; urgency=low
 Thu Jul 25 10:43:03 1996  Dirk Eddelbuettel  <edd@miles.econ.queensu.ca>
 
 	* interim release coordinated with the new maintainer, Alan Bain,
-	  based on the netlib sources as of July 25, 1996 which contain 
+	  based on the netlib sources as of July 25, 1996 which contain
 	  the f2c release of July 17, 1996
-	
-	* debian.rules: added arch=$(shell dpkg --print-architecture)    
+
+	* debian.rules: added arch=$(shell dpkg --print-architecture)
 
 	* debian.rules: removed -m486 from GCCOPTS, changed to -O2
 
@@ -278,9 +278,9 @@ Thu Jul 25 10:43:03 1996  Dirk Eddelbuettel  <edd@miles.econ.queensu.ca>
 	* debian.rules: install documentation: f2c.ps, changes, readme
 
 	* debian.rules: install fc script as /usr/bin/fc
-	
+
 	* debian.rules, debian.control: changed to new coding standard
-	
+
 	* source package contains exacr copy of ftp://netlib.att.com/f2c/
 	  (but the msdos and .cap directories)
 
