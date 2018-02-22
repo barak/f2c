@@ -1,3 +1,9 @@
+f2c (20160102-1) unstable; urgency=medium
+
+  * New upstream version (closes: #891112)
+
+ -- Barak A. Pearlmutter <bap@debian.org>  Thu, 22 Feb 2018 13:31:26 +0000
+
 f2c (20100827-4) unstable; urgency=medium
 
   * Team upload.
