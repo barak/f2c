@@ -30,7 +30,7 @@ machdefs.h	4950e5b	659
 main.c	e2fad403	20921
 makefile.u	e0dd1cab	3710
 makefile.vc	eb8aae7c	2685
-malloc.c	40d2ad0	3975
+malloc.c	3505600	4020
 mem.c	e54b227d	5437
 memset.c	12a1e1aa	2121
 misc.c	8d99c9	22945
@@ -55,5 +55,5 @@ sysdeptest.c	c92b2d4	408
 tokens	188b7c5d	733
 usignal.h	1c4ce909	124
 vax.c	8b21b83	12436
-version.c	f48eeae3	107
+version.c	f7420f4	107
 xsum.c	e05654a7	6653

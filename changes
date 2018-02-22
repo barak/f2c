@@ -3478,5 +3478,16 @@ Fri Sep  3 16:03:24 MDT 2010
 Mon Aug  1 13:46:40 MDT 2011
   README, README in libf2c.zip: update some netlib pointers.
 
+Thu Sep 26 16:42:35 MDT 2013
+  arithchk.c and sysdep1.h0 updated.  The former has a new
+"#ifdef NO_SSZIZE_T" section for use elsewhere.  The latter has a
+change supplied by Gregor Richards for use with some libc variants.
+
+Fri Jul 11 16:29:03 MDT 2014
+  comptry.bat in libf2c.zip updated.
+
 NOTE:  the old libf77 and libi77 bundles are no longer being updated.
 Use libf2c.zip instead.
+
+20160102
+  malloc.c:  use memmove rather than memcpy in realloc().

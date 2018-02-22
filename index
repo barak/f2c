@@ -21,12 +21,6 @@ for	Source for "getopt" command used by fc (for systems lacking getopt)
 
 file	f2c/index
 
-file	f2c/libf77
-lang	C (bundle of source)
-
-file	f2c/libi77
-lang	C (bundle of source)
-
 file	f2c/libf2c.zip
 for	combined libf77, libi77, with several makefile variants
 size	102 KB
