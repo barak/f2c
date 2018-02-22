@@ -2,6 +2,7 @@ f2c (20100827-4) UNRELEASED; urgency=medium
 
   * Team upload.
   * Moved to salsa.debian.org
+  * cme fix dpkg-control
 
  -- Andreas Tille <tille@debian.org>  Thu, 22 Feb 2018 13:00:33 +0100
 
