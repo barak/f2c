@@ -1,0 +1,28 @@
+f2c
+---
+
+The upstream sources are not in a nice tarball, and require some
+manual processing.
+
+To check for the latest upstream version:
+
+  $ eval $(tail -4 debian/watch | sed 's/^#//' | sed 's/\\$//')
+
+To get a new version, downloaded manually:
+
+  $ wget --mirror --no-parent http://www.netlib.org/f2c
+
+Then checkout the upstream branch, delete everything, move the new
+stuff into place, manually delete any extraneous files, e.g.:
+
+  msdos/
+  mswin/
+  libf2c.zip
+  src.tgz
+  src/index.html
+  src/notice    # identical to src/Notice
+  src/readme    # identical to src/README
+
+commit, and tag.  To generate *.orig.tar.gz, see git-deborig(1).
+
+ -- Barak A. Pearlmutter <bap@debian.org>, Thu, 22 Feb 2018 16:38:36 +0000
