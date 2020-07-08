@@ -3491,3 +3491,24 @@ Use libf2c.zip instead.
 
 20160102
   malloc.c:  use memmove rather than memcpy in realloc().
+
+20181026
+  Fix an allocation glitch in proc.c:
+1149c1149
+< 	    size = sizeof(int) + (3 + 2 * nd) * sizeof (expptr);
+---
+> 	    size = sizeof(struct Dimblock) + 2*sizeof(expptr)*(nd-1);
+Thanks to Ole Streicher for pointing out the need for this change.
+
+20190311
+  main.c:  update URL's in "f2c -?" and "f2c --help" output.
+
+20191129
+  pread.c: fix a glitch not known to have caused any trouble:
+355c355
+< 		if (c < '0' && c > '9')
+---
+> 		if (c < '0' || c > '9')
+
+20200425
+  sysdeptest.c: add #include <stdlib.h>
