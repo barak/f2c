@@ -1,11 +1,13 @@
-f2c (20160102-2) UNRELEASED; urgency=low
+f2c (20191129-1) unstable; urgency=medium
 
-  * Use secure URI in Homepage field.
+  * Use secure URI in Homepage field and upstream source URIs.
   * Bump debhelper from old 11 to 13.
   * Set debhelper-compat version in Build-Depends.
   * Fix day-of-week for changelog entries 20010821-2, 19990210-1.
+  * New upstream version
+  * Bump policy
 
- -- Barak A. Pearlmutter <bap@debian.org>  Wed, 08 Jul 2020 22:22:38 -0000
+ -- Barak A. Pearlmutter <bap@debian.org>  Wed, 08 Jul 2020 22:33:33 +0100
 
 f2c (20160102-1) unstable; urgency=medium
 
