@@ -3,7 +3,7 @@ Date: Wed, 18 Jul 2012 11:14:01 +0200
 Subject: fc script path and tmpfile
 
 ---
- fc |   18 ++++++++----------
+ fc | 18 ++++++++----------
  1 file changed, 8 insertions(+), 10 deletions(-)
 
 diff --git a/fc b/fc

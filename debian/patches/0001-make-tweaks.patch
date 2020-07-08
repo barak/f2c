@@ -10,9 +10,9 @@ Supply stub top-level Makefile.
 Set all target to not include xsum.out
 Make target distclean be very clean.
 ---
- Makefile       |    4 ++++
- src/f2c.c      |    1 +
- src/makefile.u |   11 +++++++----
+ Makefile       |  4 ++++
+ src/f2c.c      |  1 +
+ src/makefile.u | 11 +++++++----
  3 files changed, 12 insertions(+), 4 deletions(-)
  create mode 100644 Makefile
  create mode 100644 src/f2c.c

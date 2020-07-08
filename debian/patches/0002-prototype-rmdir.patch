@@ -3,7 +3,7 @@ Date: Tue, 14 Feb 2012 14:52:48 +0000
 Subject: prototype rmdir
 
 ---
- src/sysdep.c |    2 ++
+ src/sysdep.c | 2 ++
  1 file changed, 2 insertions(+)
 
 diff --git a/src/sysdep.c b/src/sysdep.c

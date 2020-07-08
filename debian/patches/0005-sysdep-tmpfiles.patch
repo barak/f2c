@@ -3,7 +3,7 @@ Date: Wed, 18 Jul 2012 11:15:58 +0200
 Subject: sysdep tmpfiles
 
 ---
- src/sysdep.c |    5 +++++
+ src/sysdep.c | 5 +++++
  1 file changed, 5 insertions(+)
 
 diff --git a/src/sysdep.c b/src/sysdep.c

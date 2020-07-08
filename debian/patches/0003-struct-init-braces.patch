@@ -3,9 +3,9 @@ Date: Tue, 14 Feb 2012 15:12:31 +0000
 Subject: struct init braces
 
 ---
- src/intr.c |  278 ++++++++++++++++++++++++++++++------------------------------
- src/io.c   |   18 ++--
- src/lex.c  |   54 ++++++------
+ src/intr.c | 278 ++++++++++++++++++++++++++++++-------------------------------
+ src/io.c   |  18 ++--
+ src/lex.c  |  54 ++++++------
  3 files changed, 175 insertions(+), 175 deletions(-)
 
 diff --git a/src/intr.c b/src/intr.c
