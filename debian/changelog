@@ -2,6 +2,7 @@ f2c (20160102-2) UNRELEASED; urgency=low
 
   * Use secure URI in Homepage field.
   * Bump debhelper from old 11 to 13.
+  * Set debhelper-compat version in Build-Depends.
 
  -- Barak A. Pearlmutter <bap@debian.org>  Wed, 08 Jul 2020 22:22:38 -0000
 
