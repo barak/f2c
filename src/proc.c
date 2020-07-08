@@ -1146,7 +1146,7 @@ copy_data(chainp list)
 	    namep -> vleng = (expptr) cpexpr (namep -> vleng);
 	if (namep -> vdim) {
 	    nd = namep -> vdim -> ndim;
-	    size = sizeof(int) + (3 + 2 * nd) * sizeof (expptr);
+	    size = sizeof(struct Dimblock) + 2*sizeof(expptr)*(nd-1);
 	    dp = (struct Dimblock *) ckalloc (size);
 	    cpn(size, (char *)namep->vdim, (char *)dp);
 	    namep -> vdim = dp;
