@@ -1,3 +1,9 @@
+f2c (20160102-2) UNRELEASED; urgency=low
+
+  * Use secure URI in Homepage field.
+
+ -- Barak A. Pearlmutter <bap@debian.org>  Wed, 08 Jul 2020 22:22:38 -0000
+
 f2c (20160102-1) unstable; urgency=medium
 
   * New upstream version (closes: #891112)
