@@ -7,7 +7,7 @@ Subject: prototype rmdir
  1 file changed, 2 insertions(+)
 
 diff --git a/src/sysdep.c b/src/sysdep.c
-index ab5b04e..f6d418c 100644
+index 93a1e5b..a692b4a 100644
 --- a/src/sysdep.c
 +++ b/src/sysdep.c
 @@ -22,6 +22,8 @@ use or performance of this software.
