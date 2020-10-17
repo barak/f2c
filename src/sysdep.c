@@ -102,6 +102,11 @@ Un_link_all(int cdelete)
 		}
 	}
 
+#ifndef MSDOS
+#include "sysdep.hd"
+#include <unistd.h> /* for mkdtemp and rmdir */
+#endif
+
 #ifndef NO_TEMPDIR
  static void
 rmtdir(Void)
@@ -113,13 +118,6 @@ rmtdir(Void)
 		}
 	}
 #endif /*NO_TEMPDIR*/
-
-#ifndef MSDOS
-#include "sysdep.hd"
-#ifndef NO_MKDTEMP
-#include <unistd.h> /* for mkdtemp */
-#endif
-#endif
 
  static void
 alloc_names(Void)
