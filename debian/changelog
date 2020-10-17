@@ -1,3 +1,11 @@
+f2c (20200916-1) unstable; urgency=medium
+
+  * New upstream version
+  * Add version to comments-only debian/watch uscan file
+  * Rules-requires-root, not
+
+ -- Barak A. Pearlmutter <bap@debian.org>  Sat, 17 Oct 2020 16:14:16 +0100
+
 f2c (20191129-1) unstable; urgency=medium
 
   * Use secure URI in Homepage field and upstream source URIs.
