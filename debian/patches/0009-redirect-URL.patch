@@ -1,0 +1,83 @@
+From: "Barak A. Pearlmutter" <barak+git@pearlmutter.net>
+Date: Mon, 8 May 2023 13:19:07 +0100
+Subject: redirect URL
+
+---
+ README       | 4 ++--
+ src/README   | 4 ++--
+ src/main.c   | 4 ++--
+ src/sysdep.c | 2 +-
+ 4 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/README b/README
+index 1416f52..8cb49f2 100644
+--- a/README
++++ b/README
+@@ -90,7 +90,7 @@ this combined library is also available from netlib in f2c/libf2c.zip,
+ e.g.,
+ 	http://netlib.bell-labs.com/netlib/f2c/libf2c.zip
+ or
+-	http://www.netlib.org/f2c/libf2c.zip
++	http://netlib.org/f2c/libf2c.zip
+ 
+ (and similarly for other netlib mirrors).  After unzipping libf2c.zip,
+ copy the relevant makefile.* to makefile, edit makefile if necessary
+@@ -101,7 +101,7 @@ makefile.u just shows how to make libf2c.a.  Details on creating the
+ shared-library variant, libf2c.so, are system-dependent; some that
+ have worked under Linux appear below.  For some other systems, you can
+ glean the details from the system-dependent makefile variants in
+-directory http://www.netlib.org/ampl/solvers/funclink or
++directory http://netlib.org/ampl/solvers/funclink or
+ http://netlib.bell-labs.com/netlib/ampl/solvers/funclink, etc.
+ 
+ In general, under Linux it is necessary to compile libf2c (or libI77)
+diff --git a/src/README b/src/README
+index 1416f52..8cb49f2 100644
+--- a/src/README
++++ b/src/README
+@@ -90,7 +90,7 @@ this combined library is also available from netlib in f2c/libf2c.zip,
+ e.g.,
+ 	http://netlib.bell-labs.com/netlib/f2c/libf2c.zip
+ or
+-	http://www.netlib.org/f2c/libf2c.zip
++	http://netlib.org/f2c/libf2c.zip
+ 
+ (and similarly for other netlib mirrors).  After unzipping libf2c.zip,
+ copy the relevant makefile.* to makefile, edit makefile if necessary
+@@ -101,7 +101,7 @@ makefile.u just shows how to make libf2c.a.  Details on creating the
+ shared-library variant, libf2c.so, are system-dependent; some that
+ have worked under Linux appear below.  For some other systems, you can
+ glean the details from the system-dependent makefile variants in
+-directory http://www.netlib.org/ampl/solvers/funclink or
++directory http://netlib.org/ampl/solvers/funclink or
+ http://netlib.bell-labs.com/netlib/ampl/solvers/funclink, etc.
+ 
+ In general, under Linux it is necessary to compile libf2c (or libI77)
+diff --git a/src/main.c b/src/main.c
+index 977113d..99d8dce 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -528,8 +528,8 @@ show_help(char *progname)
+ 	"For usage details, see the man page, f2c.1.\n",
+ 	"For technical details, see the f2c report.\n",
+ 	"Both are available from netlib, e.g.,\n",
+-	"\thttps://www.netlib.org/f2c/f2c.1\n",
+-	"\thttps://www.netlib.org/f2c/f2c.pdf\nor\n",
++	"\thttps://netlib.org/f2c/f2c.1\n",
++	"\thttps://netlib.org/f2c/f2c.pdf\nor\n",
+ 	"\thttps://ampl.com/netlib/f2c/f2c.1\n",
+ 	"\thttps://ampl.com/netlib/f2c/f2c.pdf\n");
+ 	}
+diff --git a/src/sysdep.c b/src/sysdep.c
+index 66da0c0..da22d6b 100644
+--- a/src/sysdep.c
++++ b/src/sysdep.c
+@@ -43,7 +43,7 @@ char link_msg[]	= "on Microsoft Windows system, link with libf2c.lib;\n\
+ 	-- in that order, at the end of the command line, as in\n\
+ 		cc *.o -lf2c -lm\n\
+ 	Source for libf2c is in /netlib/f2c/libf2c.zip, e.g.,\n\n\
+-		http://www.netlib.org/f2c/libf2c.zip";
++		http://netlib.org/f2c/libf2c.zip";
+ 
+ char *outbuf = "", *outbtail;
+ 

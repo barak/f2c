@@ -1,8 +1,9 @@
 f2c (20200916-2) UNRELEASED; urgency=medium
 
   * Update standards version to 4.6.2, no changes needed.
+  * Permanent URL redirect.
 
- -- Barak A. Pearlmutter <bap@debian.org>  Mon, 08 May 2023 13:17:12 -0000
+ -- Barak A. Pearlmutter <bap@debian.org>  Mon, 08 May 2023 13:17:57 +0100
 
 f2c (20200916-1) unstable; urgency=medium
 
@@ -194,7 +195,7 @@ f2c (20010618-2) unstable; urgency=low
   * corrected upload to fix problem with original
  -- Alan Bain <afrb2@debian.org>  Tue, 3 July 2001 15:00:00 +0100
 f2c (20010618-1) unstable; urgency=low
-  * New upstream release from netlib (www.netlib.org)
+  * New upstream release from netlib (netlib.org)
   * min,max of three or more arguments now work in parameter statements
   * Accept write , format (as per Fortran IV)
   * more accurate algorithm used for double precision complex log function

@@ -7,7 +7,7 @@ Standards-Version: 4.6.2
 Rules-Requires-Root: no
 Vcs-Browser: https://salsa.debian.org/debian/f2c
 Vcs-Git: https://salsa.debian.org/debian/f2c.git
-Homepage: https://www.netlib.org/f2c/
+Homepage: https://netlib.org/f2c/
 
 Package: f2c
 Architecture: any

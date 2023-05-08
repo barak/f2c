@@ -4,15 +4,15 @@ version=4
 # Unfortunately it is not easy to determine the version
 # number from upstream.  It is contained in a source code
 # file src/version.c
-# https://www.netlib.org/f2c/index.html
+# https://netlib.org/f2c/index.html
 # which can be directly accessed as
-# https://www.netlib.org/f2c/src/version.c
+# https://netlib.org/f2c/src/version.c
 
 ## This runs the check for the current version.
 # eval $(tail -4 debian/watch | sed 's/^#//' | sed 's/\\$//')
 
 ## This checks for the current version.
-# wget2 --quiet -O- https://www.netlib.org/f2c/src/version.c \
+# wget2 --quiet -O- https://netlib.org/f2c/src/version.c \
 #  | egrep F2C_version \
 #  | sed 's/^[^"]*"//' \
 #  | sed 's/".*$//'
