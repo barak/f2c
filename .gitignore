@@ -1,3 +1,4 @@
 *.o
 /src/f2c
 /src/sysdep.hd
+/src/tokdefs.h
