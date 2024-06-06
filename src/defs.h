@@ -366,6 +366,12 @@ struct Intrpacked	/* bits for intrinsic function description */
 	unsigned f4:1;
 	};
 
+ typedef union
+	{
+	int ijunk;
+	struct Intrpacked bits;
+	} Packed;
+
 struct Nameblock
 	{
 	field tag;

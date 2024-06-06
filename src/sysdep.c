@@ -20,6 +20,9 @@ data or profits, whether in an action of contract, negligence or
 other tortious action, arising out of or in connection with the
 use or performance of this software.
 ****************************************************************/
+#ifdef _WIN32
+#include <windows.h>	/* for GetVolumeInformation */
+#endif
 #include "defs.h"
 #include "usignal.h"
 
@@ -53,7 +56,6 @@ char *outbuf = "", *outbtail;
 #endif
 
 #ifdef _WIN32
-#include <windows.h>	/* for GetVolumeInformation */
 #undef WANT_spawnvp
 #define WANT_spawnvp
 #undef  MSDOS
@@ -102,7 +104,9 @@ Un_link_all(int cdelete)
 		}
 	}
 
-#ifndef MSDOS
+#ifdef MSDOS
+extern int rmdir(const char*);
+#else
 #include "sysdep.hd"
 #include <unistd.h> /* for mkdtemp and rmdir */
 #endif

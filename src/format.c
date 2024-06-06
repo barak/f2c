@@ -80,7 +80,7 @@ static void proto Argdcl((FILEP, Argtypes*, char*));
 
 extern chainp assigned_fmts;
 char filename[P1_FILENAME_MAX];
-extern int gflag, sharp_line, trapuv;
+extern int gflag, sharp_line, trapuv, uselonglong;
 extern int typeconv[];
 int gflag1;
 extern char *parens;
@@ -442,8 +442,10 @@ addrlit(Addrp addrp)
 	for (litp = litpool; litp < lastlit; litp++)
 	    if (litp->litnum == memno) {
 		addrp->vtype = litp->littype;
-		*((union Constant *) &(addrp->user)) =
-			*((union Constant *) &(litp->litval));
+		addrp->user.kludge.dfill[0] = litp->litval.litdval[0];
+		addrp->user.kludge.dfill[1] = litp->litval.litdval[1];
+		/* was *((union Constant *) &(addrp->user)) =
+			*((union Constant *) &(litp->litval)); */
 		addrp->vstg = STGMEMNO;
 		return;
 		}
@@ -2124,6 +2126,8 @@ do_uninit_equivs(FILE *outfile, int *did_one)
 	    if (!*did_one)
 		nice_printf (outfile, "/* System generated locals */\n");
 	    t = eqv->eqvtype;
+	    if (t == TYREAL && uselonglong)
+		t = eqv->eqvtype = TYLONG;
 	    if (last_type == t)
 		nice_printf (outfile, ", ");
 	    else {
