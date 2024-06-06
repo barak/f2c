@@ -1,9 +1,10 @@
-f2c (20200916-2) UNRELEASED; urgency=medium
+f2c (20240504-1) UNRELEASED; urgency=medium
 
-  * Update standards version to 4.6.2, no changes needed.
   * Permanent URL redirect.
+  * New upstream version
+  * Update standards version to 4.7.0, no changes needed.
 
- -- Barak A. Pearlmutter <bap@debian.org>  Mon, 08 May 2023 13:17:57 +0100
+ -- Barak A. Pearlmutter <bap@debian.org>  Fri, 07 Jun 2024 00:17:13 +0100
 
 f2c (20200916-1) unstable; urgency=medium
 
