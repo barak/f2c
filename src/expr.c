@@ -1057,9 +1057,10 @@ mkfunct(expptr p0)
 	Addrp ap;
 	Extsym *extp;
 	Namep np;
+	Packed k;
 	expptr q;
 	extern chainp new_procs;
-	int k, nargs;
+	int nargs;
 	int vclass;
 
 	if(p->tag != TPRIM)
@@ -1074,12 +1075,11 @@ mkfunct(expptr p0)
 		np->vclass = vclass = CLPROC;
 		if(np->vstg == STGUNKNOWN)
 		{
-			if(np->vtype!=TYSUBR && (k = intrfunct(np->fvarname))
-				&& (zflag || !(*(struct Intrpacked *)&k).f4
-					|| dcomplex_seen))
+			if(np->vtype!=TYSUBR && (k.ijunk = intrfunct(np->fvarname))
+				&& (zflag || k.bits.f4 || dcomplex_seen))
 			{
 				np->vstg = STGINTR;
-				np->vardesc.varno = k;
+				np->vardesc.varno = k.ijunk;
 				np->vprocclass = PINTRINSIC;
 			}
 			else

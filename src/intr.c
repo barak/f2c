@@ -24,12 +24,6 @@ use or performance of this software.
 #include "defs.h"
 #include "names.h"
 
-union
-	{
-	int ijunk;
-	struct Intrpacked bits;
-	} packed;
-
 struct Intrbits
 	{
 	char intrgroup /* :3 */;
@@ -611,6 +605,7 @@ intrcall(Namep np, struct Listblock *argsp, int nargs)
 	int i, rettype;
 	ftnint k;
 	Addrp ap;
+	Packed packed;
 	register struct Specblock *sp;
 	register struct Chain *cp;
 	expptr q, ep;
@@ -933,6 +928,7 @@ intrfunct(s)
 intrfunct(char *s)
 #endif
 {
+	Packed packed;
 	register struct Intrblock *p;
 	int i;
 	extern int intr_omit;
@@ -971,6 +967,7 @@ intraddr(Namep np)
 #endif
 {
 	Addrp q;
+	Packed packed;
 	register struct Specblock *sp;
 	int f3field;
 

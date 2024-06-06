@@ -3521,3 +3521,41 @@ of the f2c source on platforms that actually use more than 32 bits
 for addresses.  (Many 64-bit platforms keep addresses <= 32 bits
 long when possible.  One that does not and for which today's changes
 are relevant is Microsoft Windows with Microsoft's cl compiler.)
+
+20210928
+  README: add a paragraph about the size of integers and a simple
+change to f2c.h that is appropriate when sizeof(int) == 4 and
+sizeof(long) == 8.
+  xsum.c: trivial change to banish a pedantic compiler warning.
+
+20230428
+  proc.c:  fix another allocation glitch in proc.c:
+1701c1701
+<	    ckalloc( sizeof(int) + (3+2*nd)*sizeof(expptr) );
+---
+>	    ckalloc( sizeof(struct Dimblock) + 2*sizeof(expptr)*(nd-1) );
+This is similar to the change of 20181026 and the need for it was
+revealed in E-mail from Ole Streicher.
+
+20240123
+  New command-line options -I8 and -cf:
+
+  -I8	Assume 8-byte integer and logical, 4-byte REAL, 8-byte
+	double precision and complex, and 16-byte double complex
+	variables.  Appropriate changes to f2c.h may be needed.
+
+  -cf	Do not report the current .f file except in error messages.
+
+20240130
+  Fix a glitch (missed case) with the new "-cf" command-line option.
+  Minor updates to makefile.u and addition of fio.h0 in libf2c.zip.
+
+0240312
+  Tweaks for pedants who compile with -Werror=strict-aliasing.
+
+20240313
+  Adjusted updates to 20240312:  missed updating some files; version.c
+still says 20240312.
+
+20240504
+  Tweak sysdep.c to work with newer versions of mingw.
