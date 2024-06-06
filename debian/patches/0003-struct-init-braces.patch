@@ -9,10 +9,10 @@ Subject: struct init braces
  3 files changed, 175 insertions(+), 175 deletions(-)
 
 diff --git a/src/intr.c b/src/intr.c
-index dcae4db..9da6757 100644
+index 8b6a401..eb5698f 100644
 --- a/src/intr.c
 +++ b/src/intr.c
-@@ -48,182 +48,182 @@ LOCAL struct Intrblock
+@@ -42,182 +42,182 @@ LOCAL struct Intrblock
  	struct Intrbits intrval;
  	} intrtab[ ] =
  {

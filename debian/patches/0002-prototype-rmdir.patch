@@ -7,11 +7,11 @@ Subject: prototype rmdir
  1 file changed, 2 insertions(+)
 
 diff --git a/src/sysdep.c b/src/sysdep.c
-index 93a1e5b..a692b4a 100644
+index 45ef4be..bca6ff2 100644
 --- a/src/sysdep.c
 +++ b/src/sysdep.c
-@@ -22,6 +22,8 @@ use or performance of this software.
- ****************************************************************/
+@@ -25,6 +25,8 @@ use or performance of this software.
+ #endif
  #include "defs.h"
  #include "usignal.h"
 +#include <stdlib.h>

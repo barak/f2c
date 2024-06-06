@@ -3,12 +3,12 @@ Date: Wed, 18 Jul 2012 11:12:20 +0200
 Subject: man dash hyphen slash
 
 ---
- f2c.1t     | 126 +++++++++++++++++++++++++++++++++----------------------------
- src/f2c.1t | 126 +++++++++++++++++++++++++++++++++----------------------------
- 2 files changed, 136 insertions(+), 116 deletions(-)
+ f2c.1t     | 138 +++++++++++++++++++++++++++++++++----------------------------
+ src/f2c.1t | 138 +++++++++++++++++++++++++++++++++----------------------------
+ 2 files changed, 148 insertions(+), 128 deletions(-)
 
 diff --git a/f2c.1t b/f2c.1t
-index d73d334..4723784 100644
+index b06c56b..2e6e85e 100644
 --- a/f2c.1t
 +++ b/f2c.1t
 @@ -19,7 +19,6 @@
@@ -19,7 +19,7 @@ index d73d334..4723784 100644
  .SH NAME
  f2c \- Convert Fortran 77 to C or C++
  . \" f\^2c changed to f2c in the previous line for the benefit of
-@@ -58,24 +57,24 @@ or
+@@ -58,29 +57,29 @@ or
  .L .P
  are taken to be prototype
  files, as produced by option
@@ -44,12 +44,18 @@ index d73d334..4723784 100644
 +.L \-I4
  confirms the default rendering of INTEGER as long int.
  .TP
+-.B -I8
++.B \-I8
+ Assume 8-byte integer and logical, 4-byte REAL, 8-byte double precison
+ and complex, and 16-byte double complex variables.  Appropriate changes
+ to f2c.h may be needed.
+ .TP
 -.BI -I dir
 +.BI \-I dir
  Look for a non-absolute include file first in the directory of the
  current input file, then in directories specified by \f(CW-I\fP
  options (one directory per option).  Options
-@@ -83,34 +82,34 @@ options (one directory per option).  Options
+@@ -88,34 +87,34 @@ options (one directory per option).  Options
  have precedence, so, e.g., a directory named \f(CW2\fP
  should be specified by \f(CW-I./2\fP .
  .TP
@@ -91,7 +97,7 @@ index d73d334..4723784 100644
  Make local variables automatic rather than static
  unless they appear in a
  .SM "DATA, EQUIVALENCE, NAMELIST,"
-@@ -118,26 +117,26 @@ or
+@@ -123,29 +122,29 @@ or
  .SM SAVE
  statement.
  .TP
@@ -110,6 +116,10 @@ index d73d334..4723784 100644
  zabs, zcos, zexp, zlog, zsin, and zsqrt, respectively,
  nor dreal as a synonym for dble.
  .TP
+-.B -cf
++.B \-cf
+ Do not report the current \f(CW.f\fP file except in error messages.
+ .TP
 -.BI -d dir
 +.BI \-d dir
  Write
@@ -123,7 +133,7 @@ index d73d334..4723784 100644
  Declare uninitialized
  .SM COMMON
  to be
-@@ -147,7 +146,7 @@ to be
+@@ -155,7 +154,7 @@ to be
  as
  .B extern).
  .TP
@@ -132,7 +142,14 @@ index d73d334..4723784 100644
  Place uninitialized
  .SM COMMON
  blocks in separate files:
-@@ -161,36 +160,36 @@ into the output file, with comments that give an unbundling
+@@ -163,42 +162,42 @@ blocks in separate files:
+ appears in file
+ .BR abc_com.c .
+ Option
+-.LR -e1c
++.LR \-e1c
+ bundles the separate files
+ into the output file, with comments that give an unbundling
  .IR sed (1)
  script.
  .TP
@@ -178,7 +195,7 @@ index d73d334..4723784 100644
  so
  .SM INTEGER
  and
-@@ -199,18 +198,18 @@ variables may be assigned by
+@@ -207,18 +206,18 @@ variables may be assigned by
  .SM INQUIRE
  and array lengths are stored in short ints.
  .TP
@@ -201,7 +218,7 @@ index d73d334..4723784 100644
  Write a
  .IB file .P
  of ANSI (or C++) prototypes
-@@ -220,24 +219,24 @@ or
+@@ -228,32 +227,32 @@ or
  .IB file .F .
  When reading Fortran from standard input, write prototypes
  at the beginning of standard output.  Option
@@ -231,7 +248,8 @@ index d73d334..4723784 100644
  confirms the default, which imitates
  .IR f\^77 .
  .TP
-@@ -245,7 +244,7 @@ confirms the default, which imitates
+-.B -r
++.B \-r
  Cast REAL arguments of intrinsic functions and values of REAL
  functions (including intrinsics) to REAL.
  .TP
@@ -240,7 +258,7 @@ index d73d334..4723784 100644
  Promote
  .SM REAL
  to
-@@ -253,16 +252,16 @@ to
+@@ -261,16 +260,16 @@ to
  to
  .SM DOUBLE COMPLEX.
  .TP
@@ -261,7 +279,7 @@ index d73d334..4723784 100644
  Dynamically initialize local variables, except those appearing in
  .SM SAVE
  or
-@@ -271,42 +270,42 @@ statements, with values that may help find references to
+@@ -279,42 +278,42 @@ statements, with values that may help find references to
  uninitialized variables.  For example, with IEEE arithmetic,
  initialize local floating-point variables to signaling NaNs.
  .TP
@@ -293,7 +311,8 @@ index d73d334..4723784 100644
 -.B -!c
 +.B \-!c
  Inhibit C output, but produce
- .B -P
+-.B -P
++.B \-P
  output.
  .TP
 -.B -!I
@@ -312,7 +331,7 @@ index d73d334..4723784 100644
  permit
  .SM INTEGER*8
  but do not promote integer
-@@ -314,17 +313,20 @@ constants to
+@@ -322,17 +321,20 @@ constants to
  .SM INTEGER*8
  when they involve more than 32 bits.
  .TP
@@ -335,7 +354,16 @@ index d73d334..4723784 100644
  .PP
  The resulting C invokes the support routines of
  .IR f\^77 ;
-@@ -353,14 +355,22 @@ output file
+@@ -343,7 +345,7 @@ or with
+ or
+ .IR cc (1)
+ options
+-.BR "-lF77 -lI77 -lm" .
++.BR "\-lF77 \-lI77 \-lm" .
+ Calling conventions
+ are those of
+ .IR f\&77 :
+@@ -361,14 +363,22 @@ output file
  .F /usr/include/f2c.h
  header file
  .TP
@@ -343,7 +371,9 @@ index d73d334..4723784 100644
 -intrinsic function library
 +.F /usr/lib/libf2c.a
 +static link intrinsic and I/O library
-+.TP
+ .TP
+-.F /usr/lib/libI77.a
+-Fortran I/O library
 +.F /usr/lib/libf2c_i2.a
 +static link intrinsic and I/O library for use with 
 +files translated using the
@@ -351,9 +381,7 @@ index d73d334..4723784 100644
 +.TP
 +.F /usr/lib/libf2c.so
 +shared object intrinsic and I/O library
- .TP
--.F /usr/lib/libI77.a
--Fortran I/O library
++.TP
 +.F /usr/lib/libf2c_i2.so
 +shared object intrinsic and I/O library for use with
 +files translated using the 
@@ -365,7 +393,7 @@ index d73d334..4723784 100644
  S. I. Feldman and
  P. J. Weinberger,
 diff --git a/src/f2c.1t b/src/f2c.1t
-index d73d334..4723784 100644
+index b06c56b..2e6e85e 100644
 --- a/src/f2c.1t
 +++ b/src/f2c.1t
 @@ -19,7 +19,6 @@
@@ -376,7 +404,7 @@ index d73d334..4723784 100644
  .SH NAME
  f2c \- Convert Fortran 77 to C or C++
  . \" f\^2c changed to f2c in the previous line for the benefit of
-@@ -58,24 +57,24 @@ or
+@@ -58,29 +57,29 @@ or
  .L .P
  are taken to be prototype
  files, as produced by option
@@ -401,12 +429,18 @@ index d73d334..4723784 100644
 +.L \-I4
  confirms the default rendering of INTEGER as long int.
  .TP
+-.B -I8
++.B \-I8
+ Assume 8-byte integer and logical, 4-byte REAL, 8-byte double precison
+ and complex, and 16-byte double complex variables.  Appropriate changes
+ to f2c.h may be needed.
+ .TP
 -.BI -I dir
 +.BI \-I dir
  Look for a non-absolute include file first in the directory of the
  current input file, then in directories specified by \f(CW-I\fP
  options (one directory per option).  Options
-@@ -83,34 +82,34 @@ options (one directory per option).  Options
+@@ -88,34 +87,34 @@ options (one directory per option).  Options
  have precedence, so, e.g., a directory named \f(CW2\fP
  should be specified by \f(CW-I./2\fP .
  .TP
@@ -448,7 +482,7 @@ index d73d334..4723784 100644
  Make local variables automatic rather than static
  unless they appear in a
  .SM "DATA, EQUIVALENCE, NAMELIST,"
-@@ -118,26 +117,26 @@ or
+@@ -123,29 +122,29 @@ or
  .SM SAVE
  statement.
  .TP
@@ -467,6 +501,10 @@ index d73d334..4723784 100644
  zabs, zcos, zexp, zlog, zsin, and zsqrt, respectively,
  nor dreal as a synonym for dble.
  .TP
+-.B -cf
++.B \-cf
+ Do not report the current \f(CW.f\fP file except in error messages.
+ .TP
 -.BI -d dir
 +.BI \-d dir
  Write
@@ -480,7 +518,7 @@ index d73d334..4723784 100644
  Declare uninitialized
  .SM COMMON
  to be
-@@ -147,7 +146,7 @@ to be
+@@ -155,7 +154,7 @@ to be
  as
  .B extern).
  .TP
@@ -489,7 +527,14 @@ index d73d334..4723784 100644
  Place uninitialized
  .SM COMMON
  blocks in separate files:
-@@ -161,36 +160,36 @@ into the output file, with comments that give an unbundling
+@@ -163,42 +162,42 @@ blocks in separate files:
+ appears in file
+ .BR abc_com.c .
+ Option
+-.LR -e1c
++.LR \-e1c
+ bundles the separate files
+ into the output file, with comments that give an unbundling
  .IR sed (1)
  script.
  .TP
@@ -535,7 +580,7 @@ index d73d334..4723784 100644
  so
  .SM INTEGER
  and
-@@ -199,18 +198,18 @@ variables may be assigned by
+@@ -207,18 +206,18 @@ variables may be assigned by
  .SM INQUIRE
  and array lengths are stored in short ints.
  .TP
@@ -558,7 +603,7 @@ index d73d334..4723784 100644
  Write a
  .IB file .P
  of ANSI (or C++) prototypes
-@@ -220,24 +219,24 @@ or
+@@ -228,32 +227,32 @@ or
  .IB file .F .
  When reading Fortran from standard input, write prototypes
  at the beginning of standard output.  Option
@@ -588,7 +633,8 @@ index d73d334..4723784 100644
  confirms the default, which imitates
  .IR f\^77 .
  .TP
-@@ -245,7 +244,7 @@ confirms the default, which imitates
+-.B -r
++.B \-r
  Cast REAL arguments of intrinsic functions and values of REAL
  functions (including intrinsics) to REAL.
  .TP
@@ -597,7 +643,7 @@ index d73d334..4723784 100644
  Promote
  .SM REAL
  to
-@@ -253,16 +252,16 @@ to
+@@ -261,16 +260,16 @@ to
  to
  .SM DOUBLE COMPLEX.
  .TP
@@ -618,7 +664,7 @@ index d73d334..4723784 100644
  Dynamically initialize local variables, except those appearing in
  .SM SAVE
  or
-@@ -271,42 +270,42 @@ statements, with values that may help find references to
+@@ -279,42 +278,42 @@ statements, with values that may help find references to
  uninitialized variables.  For example, with IEEE arithmetic,
  initialize local floating-point variables to signaling NaNs.
  .TP
@@ -650,7 +696,8 @@ index d73d334..4723784 100644
 -.B -!c
 +.B \-!c
  Inhibit C output, but produce
- .B -P
+-.B -P
++.B \-P
  output.
  .TP
 -.B -!I
@@ -669,7 +716,7 @@ index d73d334..4723784 100644
  permit
  .SM INTEGER*8
  but do not promote integer
-@@ -314,17 +313,20 @@ constants to
+@@ -322,17 +321,20 @@ constants to
  .SM INTEGER*8
  when they involve more than 32 bits.
  .TP
@@ -692,7 +739,16 @@ index d73d334..4723784 100644
  .PP
  The resulting C invokes the support routines of
  .IR f\^77 ;
-@@ -353,14 +355,22 @@ output file
+@@ -343,7 +345,7 @@ or with
+ or
+ .IR cc (1)
+ options
+-.BR "-lF77 -lI77 -lm" .
++.BR "\-lF77 \-lI77 \-lm" .
+ Calling conventions
+ are those of
+ .IR f\&77 :
+@@ -361,14 +363,22 @@ output file
  .F /usr/include/f2c.h
  header file
  .TP
@@ -700,7 +756,9 @@ index d73d334..4723784 100644
 -intrinsic function library
 +.F /usr/lib/libf2c.a
 +static link intrinsic and I/O library
-+.TP
+ .TP
+-.F /usr/lib/libI77.a
+-Fortran I/O library
 +.F /usr/lib/libf2c_i2.a
 +static link intrinsic and I/O library for use with 
 +files translated using the
@@ -708,9 +766,7 @@ index d73d334..4723784 100644
 +.TP
 +.F /usr/lib/libf2c.so
 +shared object intrinsic and I/O library
- .TP
--.F /usr/lib/libI77.a
--Fortran I/O library
++.TP
 +.F /usr/lib/libf2c_i2.so
 +shared object intrinsic and I/O library for use with
 +files translated using the 

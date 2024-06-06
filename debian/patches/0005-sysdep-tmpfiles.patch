@@ -7,10 +7,10 @@ Subject: sysdep tmpfiles
  1 file changed, 5 insertions(+)
 
 diff --git a/src/sysdep.c b/src/sysdep.c
-index a692b4a..66da0c0 100644
+index bca6ff2..01190c3 100644
 --- a/src/sysdep.c
 +++ b/src/sysdep.c
-@@ -96,7 +96,9 @@ Un_link_all(int cdelete)
+@@ -98,7 +98,9 @@ Un_link_all(int cdelete)
  	if (!debugflag) {
  		unlink(c_functions);
  		unlink(initfname);
@@ -20,7 +20,7 @@ index a692b4a..66da0c0 100644
  		unlink(sortfname);
  		unlink(blkdfname);
  		if (cdelete && coutput)
-@@ -233,6 +235,9 @@ set_tmp_names(Void)
+@@ -237,6 +239,9 @@ set_tmp_names(Void)
  #endif /*NO_TEMPDIR*/
  		}
  	alloc_names();
